@@ -1,0 +1,353 @@
+/* ***** BEGIN LICENSE BLOCK *****
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ *
+ * The contents of this file are subject to the Mozilla Public License Version
+ * 1.1 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * The Initial Developer of the Original Code is Parakey Inc.
+ *
+ * Portions created by the Initial Developer are Copyright (C) 2006
+ * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *     Joe Hewitt <joe@joehewitt.com>
+ *
+ * Alternatively, the contents of this file may be used under the terms of
+ * either the GNU General Public License Version 2 or later (the "GPL"), or
+ * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+ * in which case the provisions of the GPL or the LGPL are applicable instead
+ * of those above. If you wish to allow use of your version of this file only
+ * under the terms of either the GPL or the LGPL, and not to allow others to
+ * use your version of this file under the terms of the MPL, indicate your
+ * decision by deleting the provisions above and replace them with the notice
+ * and other provisions required by the GPL or the LGPL. If you do not delete
+ * the provisions above, a recipient may use your version of this file under
+ * the terms of any one of the MPL, the GPL or the LGPL.
+ *
+ * ***** END LICENSE BLOCK ***** */
+
+.panelNode-net {
+    overflow-x: hidden;
+}
+
+.netTable {
+    width: 100%;
+}
+
+/************************************************************************************************/
+
+.hideCategory-undefined .category-undefined,
+.hideCategory-html .category-html,
+.hideCategory-css .category-css,
+.hideCategory-js .category-js,
+.hideCategory-image .category-image,
+.hideCategory-xhr .category-xhr,
+.hideCategory-flash .category-flash,
+.hideCategory-txt .category-txt,
+.hideCategory-bin .category-bin {
+    display: none;
+}
+
+/************************************************************************************************/
+
+.netHeadRow {
+    background: url(chrome://firebug/skin/group.gif) repeat-x #FFFFFF;
+}
+
+.netHeadCol {
+    border-bottom: 1px solid #CCCCCC;
+    padding: 2px 4px 2px 18px;
+    font-weight: bold;
+}
+
+.netHeadLabel {
+    white-space: nowrap;
+    overflow: hidden;    
+}
+
+/************************************************************************************************/
+
+.netRow {
+    background: LightYellow;
+}
+
+.netRow.loaded {
+    background: #FFFFFF;
+}
+
+.netRow:hover {
+    background: LightYellow;
+}
+
+.netRow.loaded:hover {
+    background: #EFEFEF;
+}
+
+.netCol {
+    padding: 0;
+    vertical-align: top;
+    border-bottom: 1px solid #EFEFEF;  
+    white-space: nowrap;
+}
+
+.netDomainCol {
+    padding-left: 10px;
+}
+
+.netSizeCol {
+    text-align: right;
+    padding-right: 10px;
+}
+
+.netHrefLabel {
+    -moz-box-sizing: padding-box;
+    overflow: hidden;
+    z-index: 100;
+    position: absolute;
+    padding-left: 18px;
+    max-width: 15%;
+    font-weight: bold;
+}
+
+.netFullHrefLabel {
+    display: none;
+    -moz-user-select: none;
+    padding-right: 10px;
+    padding-bottom: 4px;
+    max-width: 100%;
+    background: #FFFFFF;
+}
+
+.netRow:hover > .netCol > .netDomainLabel,
+.netRow:hover > .netCol > .netHrefLabel {
+    display: none;
+}
+
+.netRow:hover > .netCol > .netFullHrefLabel {
+    display: block;
+}
+
+.netRow.loaded:hover > .netCol > .netFullHrefLabel {
+    background-color: #EFEFEF;
+}
+
+.netSizeLabel {
+    padding-left: 6px;
+}
+
+.netDomainLabel,
+.netSizeLabel,
+.netBar {
+    padding: 2px 0 2px 0 !important;
+}
+
+.responseError {
+    color: red;
+}
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+.hasHeaders .netHrefLabel:hover {
+    cursor: pointer;
+    color: blue;
+    text-decoration: underline;
+}
+
+/************************************************************************************************/
+
+.netBar {
+    position: relative;
+    border-right: 50px solid Cyan;
+}
+
+.netTotalBar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background: Cyan;
+}
+
+.netTimeBar {    
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    min-width: 3px;
+    background: #38D63B url(chrome://firebug/skin/netBarLoading.gif) repeat-x;
+    border-right: 1px solid #38D63B;
+}
+
+.netTimeLabel {
+    -moz-box-sizing: padding-box;
+    position: absolute;
+    top: 1px;
+    left: 100%;
+    padding-left: 6px;
+    color: #444444;
+    min-width: 16px;
+    background: url(chrome://firebug/skin/loading_16.gif) no-repeat 4px -1px;
+}
+
+.netSummaryRow .netTimeLabel,
+.loaded .netTimeLabel {
+    background: transparent;
+}
+
+.loaded .netTimeBar {
+    background: #B6B6B6 url(chrome://firebug/skin/netBarLoaded.gif) repeat-x;
+    border-color: #B6B6B6;
+}
+
+.fromCache .netTimeBar {
+    background: #D6D6D6 url(chrome://firebug/skin/netBarCached.gif) repeat-x;
+    border-color: #D6D6D6;
+}
+
+.netSummaryRow .netTimeBar {
+    background: #BBBBBB;
+    border: none;
+}
+
+/************************************************************************************************/
+
+.netSummaryLabel {
+    color: #222222;
+}
+
+.netSummaryRow {
+    background: #BBBBBB !important;
+    font-weight: bold;
+}
+
+.netSummaryRow .netBar {
+    border-right-color: #BBBBBB;
+}
+
+.netSummaryRow > .netCol {
+    border-top: 1px solid #999999;
+    border-bottom: 2px solid;
+    -moz-border-bottom-colors: #EFEFEF #999999;
+    padding-top: 1px;
+    padding-bottom: 2px;
+}
+
+.netCountLabel {
+    padding-left: 18px;
+}
+
+.netTotalSizeCol {
+    text-align: right;
+    padding-right: 10px;
+}
+
+.netTotalTimeCol {
+    text-align: right;
+}
+
+.netCacheSizeLabel {
+    position: absolute;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+}
+
+/************************************************************************************************/
+
+.netInfoCol {
+    border-top: 1px solid #EEEEEE;
+    background: url(chrome://firebug/skin/group.gif) repeat-x #FFFFFF;
+}
+
+.netInfoBody {
+    margin: 10px 0 4px 10px;
+}
+
+.netInfoTabs {
+    position: relative;
+    padding-left: 14px;
+}
+
+.netInfoTab {
+    position: relative;
+    top: -3px;
+    margin-top: 10px;
+    padding: 4px 6px;
+    border: 1px solid transparent;
+    border-bottom: none;
+    font-weight: bold;
+    color: #565656;
+}
+
+.netInfoTab:hover {
+    cursor: pointer;
+}
+
+.netInfoTab[selected="true"] {
+    cursor: default !important;
+    border-color: #D7D7D7;
+    -moz-border-radius: 4px 4px 0 0;
+    background-color: #FFFFFF;
+}
+
+.logRow-netInfo.error .netInfoTitle {
+    color: red;
+}
+
+.logRow-netInfo.loading .netInfoResponseText {
+    font-style: italic;
+    color: #888888;
+}
+
+.loading .netInfoResponseHeadersTitle {
+    display: none;
+}
+
+.netInfoText {
+    display: none;
+    margin: 0;
+    border: 1px solid #D7D7D7;
+    border-right: none;
+    padding: 8px;
+    background-color: #FFFFFF;
+    font-family: Monaco, monospace;
+    overflow-x: auto;
+}
+
+.netInfoText[selected="true"] {
+    display: block;
+}
+
+.netInfoParamName {
+    padding: 0 10px 0 0;
+    font-family: Lucida Grande, Tahoma, sans-serif;
+    font-weight: bold;
+    vertical-align: top;
+}
+
+.netInfoParamName {
+    font-family: Lucida Grande, Tahoma, sans-serif;
+    text-align: right;
+}
+
+.netInfoHeadersText {
+    padding-top: 0;
+}
+
+.netInfoHeadersGroup {
+    margin-bottom: 4px;
+    border-bottom: 1px solid #D7D7D7;
+    padding-top: 8px;
+    padding-bottom: 2px;
+    font-family: Lucida Grande, Tahoma, sans-serif;
+    font-weight: bold;
+    color: #565656;
+}

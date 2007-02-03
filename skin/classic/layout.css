@@ -1,0 +1,250 @@
+/* ***** BEGIN LICENSE BLOCK *****
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ *
+ * The contents of this file are subject to the Mozilla Public License Version
+ * 1.1 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * The Initial Developer of the Original Code is Parakey Inc.
+ *
+ * Portions created by the Initial Developer are Copyright (C) 2006
+ * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *     Joe Hewitt <joe@joehewitt.com>
+ *
+ * Alternatively, the contents of this file may be used under the terms of
+ * either the GNU General Public License Version 2 or later (the "GPL"), or
+ * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+ * in which case the provisions of the GPL or the LGPL are applicable instead
+ * of those above. If you wish to allow use of your version of this file only
+ * under the terms of either the GPL or the LGPL, and not to allow others to
+ * use your version of this file under the terms of the MPL, indicate your
+ * decision by deleting the provisions above and replace them with the notice
+ * and other provisions required by the GPL or the LGPL. If you do not delete
+ * the provisions above, a recipient may use your version of this file under
+ * the terms of any one of the MPL, the GPL or the LGPL.
+ *
+ * ***** END LICENSE BLOCK ***** */
+
+.panelNode-layout {
+    overflow: hidden !important;
+}
+
+.outerLayoutBox {
+    overflow: hidden !important;
+    position: relative;
+    margin: 0 auto;
+    width: 300px;
+    height: 100%;
+}
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+.layoutBox {
+    position: absolute;
+    border: 1px solid #4D8CA5;
+    top: 20px;
+    right: 20px;
+    bottom: 20px;
+    left: 20px;
+    color: #333333;
+}
+
+.offsetLayoutBox {
+    position: absolute;
+    top: 12px;
+    bottom: 12px;
+    left: 15px;
+    width: 260px;
+    max-height: 260px;
+    min-height: 180px;
+}
+
+.marginLayoutBox {
+    border: 1px dashed #BBBBBB;
+    background: #FFFFFF;
+}
+
+.borderLayoutBox {
+    background: #6CB5DF;
+}
+
+.paddingLayoutBox {
+    background: #00F3F3;
+}
+
+.contentLayoutBox {
+    background: #00F3F3;
+}
+
+.layoutBox.editing,
+.layoutBox.highlighted {
+    background-color: Highlight;
+}
+
+.layoutBox.editing,
+.layoutBox.editing > .layoutCaption,
+.layoutBox.editing > .layoutLabel,
+.layoutBox.highlighted,
+.layoutBox.highlighted > .layoutCaption,
+.layoutBox.highlighted > .layoutLabel {
+    color: HighlightText;
+    -moz-opacity: 1.0;
+}
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+.layoutCaption {
+    position: absolute;
+    left: 2px;
+    top: 2px;
+    font-size: 9px;
+    color: #555555;
+}
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+.layoutLabel {
+    position: absolute;
+}
+
+.layoutLabel.v0 {
+    -moz-opacity: 0.2;
+}
+
+.layoutLabelTop {
+    left: 0;
+    top: 2px;
+    width: 100%;
+    text-align: center;
+}
+
+.layoutLabelBottom {
+    left: 0;
+    bottom: 2px;
+    width: 100%;
+    text-align: center;
+}
+
+.layoutLabelLeft {
+    top: 50%;
+    left: 0;
+    width: 20px;
+    margin-top: -0.5em;
+    text-align: center;
+}
+
+.layoutLabelRight {
+    top: 50%;
+    right: 0;
+    width: 20px;
+    margin-top: -0.5em;
+    text-align: center;
+}
+
+.layoutLabelCenter {
+    left: 0;
+    top: 50%;
+    width: 100%;
+    margin-top: -0.5em;
+    text-align: center;
+}
+
+.layoutLabelWidth,
+.layoutLabelHeight {
+    position: static;
+}
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+.layoutEdge {
+    position: absolute;
+}
+
+.parentLeft > .layoutEdgeLeft,
+.parentRight > .layoutEdgeRight,
+.parentTop > .layoutEdgeTop,
+.parentBottom > .layoutEdgeBottom {
+    background: #EEEEEE;
+}
+
+.siblingLeft > .layoutEdgeLeft {
+    border-left: 1px dashed #BBBBBB;
+}
+
+.siblingRight > .layoutEdgeRight {
+    border-right: 1px dashed #BBBBBB;
+}
+
+.siblingTop > .layoutEdgeTop {
+    border-top: 1px dashed #BBBBBB;
+}
+
+.siblingBottom > .layoutEdgeBottom {
+    border-bottom: 1px dashed #BBBBBB;
+}
+
+.siblingLeft > .layoutEdgeTop,
+.siblingLeft > .layoutEdgeBottom {
+    left: 0;
+}
+
+.siblingRight > .layoutEdgeTop,
+.siblingRight > .layoutEdgeBottom {
+    right: 0;
+}
+
+.siblingTop > .layoutEdgeLeft,
+.siblingTop > .layoutEdgeRight {
+    top: 0;
+}
+
+.siblingBottom > .layoutEdgeLeft,
+.siblingBottom > .layoutEdgeRight {
+    bottom: 0;
+}
+
+.parentLeft.parentTop > .layoutEdgeLeft,
+.parentRight.parentTop > .layoutEdgeRight {
+    top: 0;
+}
+
+.parentLeft.parentBottom > .layoutEdgeLeft,
+.parentRight.parentBottom > .layoutEdgeRight {
+    bottom: 0;
+}
+
+.layoutEdgeTop {
+    left: 20px;
+    right: 20px;
+    top: 0;
+    height: 20px;
+}
+
+.layoutEdgeBottom {
+    left: 20px;
+    right: 20px;
+    bottom: 0;
+    height: 20px;
+}
+
+.layoutEdgeLeft {
+    left: 0;
+    top: 20px;
+    bottom: 20px;
+    width: 20px;
+}
+
+.layoutEdgeRight {
+    right: 0;
+    top: 20px;
+    bottom: 20px;
+    width: 20px;
+}
