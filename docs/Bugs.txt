@@ -24,12 +24,8 @@ HTML
 2. Mutation events not applied to iframes sometimes, seems after page reload (test on Gwen)
 
 CSS
-1. Editor is going off the screen
-1. "Find Next" doesn't work in CSS tab
 1. Escape in big CSS editor doesn't revert values on refreshed view
-1. Disabling properties on element.style causes them to disappear (randomly?)
 1. Remove empty warning message when inserting first style rule
-2. Show import rules as a link to the style sheet
 * Shorthand rules don't get inheritance crossed out (margin -> margin-top)
 
 DEBUGGER
@@ -41,7 +37,6 @@ DEBUGGER
     * Re-write script display to display streaming pages incrementally while they load
 
 DOM
-1. Editing properties that are null or undefined wind up with "propnameundefined"
 1. Disable and re-enable Firebug and DOM window winds up empty
 2. Clicking built-in functions shouldn't take you to script tab (console builtin map)
 2. Make list of read-only DOM properties and disallow editing them
@@ -49,8 +44,6 @@ DOM
 3. Make inline editor cover only the property value, with shadow and all
 
 SPY
-1. Crop length of URL to 100 chars or so
-* Re-instate UniversalBrowserRead for file URLs
 
 NET
 * Show time from start of request until first byte comes in

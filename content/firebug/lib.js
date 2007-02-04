@@ -1241,7 +1241,7 @@ this.escapeNewLines = function(value)
 
 this.stripNewLines = function(value)
 {
-    return value.replace(/[\r\n]/g, " ");
+    return typeof(value) == "string" ? value.replace(/[\r\n]/g, " ") : value;
 };
 
 this.escapeJS = function(value)
