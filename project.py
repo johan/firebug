@@ -9,3 +9,4 @@ build = FirefoxExtension()
 
 class variables:
     extensionId = "firebug@software.joehewitt.com"
+    chromeDirs = ["content", "locale/en-US", "skin"]

@@ -385,30 +385,38 @@ function parseFormat(format)
 {
     var parts = [];
     
-    var reg = /((^%|[^\\]%)(\d+)?(\.)([a-zA-Z]))|((^%|[^\\]%)([a-zA-Z]))/;    
+    var reg = /((^%|.%)(\d+)?(\.)([a-zA-Z]))|((^%|.%)([a-zA-Z]))/;    
     for (var m = reg.exec(format); m; m = reg.exec(format))
     {
-        var type = m[8] ? m[8] : m[5];
-        var precision = m[3] ? parseInt(m[3]) : (m[4] == "." ? -1 : 0);
-        
-        var rep = null;
-        switch (type)
+        if (m[0].substr(0, 2) == "%%")
         {
-            case "s":
-                rep = FirebugReps.Text;
-                break;
-            case "f":
-            case "i":
-            case "d":
-                rep = FirebugReps.Number;
-                break;
-            case "o":
-                rep = null;
-                break;
+            parts.push(format.substr(0, m.index));
+            parts.push(m[0].substr(1));
         }
-        
-        parts.push(format.substr(0, m[0][0] == "%" ? m.index : m.index+1));
-        parts.push({rep: rep, precision: precision});
+        else
+        {
+            var type = m[8] ? m[8] : m[5];
+            var precision = m[3] ? parseInt(m[3]) : (m[4] == "." ? -1 : 0);
+
+            var rep = null;
+            switch (type)
+            {
+                case "s":
+                    rep = FirebugReps.Text;
+                    break;
+                case "f":
+                case "i":
+                case "d":
+                    rep = FirebugReps.Number;
+                    break;
+                case "o":
+                    rep = null;
+                    break;
+            }
+
+            parts.push(format.substr(0, m.index+1));
+            parts.push({rep: rep, precision: precision});
+        }
         
         format = format.substr(m.index+m[0].length);
     }

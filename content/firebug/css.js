@@ -88,6 +88,7 @@ const reURL = /url\("?([^"\)]+)?"?\)/;
 
 const reRepeat = /no-repeat|repeat-x|repeat-y|repeat/;
 
+const sothinkInstalled = !!$("swfcatcherKey_sidebar");
 const styleGroups =
 {
     text: [
@@ -430,6 +431,21 @@ CSSStyleSheetPanel.prototype = extend(Firebug.Panel,
         var style = Firebug.getRepObject(row);
         var propName = getChildByClass(row, "cssPropName").textContent;
         style.removeProperty(propName);
+
+        // Remove the property from the selector map, if it was disabled
+        var ruleId = Firebug.getRepNode(row).getAttribute("ruleId");
+        if (ruleId in this.context.selectorMap)
+        {
+            var map = this.context.selectorMap[ruleId];
+            for (var i = 0; i < map.length; ++i)
+            {
+                if (map[i].name == propName)
+                {
+                    map.splice(i, 1);
+                    break;
+                }
+            }
+        }
 
         row.parentNode.removeChild(row);
 
@@ -1071,6 +1087,12 @@ CSSElementPanel.prototype = extend(CSSStyleSheetPanel.prototype,
 
     updateSelection: function(element)
     {
+        if (sothinkInstalled)
+        {
+            FirebugReps.Warning.tag.replace({object: "SothinkWarning"}, this.panelNode);
+            return;
+        }
+
         if (!domUtils)
         {
             FirebugReps.Warning.tag.replace({object: "DOMInspectorWarning"}, this.panelNode);

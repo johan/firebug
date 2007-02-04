@@ -1207,6 +1207,27 @@ function bindFixed()
 
 }})();
 
+// ************************************************************************************************
+
+// XXXjoe This horrible hack works around a focus bug in Firefox which is caused when
+// the HTML Validator extension and Firebug are installed.  It causes the keyboard to
+// behave erratically when typing, and the only solution I've found is to delay
+// the initialization of HTML Validator by overriding this function with a timeout.
+if (top.TidyBrowser)
+{
+    var prev = TidyBrowser.prototype.updateStatusBar;
+    TidyBrowser.prototype.updateStatusBar = function()
+    {
+        var self = this, args = arguments;
+        setTimeout(function()
+        {
+            prev.apply(self, args);
+        });
+    }
+}
+
+// ************************************************************************************************
+
 function ddd(text)
 {
     const consoleService = Components.classes["@mozilla.org/consoleservice;1"].
@@ -1218,3 +1239,4 @@ function dddx()
 {
     Firebug.Console.logFormatted(arguments);
 }
+

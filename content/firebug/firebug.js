@@ -125,7 +125,7 @@ var clearContextTimeout = 0;
 
 top.Firebug =
 {
-    version: "1.0",
+    version: "1.01",
     
     module: modules,
     panelTypes: panelTypes,
@@ -598,8 +598,12 @@ top.Firebug =
         for (var i = 0; i < reps.length; ++i)
         {
             var rep = reps[i];
-            if (rep.supportsObject(object, type))
-                return rep;
+            try
+            {
+                if (rep.supportsObject(object, type))
+                    return rep;
+            }
+            catch (exc) {}
         }
         
         return defaultRep;

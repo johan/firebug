@@ -444,11 +444,11 @@ FirebugService.prototype =
         var index = this.findErrorBreakpoint(url, lineNo);
         if (index == -1)
         {
-            var script = this.findScript(denormalizeURL(url), lineNo);
-            if (script)
+            var scripts = this.findScripts(denormalizeURL(url), lineNo);
+            if (scripts.length)
             {
                 errorBreakpoints.push({href: normalizeURL(url), lineNo: lineNo,
-                    startLineNo: script.baseLineNumber});
+                    startLineNo: script[0].baseLineNumber});
                 dispatch(debuggers, "onToggleErrorBreakpoint", [url, lineNo, true]);
             }
         }
@@ -794,8 +794,10 @@ FirebugService.prototype =
         }
     },
     
-    findScript: function(url, lineNo)
+    findScripts: function(url, lineNo)
     {    
+        var hits = [];
+        
         var scripts = scriptMap[url];
         if (scripts)
         {
@@ -807,10 +809,12 @@ FirebugService.prototype =
                     && (script.isLineExecutable(lineNo, PCMAP_SOURCETEXT)
                         || script.baseLineNumber == lineNo))
                 {
-                    return script;
+                    hits.push(script);
                 }
             }
         }
+        
+        return hits;
     },
 
     findBreakpoint: function(url, lineNo)
@@ -862,11 +866,10 @@ FirebugService.prototype =
         }
         else
         {
-            if (!script)
-                script = this.findScript(url, lineNo);
-
-            if (script)
+            var scripts = script ? [script] : this.findScripts(url, lineNo);
+            for (var i = 0; i < scripts.length; ++i)
             {
+                var script = scripts[i];
                 var pc = script.lineToPc(lineNo, PCMAP_SOURCETEXT);
                 script.setBreakpoint(pc);
             }
@@ -876,7 +879,7 @@ FirebugService.prototype =
                 breakpoints[url] = urlBreakpoints = [];
 
             bp = {type: type, href: url, lineNo: lineNo, disabled: 0,
-                    startLineNo: script ? script.baseLineNumber : -1, debuggr: debuggr,
+                    startLineNo: scripts.length ? scripts[0].baseLineNumber : -1, debuggr: debuggr,
                     condition: ""};
             urlBreakpoints.push(bp);
             ++breakpointCount;

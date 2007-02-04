@@ -1,23 +1,8 @@
-Top Issues
-==========
-
-1. Show responseCode in expanded Net tab view
-2. Check leaks and stuff
-
 Bugs
 ====================================================================================================
 
-BROKEN PAGES
-http://www.file-factory.com/tmp/firebug.html#
-http://www.heraldtribune.com/apps/pbcs.dll/section?CATEGORY=Election03
-
 GLOBAL
-1. "unload" console object not always appended to frames
-1. Typing "InstallTrigger" on command line crashes
-1. If you reload the external window while its tab is hidden, it closes the window
-1. If you visit an error page while the context is detached, it closes the window
 2. Put access keys on all menus
-3. "About Firebug" dialog, show version and credits
 -
 * Auto-scrolling is busted
     
@@ -52,7 +37,6 @@ DEBUGGER
 1. Detection of when call stack goes to 0 doesn't always work (when caller is top-level script)
     * See http://www.apple.com/pro/ getXML() to test
     * OnScriptDestroyed is how we detect a top-level script has "returned"
-2. Reloading while debugging closes the external window
 3. Loading a "streaming" page locks up until the page loads
     * Re-write script display to display streaming pages incrementally while they load
 

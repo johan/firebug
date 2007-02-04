@@ -311,7 +311,7 @@ function onassert(message, source)
     <h1>log Tests</h1>
     <div>
         <button onclick="logit(event)">log</button>
-        <button onclick="console.log('This is some %s. %o!! %d!!!', 'formatted text', document.body, 42)">log formatted</button>
+        <button onclick="console.log('This is some %s. %o!! %d!!! %%s', 'formatted text', document.body, 42)">log formatted</button>
         <button onclick="debugit()">debug</button>
         <button onclick="informit()">info</button>
         <button onclick="warnit()">warn</button>
