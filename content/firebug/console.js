@@ -414,7 +414,7 @@ function parseFormat(format)
                     break;
             }
 
-            parts.push(format.substr(0, m.index+1));
+            parts.push(format.substr(0, m[0][0] == "%" ? m.index : m.index+1));
             parts.push({rep: rep, precision: precision});
         }
         
