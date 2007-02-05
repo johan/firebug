@@ -2,7 +2,7 @@
 <!ENTITY firebug.Close "Sluiten">
 <!ENTITY firebug.View "Beeld">
 <!ENTITY firebug.Help "Help">
-<!ENTITY firebug.Vertical "Verticale schermen">
+<!ENTITY firebug.Vertical "Vertikale schermen">
 <!ENTITY firebug.Run "Draaien">
 <!ENTITY firebug.Copy "Kopiëren">
 <!ENTITY firebug.CopyBookmarklet "Het script als bladwijzertje kopiëren">
@@ -43,7 +43,6 @@
 <!ENTITY firebug.Clear "Wissen">
 <!ENTITY firebug.ClearConsole "Console wissen">
 <!ENTITY firebug.ClearTooltip "De console wissen">
-
-<!ENTITY  firebug.All                   "All">
-<!ENTITY  firebug.Images                "Images">
-<!ENTITY  firebug.Flash                 "Flash">
+<!ENTITY firebug.All "Alles">
+<!ENTITY firebug.Images "Afbeeldingen">
+<!ENTITY firebug.Flash "Flash">

@@ -814,7 +814,6 @@ CSSStyleSheetPanel.prototype = extend(Firebug.Panel,
         var row;
         if (this.currentSearch && text == this.currentSearch.text)
         {
-            ddd("find next");
             row = this.currentSearch.findNext(true);
         }
         else
@@ -840,17 +839,17 @@ CSSStyleSheetPanel.prototype = extend(Firebug.Panel,
                 function findRow(node) { return node.nodeType == 1 ? node : node.parentNode; }
                 this.currentSearch = new TextSearch(this.panelNode, findRow);
                 row = this.currentSearch.find(text);
-
-                if (row)
-                {
-                    this.document.defaultView.getSelection().selectAllChildren(row);
-                    scrollIntoCenterView(row, this.panelNode);
-                    return true;
-                }
-                else
-                    return false;
             }
         }
+
+        if (row)
+        {
+            this.document.defaultView.getSelection().selectAllChildren(row);
+            scrollIntoCenterView(row, this.panelNode);
+            return true;
+        }
+        else
+            return false;
     }    
 });
 
