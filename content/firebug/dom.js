@@ -752,7 +752,7 @@ DOMBasePanel.prototype = extend(Firebug.Panel,
             optionMenu("ShowDOMFuncs", "showDOMFuncs"),
             optionMenu("ShowDOMConstants", "showDOMConstants"),
             "-",
-            {label: $STR("Refresh"), command: bindFixed(this.rebuild, this, true) }
+            {label: "Refresh", command: bindFixed(this.rebuild, this, true) }
         ];
     },
 
@@ -798,7 +798,7 @@ DOMBasePanel.prototype = extend(Firebug.Panel,
         
         items.push(
             "-",
-            {label: $STR("Refresh"), command: bindFixed(this.rebuild, this, true) }
+            {label: "Refresh", command: bindFixed(this.rebuild, this, true) }
         );
         
         return items;
