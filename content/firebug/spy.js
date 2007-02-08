@@ -63,9 +63,9 @@ Firebug.Spy = extend(Firebug.Module,
                 load: win.XMLDocument.prototype.load
             };            
 
-            win.XMLHttpRequest.prototype.open = function(method, url, async)
+            win.XMLHttpRequest.prototype.open = function(method, url, async, username, password)
             {
-                httpOpenWrapper(this, context, win, method, url, async);
+                httpOpenWrapper(this, context, win, method, url, async, username, password);
             };
         }
     },
@@ -298,7 +298,7 @@ XMLHttpRequestSpy.prototype =
 
 // ************************************************************************************************
 
-function httpOpenWrapper(request, context, win, method, url, async)
+function httpOpenWrapper(request, context, win, method, url, async, username, password)
 {
     // Usually the wrapper is there already, except in rare cases
     insertSafeWrapper(win, context);
@@ -309,13 +309,15 @@ function httpOpenWrapper(request, context, win, method, url, async)
     spy.method = typeof(method) == "string" ? method : "GET";
     spy.url = url+"";
     spy.async = async;
+    spy.username = username;
+    spy.password = password;
     
     spy.send = request.send;
     request.send = function(text) { httpSendWrapper(spy, text); };
 
     request.__open = win.XMLHttpRequest.wrapped.open;
     if (win.__firebug__)
-        win.__firebug__.open(request, method, url, async);
+        win.__firebug__.open(request, method, url, async, username, password);
 }
 
 function httpSendWrapper(spy, text)

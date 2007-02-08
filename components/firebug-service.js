@@ -448,7 +448,7 @@ FirebugService.prototype =
             if (scripts.length)
             {
                 errorBreakpoints.push({href: normalizeURL(url), lineNo: lineNo,
-                    startLineNo: script[0].baseLineNumber});
+                    startLineNo: scripts[0].baseLineNumber});
                 dispatch(debuggers, "onToggleErrorBreakpoint", [url, lineNo, true]);
             }
         }
