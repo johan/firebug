@@ -529,7 +529,7 @@ function insertSafeWrapper(win, context)
     // assigned
     evalSafeScript(win, context,
         "var __firebug__ = { " + 
-        "open: function(req, m, u, s) { req.__open(m, u, s); delete req.__open; }, " + 
+        "open: function(req, m, u, s, us, p) { req.__open(m, u, s, us, p); delete req.__open; }, " + 
         "send: function(req, text) { req.send(text); }" + 
         "};"
     );
