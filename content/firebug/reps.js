@@ -528,7 +528,7 @@ this.Element = domplate(Firebug.Rep,
             "&lt;",
             SPAN({class: "nodeTag"}, "$object.localName|toLowerCase"),
             FOR("attr", "$object|attrIterator",
-                "&nbsp;$attr.localName|escapeHTML=&quot;", SPAN({class: "nodeValue"}, "$attr.nodeValue|escapeHTML"), "&quot;"
+                "&nbsp;$attr.localName=&quot;", SPAN({class: "nodeValue"}, "$attr.nodeValue|escapeHTML"), "&quot;"
             ),
             "&gt;"
          ),

@@ -125,7 +125,7 @@ var clearContextTimeout = 0;
 
 top.Firebug =
 {
-    version: "1.02",
+    version: "1.03",
     
     module: modules,
     panelTypes: panelTypes,
