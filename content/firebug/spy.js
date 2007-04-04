@@ -149,7 +149,7 @@ Firebug.Spy.XHR = domplate(Firebug.Rep,
         DIV({class: "spyHead", _repObject: "$object"},
             A({class: "spyTitle", onclick: "$onToggleBody"},
                 IMG({class: "spyIcon", src: "blank.gif"}),
-                SPAN({class: "spyURI"}, "$object|getCaption"),
+                SPAN({class: "spyURI"}, "$object|getCaption|escapeHTML"),
                 SPAN({class: "spyErrorCode"}),
                 SPAN({class: "spyTime"})
             ),

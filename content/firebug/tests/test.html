@@ -97,7 +97,7 @@ function loadXMLSync()
 function postXML()
 {
     var req1 = new XMLHttpRequest();
-    req1.open("GET", "test.xml");
+    req1.open("GET", "test.html");
     req1.send(null);
 
     var req = new XMLHttpRequest();
@@ -295,6 +295,7 @@ function onassert(message, source)
 </style>
 
 <style type="text/css">@import "styles.css";</style>
+<style type="text/css">@import "<script>alert(1)</script>";</style>
 
 </head>
 
