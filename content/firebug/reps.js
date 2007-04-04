@@ -457,7 +457,7 @@ this.Obj = domplate(Firebug.Rep,
         OBJECTLINK(
             SPAN({class: "objectTitle"}, "$object|getTitle"),
             FOR("prop", "$object|propIterator",
-                " $prop.name=",
+                " $prop.name|escapeHTML=",
                 SPAN({class: "objectPropValue"}, "$prop.value|cropString|escapeHTML")
             )
         ),
@@ -469,7 +469,7 @@ this.Obj = domplate(Firebug.Rep,
         
         var props = [];
         var len = 0;
-        
+
         try
         {
             for (var name in object)
@@ -528,7 +528,7 @@ this.Element = domplate(Firebug.Rep,
             "&lt;",
             SPAN({class: "nodeTag"}, "$object.localName|toLowerCase"),
             FOR("attr", "$object|attrIterator",
-                "&nbsp;$attr.localName=&quot;", SPAN({class: "nodeValue"}, "$attr.nodeValue|escapeHTML"), "&quot;"
+                "&nbsp;$attr.localName|escapeHTML=&quot;", SPAN({class: "nodeValue"}, "$attr.nodeValue|escapeHTML"), "&quot;"
             ),
             "&gt;"
          ),
