@@ -1,6 +1,6 @@
 name = "firebug"
 description = "Web development evolved"
-version = "1.0"
+version = "1.02"
 
 buildPre = XPIDLCompile()
 build = FirefoxExtension()

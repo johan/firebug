@@ -65,6 +65,9 @@ Firebug.Spy = extend(Firebug.Module,
 
             win.XMLHttpRequest.prototype.open = function(method, url, async, username, password)
             {
+                if (typeof(async) == "undefined")
+                    async = false; 
+
                 httpOpenWrapper(this, context, win, method, url, async, username, password);
             };
         }

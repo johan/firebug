@@ -759,7 +759,7 @@ BoxModelHighlighter.prototype =
 
 function getNonFrameBody(elt)
 {
-    var body = elt.ownerDocument.body;
+    var body = getBody(elt.ownerDocument);
     return body.localName.toUpperCase() == "FRAMESET" ? null : body;
 }
 
