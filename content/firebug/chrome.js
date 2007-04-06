@@ -466,9 +466,9 @@ top.FirebugChrome =
             {
                 var host = getURIHost(uri);
                 var cantDisplayPage = this.getCurrentBrowser().isSystemPage;
-                
+
                 var caption;
-                if (cantDisplayPage || Firebug.disabledAlways)
+                if (!host || cantDisplayPage || Firebug.disabledAlways)
                     caption = FBL.$STR("DisabledHeader");
                 else
                     caption = FBL.$STRF("DisabledForSiteHeader", [host]);
@@ -487,7 +487,8 @@ top.FirebugChrome =
                     enableAlwaysLink.firstChild.nodeValue = Firebug.disabledAlways
                         ? FBL.$STR("EnableAlways") : "";
                     enableSiteLink.firstChild.nodeValue = host
-                        ? FBL.$STRF("EnableForSite", [host]) : "";
+                        ? FBL.$STRF("EnableForSite", [host])
+                        : FBL.$STR("EnableForFiles");
                 }
 
                 disabledBox.removeAttribute("collapsed");
@@ -763,12 +764,15 @@ top.FirebugChrome =
                         if (uri)
                         {
                             if (!getURIHost(uri))
-                                child.setAttribute("hidden", "true");
+                            {
+                                checked = Firebug.disabledFile;
+                                child.setAttribute("label", FBL.$STR("DisableForFiles"));
+                            }
                             else
                             {
                                 checked = Firebug.isURIDenied(uri);
-                                child.setAttribute("label", FBL.$STRF("DisableForSite", [uri.host]));
-                                child.removeAttribute("hidden");
+                                child.setAttribute("label",
+                                    FBL.$STRF("DisableForSite", [uri.host]));
                             }
                         }
                     }

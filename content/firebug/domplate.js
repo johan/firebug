@@ -169,9 +169,9 @@ DomplateTag.prototype =
 		this.compileMarkup();
 		this.compileDOM();
 
-		//ddd("%1.o", this.renderMarkup);
-		//ddd("%1.o", this.renderDOM);
-		//ddd("%1.o", this.domArgs);
+		//ddd(this.renderMarkup);
+		//ddd(this.renderDOM);
+		//ddd(this.domArgs);
 	},
 
 	compileMarkup: function()
@@ -215,6 +215,28 @@ DomplateTag.prototype =
             outputs.push(tagOutputs);
         }
         
+        function __escape__(value)
+        {
+            function replaceChars(ch)
+            {
+                switch (ch)
+                {
+                    case "<":
+                        return "&lt;";
+                    case ">":
+                        return "&gt;";
+                    case "&":
+                        return "&amp;";
+                    case "'":
+                        return "&#39;";
+                    case '"':
+                        return "&quot;";
+                }
+                return "?";
+            };
+            return String(value).replace(/[<>&"']/g, replaceChars);
+        }
+              
 		function __loop__(iter, outputs, fn)
 		{
 		    var iterOuts = [];
@@ -279,7 +301,7 @@ DomplateTag.prototype =
 	        {
     	        var val = this.attrs[name];
         		topBlock.push(', " ', name, '=\\""');
-                addParts(val, ',', topBlock, info);
+                addParts(val, ',', topBlock, info, true);
         		topBlock.push(', "\\""');
 	        }
 	    }
@@ -300,8 +322,8 @@ DomplateTag.prototype =
         {
     		topBlock.push(', " class=\\""');
     		if ("class" in this.attrs)
-                addParts(this.attrs["class"], ',', topBlock, info);
-        		topBlock.push(', " "');
+                addParts(this.attrs["class"], ',', topBlock, info, true);
+      		topBlock.push(', " "');
             for (var name in this.classes)
             {
                 topBlock.push(', (');
@@ -324,7 +346,7 @@ DomplateTag.prototype =
 			if (isTag(child))
 				child.tag.generateMarkup(topBlock, topOuts, blocks, info);
 			else
-                addParts(child, ',', topBlock, info);
+                addParts(child, ',', topBlock, info, true);
 		}
 	},
 
@@ -540,7 +562,7 @@ DomplateEmbed.prototype = copyObject(DomplateTag.prototype,
 		this.addCode(topBlock, topOuts, blocks);
         
         blocks.push('__link__(');
-        addParts(this.value, '', blocks, info);		
+        addParts(this.value, '', blocks, info);
 		blocks.push(', __code__, __out__, {');
 
 		var lastName = null;
@@ -772,7 +794,7 @@ function generateArg(val, path, args)
     }
 }
  
-function addParts(val, delim, block, info)
+function addParts(val, delim, block, info, escapeIt)
 {
     var vals = [];
     if (val instanceof Parts)
@@ -788,8 +810,11 @@ function addParts(val, delim, block, info)
     		        for (var j = 0; j < part.format.length; ++j)
     		            partName = part.format[j] + "(" + partName + ")";	                
 	            }
-
-		        vals.push(partName);
+                
+                if (escapeIt)
+                    vals.push("__escape__(" + partName + ")");
+		        else
+	                vals.push(partName);
 	        }
 			else
 			    vals.push('"'+ part + '"');

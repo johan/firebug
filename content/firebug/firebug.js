@@ -78,7 +78,8 @@ const prefDomain = "extensions.firebug";
 
 const prefNames =
 [
-    "disabledAlways","defaultPanelName", "throttleMessages", "textSize", "showInfoTips",
+    "disabledAlways", "disabledFile",
+    "defaultPanelName", "throttleMessages", "textSize", "showInfoTips",
     "largeCommandLine", "textWrapWidth", "openInWindow", "showErrorCount",
     
     // Console
@@ -269,12 +270,24 @@ top.Firebug =
         var ioService = CCSV("@mozilla.org/network/io-service;1", "nsIIOService");
 
         var host = tabBrowser.currentURI.host;
-        var uri = ioService.newURI("http://" + host, null, null);
+        if (!host)
+            this.setPref("disabledFile", disable);
+        else
+        {
+            var uri = ioService.newURI("http://" + host, null, null);
+            if (disable)
+                pm.add(uri, "firebug", DENY_ACTION);
+            else
+            {
+                if (this.isURIDenied(uri))
+                    pm.remove(host, "firebug");
+                else
+                    pm.add(uri, "firebug", ALLOW_ACTION);
+            }
+        }
 
         if (disable)
         {
-            pm.add(uri, "firebug", DENY_ACTION);
-
             TabWatcher.unwatchBrowser(tabBrowser.selectedBrowser);
             for (var i = 0; i < tabBrowser.browsers.length; ++i)
             {
@@ -283,14 +296,7 @@ top.Firebug =
             }
         }
         else
-        {
-            if (this.isURIDenied(uri))
-                pm.remove(host, "firebug");
-            else
-                pm.add(uri, "firebug", ALLOW_ACTION);
-            
             TabWatcher.watchBrowser(tabBrowser.selectedBrowser);
-        }
     },
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
@@ -706,13 +712,15 @@ top.Firebug =
     isURIAllowed: function(uri)
     {
         return uri && 
-            (pm.testPermission(uri, "firebug") == ALLOW_ACTION || uri.scheme == "file");
+            (pm.testPermission(uri, "firebug") == ALLOW_ACTION
+                || (uri.scheme == "file" && !this.disabledFile));
     },
     
     isURIDenied: function(uri)
     {
         return uri &&
-            (pm.testPermission(uri, "firebug") == DENY_ACTION && uri.scheme != "file");
+            (pm.testPermission(uri, "firebug") == DENY_ACTION
+                || (uri.scheme == "file" && this.disabledFile));
     },
     
     createTabContext: function(win, browser, chrome, state)
@@ -1174,11 +1182,6 @@ Firebug.Rep = domplate(
     STR: function(name)
     {
         return $STR(name);
-    },
-    
-    escapeHTML: function(text)
-    {
-        return escapeHTML(text);
     },
     
     cropString: function(text)

@@ -121,9 +121,9 @@ this.Number = domplate(Firebug.Rep,
 
 this.String = domplate(Firebug.Rep,
 {
-    tag: OBJECTBOX("&quot;$object|escapeHTML&quot;"),
+    tag: OBJECTBOX("&quot;$object&quot;"),
 
-    shortTag: OBJECTBOX("&quot;$object|cropString|escapeHTML&quot;"),
+    shortTag: OBJECTBOX("&quot;$object|cropString&quot;"),
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
 
@@ -139,9 +139,9 @@ this.String = domplate(Firebug.Rep,
 
 this.Text = domplate(Firebug.Rep,
 {
-    tag: OBJECTBOX("$object|escapeHTML"),
+    tag: OBJECTBOX("$object"),
 
-    shortTag: OBJECTBOX("$object|cropString|escapeHTML"),
+    shortTag: OBJECTBOX("$object|cropString"),
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
 
@@ -152,7 +152,7 @@ this.Text = domplate(Firebug.Rep,
 
 this.Caption = domplate(Firebug.Rep,
 {
-    tag: SPAN({class: "caption"}, "$object|escapeHTML")
+    tag: SPAN({class: "caption"}, "$object")
 });
 
 // ************************************************************************************************
@@ -457,8 +457,8 @@ this.Obj = domplate(Firebug.Rep,
         OBJECTLINK(
             SPAN({class: "objectTitle"}, "$object|getTitle"),
             FOR("prop", "$object|propIterator",
-                " $prop.name|escapeHTML=",
-                SPAN({class: "objectPropValue"}, "$prop.value|cropString|escapeHTML")
+                " $prop.name=",
+                SPAN({class: "objectPropValue"}, "$prop.value|cropString")
             )
         ),
     
@@ -528,7 +528,7 @@ this.Element = domplate(Firebug.Rep,
             "&lt;",
             SPAN({class: "nodeTag"}, "$object.localName|toLowerCase"),
             FOR("attr", "$object|attrIterator",
-                "&nbsp;$attr.localName=&quot;", SPAN({class: "nodeValue"}, "$attr.nodeValue|escapeHTML"), "&quot;"
+                "&nbsp;$attr.localName=&quot;", SPAN({class: "nodeValue"}, "$attr.nodeValue"), "&quot;"
             ),
             "&gt;"
          ),
@@ -734,7 +734,7 @@ this.Element = domplate(Firebug.Rep,
 this.TextNode = domplate(Firebug.Rep,
 {
     tag:
-        OBJECTLINK("&quot;$object.nodeValue|cropString|escapeHTML&quot;"),
+        OBJECTLINK("&quot;$object.nodeValue|cropString&quot;"),
     
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
 
@@ -1188,12 +1188,12 @@ this.ErrorMessage = domplate(Firebug.Rep,
                 onclick: "$onToggleError"},
         
             DIV({class: "errorTitle"},
-                "$object.message|getMessage|escapeHTML"
+                "$object.message|getMessage"
             ),
             DIV({class: "errorTrace"}),
             DIV({class: "errorSourceBox errorSource-$object|getSourceType"},
                 IMG({class: "errorBreak", src:"blank.gif", title: "Break on this error"}),
-                SPAN({class: "errorSource"}, "$object|getLine|escapeHTML")
+                SPAN({class: "errorSource"}, "$object|getLine")
             ),
             TAG(this.SourceLink.tag, {object: "$object|getSourceLink"})
         ),

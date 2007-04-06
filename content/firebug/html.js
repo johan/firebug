@@ -49,7 +49,7 @@ const REMOVAL = MutationEvent.REMOVAL;
 var AttrTag = 
     SPAN({class: "nodeAttr editGroup"},
         "&nbsp;", SPAN({class: "nodeName editable"}, "$attr.nodeName"), "=&quot;",
-        SPAN({class: "nodeValue editable"}, "$attr.nodeValue|escapeHTML"), "&quot;"
+        SPAN({class: "nodeValue editable"}, "$attr.nodeValue"), "&quot;"
     );
 
 // ************************************************************************************************
@@ -946,7 +946,7 @@ Firebug.HTMLPanel.TextElement = domplate(FirebugReps.Element,
                     SPAN({class: "nodeTag"}, "$object.localName|toLowerCase"),
                     FOR("attr", "$object|attrIterator", AttrTag),
                     SPAN({class: "nodeBracket editable insertBefore"}, "&gt;"),
-                    SPAN({class: "nodeText editable"}, "$object|getNodeText|escapeHTML"),
+                    SPAN({class: "nodeText editable"}, "$object|getNodeText"),
                     "&lt;/",
                     SPAN({class: "nodeTag"}, "$object.localName|toLowerCase"),
                     "&gt;"
@@ -979,7 +979,7 @@ Firebug.HTMLPanel.TextNode = domplate(FirebugReps.Element,
 {
     tag:
         DIV({class: "nodeBox", _repObject: "$object"},
-            SPAN({class: "nodeText editable"}, "$object.nodeValue|escapeHTML")
+            SPAN({class: "nodeText editable"}, "$object.nodeValue")
         )
 }),
 
@@ -988,7 +988,7 @@ Firebug.HTMLPanel.CDATANode = domplate(FirebugReps.Element,
     tag:
         DIV({class: "nodeBox", _repObject: "$object"},
             "&lt;![CDATA[",
-            SPAN({class: "nodeText editable"}, "$object.nodeValue|escapeHTML"),
+            SPAN({class: "nodeText editable"}, "$object.nodeValue"),
             "]]&gt;"
         )
 }),
@@ -998,7 +998,7 @@ Firebug.HTMLPanel.CommentNode = domplate(FirebugReps.Element,
     tag:
         DIV({class: "nodeBox", _repObject: "$object"},
             DIV({class: "nodeComment editable"},
-                "&lt;!--$object.nodeValue|escapeHTML--&gt;"
+                "&lt;!--$object.nodeValue--&gt;"
             )
         )
 });

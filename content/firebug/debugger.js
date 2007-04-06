@@ -1418,7 +1418,7 @@ var BreakpointsTemplate = domplate(Firebug.Rep,
                                 TAG(FirebugReps.SourceLink.tag, {object: "$bp|getSourceLink"}),
                                 IMG({class: "closeButton", src: "blank.gif"})
                             ),
-                            DIV({class: "breakpointCode"}, "$bp.sourceLine|escapeHTML")
+                            DIV({class: "breakpointCode"}, "$bp.sourceLine")
                         )
                     )
                 )

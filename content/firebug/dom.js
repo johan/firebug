@@ -63,7 +63,7 @@ const RowTag =
     TR({class: "memberRow $member.open $member.type\\Row", $hasChildren: "$member.hasChildren", 
         level: "$member.level"}, 
         TD({class: "memberLabelCell", style: "padding-left: $member.indent\\px"},
-            DIV({class: "memberLabel $member.type\\Label"}, "$member.name|escapeHTML")
+            DIV({class: "memberLabel $member.type\\Label"}, "$member.name")
         ),
         TD({class: "memberValueCell"},
             TAG("$member.tag", {object: "$member.value"})
