@@ -7,4 +7,4 @@ build = FirefoxExtension()
 
 class config:
     extensionId = "firebug@software.joehewitt.com"
-    chromeDirs = ["content", "locale/en-US", "locale/ja-JP", "skin"]
+    chromeDirs = ["content", "locale/en-US", "skin"]

@@ -1388,8 +1388,31 @@ this.SourceText = domplate(Firebug.Rep,
 {
     tag:
         DIV(
-            "$object|getHTML"
+            FOR("line", "$object|lineIterator",
+                DIV({class: "sourceRow"},
+                    SPAN({class: "sourceLine"}, "$line.lineNo"),
+                    SPAN({class: "sourceRowText"}, "$line.text")
+                )
+            )
         ),
+
+    lineIterator: function(sourceText)
+    {
+        var maxLineNoChars = (sourceText.lines.length + "").length;
+        var list = [];
+        
+        for (var i = 0; i < sourceText.lines.length; ++i)
+        {
+            // Make sure all line numbers are the same width (with a fixed-width font) 
+            var lineNo = (i+1) + "";
+            while (lineNo.length < maxLineNoChars)
+                lineNo = " " + lineNo;
+
+            list.push({lineNo: lineNo, text: sourceText.lines[i]});
+        }
+        
+        return list;
+    },
     
     getHTML: function(sourceText)
     {
