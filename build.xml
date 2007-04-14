@@ -65,6 +65,7 @@ excludes="${excludes}"
 <zipfileset dir="${build_dir}/linux-gnu" includes="${ant.project.name}.jar" prefix="platform/linux-gnu/chrome" />
 <zipfileset dir="${build_dir}/WINNT" includes="${ant.project.name}.jar" prefix="platform/WINNT/chrome" />
 <zipfileset dir="${src_dir}/components" includes="*.js" prefix="components" />
+<zipfileset dir="${src_dir}/components" includes="*.xpt" prefix="components" />
 <zipfileset dir="${src_dir}/defaults" includes="**" prefix="defaults" excludes="${excludes}" />
 <zipfileset dir="${src_dir}" includes="install.rdf, *.manifest" />
 </zip>

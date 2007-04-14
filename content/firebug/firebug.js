@@ -71,6 +71,7 @@ const firebugURLs =
     docs: "http://www.getfirebug.com/docs.html",
     keyboard: "http://www.getfirebug.com/keyboard.html",
     discuss: "http://groups.google.com/group/firebug",
+	issues: "http://code.google.com/p/fbug/issues/list",
     donate: "http://www.getfirebug.com/contribute.html?product"
 };
 
@@ -95,7 +96,11 @@ const prefNames =
     "showComputedStyle",
     
     // Script
-    "breakOnErrors",    
+    "breakOnErrors",
+	"useDebugAdapter",
+	"useFirstLineForEvalName",
+	"debugFirebug_CREATION",
+    "debugFirebug_BP",    
     
     // DOM
     "showUserProps", "showUserFuncs", "showDOMProps", "showDOMFuncs", "showDOMConstants",

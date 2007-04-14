@@ -100,10 +100,17 @@
     background-color: lightgoldenrodyellow;
 }
 
+.sourceRow[executable="true"] > .sourceLine {
+    content: "-";
+    color: #4AA02C;
+    font-weight: bold;
+}
+
 .sourceRow[exeLine="true"] > .sourceLine {
     background-image: url(chrome://firebug/skin/exe.png);
     color: #000000;
 }
+
 
 .sourceRow[breakpoint="true"] > .sourceLine {
     background-image: url(chrome://firebug/skin/breakpoint.png);

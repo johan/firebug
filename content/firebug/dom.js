@@ -54,7 +54,13 @@ const ignoreVars =
     // trying to access them causes browser freeze
     "java": 1,
     "sun": 1,
-    "Packages": 1
+    "Packages": 1,
+    // XXXjjb I added these globals for the same reason as the comment above
+    "JavaArray": 1,
+    "JavaObject": 1,
+    "JavaMember": 1,
+    "JavaClass": 1,
+    "JavaPackage": 1,
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 

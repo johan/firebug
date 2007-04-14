@@ -389,7 +389,7 @@ top.TabWatcher =
                 }
                 catch (exc)
                 {
-                    ERROR(exc);
+                    ERROR(exc + " in dispatch "+ name); // XXXjjb
                 }
             }
         }

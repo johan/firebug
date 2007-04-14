@@ -73,6 +73,17 @@ top.SourceCache.prototype =
         if (url in this.cache)
             return this.cache[url];
         
+        var d = FBL.reDataURL.exec(url);
+        if (d) 
+        {
+        	var src = url.substring(FBL.reDataURL.lastIndex); 
+        	var data = decodeURIComponent(src);
+        	var lines = data.split(/\r\n|\r|\n/);
+            this.cache[url] = lines;
+            
+            return lines;
+        }
+        
         var charset = this.context.window.document.characterSet;
         
         var ioService = IOService.getService(nsIIOService);
@@ -85,6 +96,9 @@ top.SourceCache.prototype =
         }
         catch (exc)
         {
+			if (FBL.DBG_CACHE) FBL.sysout("sourceCache for window="+this.context.window.location.href+" error: \n"+FBL.getStackDump()+"\n");
+			if (FBL.DBG_CACHE) FBL.dumpProperties(this.cache);
+        	ERROR("sourceCache.load fails newChannel for url="+url+ " cause:"+exc+"\n");
             return;
         }
 
@@ -111,6 +125,7 @@ top.SourceCache.prototype =
         }
         catch (exc)
         {
+        	ERROR("sourceCache.load fails channel.open for url="+url+ " cause:"+exc+"\n");
             return;
         }
         
@@ -119,7 +134,6 @@ top.SourceCache.prototype =
             var data = readFromStream(stream, charset);
             var lines = data.split(/\r\n|\r|\n/);
             this.cache[url] = lines;
-            
             return lines;
         }
         catch (exc)
@@ -147,6 +161,7 @@ top.SourceCache.prototype =
     
     store: function(url, text)
     {
+		if (FBL.DBG_CACHE) FBL.sysout("sourceCache for window="+this.context.window.location.href+" store url="+url+"\n");
         var lines = splitLines(text);
         return this.cache[url] = lines;
     },

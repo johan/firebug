@@ -66,6 +66,8 @@ const jsdIStackFrame = CI("jsdIStackFrame");
 const jsdICallHook = CI("jsdICallHook");
 const jsdIExecutionHook = CI("jsdIExecutionHook");
 const nsIFireBug = CI("nsIFireBug");
+const nsIFireBugWithEval = CI("nsIFireBugWithEval");
+const nsIFireBugDebuggerWithEval = CI("nsIFireBugDebuggerWithEval");
 const nsIPrefBranch2 = CI("nsIPrefBranch2");
 const nsIComponentRegistrar = CI("nsIComponentRegistrar");
 const nsIFactory = CI("nsIFactory");
@@ -79,15 +81,20 @@ const NS_ERROR_NOT_IMPLEMENTED = Components.results.NS_ERROR_NOT_IMPLEMENTED;
 const NS_ERROR_NO_AGGREGATION = Components.results.NS_ERROR_NO_AGGREGATION;
 
 const PCMAP_SOURCETEXT = jsdIScript.PCMAP_SOURCETEXT;
+const PCMAP_PRETTYPRINT = jsdIScript.PCMAP_PRETTYPRINT;
 
 const COLLECT_PROFILE_DATA = jsdIDebuggerService.COLLECT_PROFILE_DATA;
 const DISABLE_OBJECT_TRACE = jsdIDebuggerService.DISABLE_OBJECT_TRACE;
+const HIDE_DISABLED_FRAMES = jsdIDebuggerService.HIDE_DISABLED_FRAMES;
+const DEBUG_WHEN_SET = jsdIDebuggerService.DEBUG_WHEN_SET;
+const MASK_TOP_FRAME_ONLY = jsdIDebuggerService.MASK_TOP_FRAME_ONLY;
 
 const TYPE_FUNCTION_CALL = jsdICallHook.TYPE_FUNCTION_CALL;
 const TYPE_FUNCTION_RETURN = jsdICallHook.TYPE_FUNCTION_RETURN;
 
 const RETURN_CONTINUE = jsdIExecutionHook.RETURN_CONTINUE;
-const RETURN_VALUE = jsdIExecutionHook.RETURN_RET_WITH_VAL;
+const RETURN_VALUE = jsdIExecutionHook.RETURN_RET_WITH_VAL;  
+const RETURN_THROW_WITH_VAL = jsdIExecutionHook.RETURN_THROW_WITH_VAL;
 const RETURN_CONTINUE_THROW = jsdIExecutionHook.RETURN_CONTINUE_THROW;
 
 const STEP_OVER = nsIFireBug.STEP_OVER;
@@ -101,6 +108,11 @@ const TYPE_ONE_SHOT = nsITimer.TYPE_ONE_SHOT;
 const BP_NORMAL = 1;
 const BP_MONITOR = 2;
 const BP_UNTIL = 4;
+const BP_ONRELOAD = 8;  // This is a mark for the UI to test
+
+const LEVEL_TOP = 1;
+const LEVEL_EVAL = 2;
+const LEVEL_EVENT = 3;
 
 // ************************************************************************************************
 // Globals
@@ -111,7 +123,6 @@ var contextCount = 0;
 
 var clients = [];
 var debuggers = [];
-var scriptMap = {};
 
 var stepMode = 0;
 var stepFrame;
@@ -158,6 +169,16 @@ function FirebugService()
 
     this.showStackTrace = prefs.getBoolPref("extensions.firebug.showStackTrace");
     this.breakOnErrors = prefs.getBoolPref("extensions.firebug.breakOnErrors");
+	
+    this.DBG_CREATION = prefs.getBoolPref("extensions.firebug.debugFirebug_CREATION");
+	this.DBG_BP = prefs.getBoolPref("extensions.firebug.debugFirebug_BP");
+    
+    this.currentLeveledScriptTag = 0;          // top- or eval-level
+    this.eventLevelScriptTag = {};    // event scripts like onclick
+	this.nestedScriptStack = {};  // scripts contained in leveledScript that have not been drained
+	this.sourceURLByTag = {};    // all script tags created by eval
+	this.scriptInfoArrayByURL = {}; 
+	this.scriptInfoByTag = {};
 }
 
 FirebugService.prototype =
@@ -174,7 +195,7 @@ FirebugService.prototype =
 
     QueryInterface: function(iid)
     {
-        if (!iid.equals(nsIFireBug) && !iid.equals(nsISupports))
+        if (!iid.equals(nsIFireBug) && !iid.equals(nsISupports) && !iid.equals(nsIFireBugWithEval))
             throw NS_ERROR_NO_INTERFACE;
 
         return this;
@@ -265,6 +286,31 @@ FirebugService.prototype =
         this.locked = false;
 
         dispatch(debuggers, "onLock", [false]);
+    },
+
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+    // nsIFireBugWithEval
+    
+    registerDebuggerWithEval: function(debuggr)
+    {
+        this.enableDebugger();
+
+        debuggers.push(debuggr);
+    },
+
+    unregisterDebuggerWithEval: function(debuggr)
+    {
+        for (var i = 0; i < debuggers.length; ++i)
+        {
+            if (debuggers[i] == debuggr)
+            {
+                debuggers.splice(i, 1);
+                break;
+            }
+        }
+
+        if (!debuggers.length)
+            this.disableDebugger();
     },
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
@@ -394,9 +440,10 @@ FirebugService.prototype =
     },
 
     hasBreakpoint: function(script)
-    {
-        var url = script.fileName;
-        var lineNo = findExecutableLine(script, script.baseLineNumber);
+    {  // Dead code
+        var url = fbs.getSourceURL(script);
+        
+        var lineNo = findFirstExecutableLine(script);  
 
         var urlBreakpoints = breakpoints[url];
         if (urlBreakpoints)
@@ -444,11 +491,12 @@ FirebugService.prototype =
         var index = this.findErrorBreakpoint(url, lineNo);
         if (index == -1)
         {
-            var scripts = this.findScripts(denormalizeURL(url), lineNo);
-            if (scripts.length)
+            var scriptInfos = this.findScriptInfos(denormalizeURL(url), lineNo);
+            if (scriptInfos.length)
             {
+				var script = scriptInfos[0].script;  // TODO Loop??
                 errorBreakpoints.push({href: normalizeURL(url), lineNo: lineNo,
-                    startLineNo: scripts[0].baseLineNumber});
+                    startLineNo: script.baseLineNumber});
                 dispatch(debuggers, "onToggleErrorBreakpoint", [url, lineNo, true]);
             }
         }
@@ -496,8 +544,10 @@ FirebugService.prototype =
 
     monitor: function(script, debuggr)
     {
-        var lineNo = findExecutableLine(script, script.baseLineNumber);
-        if (lineNo != -1 && this.addBreakpoint(BP_MONITOR, script.fileName, lineNo, debuggr, script))
+        var lineNo = findFirstExecutableLine(script);
+		var scriptInfo = fbs.scriptInfoByTag[script.tag];
+        var url = scriptInfo.url;
+        if (lineNo != -1 && this.addBreakpoint(BP_MONITOR, url, lineNo, debuggr, scriptInfo))
         {
             ++monitorCount;
             dispatch(debuggers, "onToggleMonitor", [script.fileName, lineNo, true]);
@@ -506,18 +556,20 @@ FirebugService.prototype =
 
     unmonitor: function(script)
     {
-        var lineNo = findExecutableLine(script, script.baseLineNumber);
-        if (lineNo != -1 && this.removeBreakpoint(BP_MONITOR, script.fileName, lineNo, script))
+        var lineNo = findFirstExecutableLine(script);
+        var url = fbs.getSourceURL(script);
+        if (lineNo != -1 && this.removeBreakpoint(BP_MONITOR, url, lineNo, script))
         {
             --monitorCount;
-            dispatch(debuggers, "onToggleMonitor", [script.fileName, lineNo, false]);
+            dispatch(debuggers, "onToggleMonitor", [url, lineNo, false]);
         }
     },
 
     isMonitored: function(script)
     {
-        var lineNo = findExecutableLine(script, script.baseLineNumber);
-        var bp = lineNo != -1 ? this.findBreakpoint(script.fileName, lineNo) : null;
+        var lineNo = findFirstExecutableLine(script);
+        var url = fbs.getSourceURL(script);
+        var bp = lineNo != -1 ? this.findBreakpoint(url, lineNo) : null;
         return bp && bp.type & BP_MONITOR;
     },
 
@@ -586,8 +638,11 @@ FirebugService.prototype =
             timer.cancel();
             waitingForTimer = false;
         }
-
-        if (enabledDebugger)
+		
+    	fbs.DBG_CREATION = prefs.getBoolPref("extensions.firebug.debugFirebug_CREATION");
+		fbs.DBG_BP = prefs.getBoolPref("extensions.firebug.debugFirebug_BP");
+        
+		if (enabledDebugger)
             return;
     
         enabledDebugger = true;
@@ -633,55 +688,96 @@ FirebugService.prototype =
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
     // jsd Hooks
     
+    // When (debugger keyword and not halt)||(bp and BP_UNTIL) || (onBreakPoint && no conditions)
+    // || interuptHook
     onBreak: function(frame, type, rv)
-    {    
-        var debuggr = this.findDebugger(frame);
+    {   
+    	try { 
+	        var debuggr = this.findDebugger(frame);
         if (debuggr)
             return this.breakIntoDebugger(debuggr, frame);
-        else
-            return RETURN_CONTINUE;
+        } 
+        catch(exc) 
+        {
+	        ERROR("onDebugger failed: "+exc);
+        }
+        return RETURN_CONTINUE;
     },
 
-    onDebugger: function(frame, type, rv)
-    {    
-        if (haltDebugger)
+    onDebugger: function(frame, type, rv) // When engine encounters debugger keyword (only)
+    {   
+		if (fbs.DBG_BP) ddd("fbs.onDebugger with haltDebugger="+haltDebugger+"\n");
+    	try {  
+	        if (haltDebugger)
+	        {
+	            var debuggr = haltDebugger;
+	            haltDebugger = null;
+	            
+	            return debuggr.onHalt(frame);
+	        }
+	        else
+	            return this.onBreak(frame, type, rv);
+	        } 
+        catch(exc) 
         {
-            var debuggr = haltDebugger;
-            haltDebugger = null;
-            
-            return debuggr.onHalt(frame);
+        	ERROR("onDebugger failed: "+exc);
+        	return RETURN_CONTINUE;
         }
-        else
-            return this.onBreak(frame, type, rv);
     },
     
     onDebug: function(frame, type, rv)
-    {    
-        var debuggr = reportNextError || breakOnNextError ? this.findDebugger(frame) : null;
-        
-        if (reportNextError)
-        {
-            reportNextError = false;
-            if (debuggr)
-                debuggr.onError(frame);
-        }
-
-        if (breakOnNextError)
-        {
-            breakOnNextError = false;
-            if (debuggr)
-                return this.breakIntoDebugger(debuggr, frame);
+    {   
+    	try 
+    	{ 
+			if (fbs.DBG_ERRORS) ddd("fbs.onDebug with reportNextError="+reportNextError+" breakOnNextError="+breakOnNextError+"\n");
+	        var debuggr = reportNextError || breakOnNextError ? this.findDebugger(frame) : null;
+	        
+	        if (reportNextError)
+	        {
+	            reportNextError = false;
+	            if (debuggr)
+	                debuggr.onError(frame);
+	        }
+	
+	        if (breakOnNextError)
+	        {
+	            breakOnNextError = false;
+	            if (debuggr)
+	                return this.breakIntoDebugger(debuggr, frame);
+	        }
+        } catch (exc) {
+	        ERROR("onDebug failed: "+exc);
+        	return RETURN_CONTINUE;
         }
 
         return RETURN_CONTINUE;
     },
 
     onBreakpoint: function(frame, type, val)
-    {
+    {            
+		if (fbs.DBG_BP) ddd("onBreakpoint with frame.script.tag="+frame.script.tag+" evtag="+fbs.eventLevelScriptTag[frame.script.tag]+"\n");
+    	
+		if (frame.script.tag == fbs.currentLeveledScriptTag)
+    	{
+    		fbs.currentLeveledScriptTag = 0;
+    		return this.onEvalBreak(frame, type, val);
+    	}
+    	if (frame.script.tag in fbs.eventLevelScriptTag)
+    	{
+			if (fbs.DBG_CREATION) ddd("onBreakpoint found eventLevelScriptTag\n");
+			delete fbs.eventLevelScriptTag[frame.script.tag];
+    		return this.onEventScriptBreak(frame, type, val);
+    	}
         if (disabledCount || monitorCount || conditionCount || runningUntil)
         {
-            var url = frame.script.fileName;
-            var bp = this.findBreakpoint(url, frame.line);
+            var url = getSourceURL(frame.script);
+			var scriptInfo = fbs.scriptInfoByTag[frame.script.tag];
+			if (scriptInfo) 
+				var lineNo = scriptInfo.unshiftFromSourceBufferToScriptNumbering(frame.line);
+			else
+				var lineNo = frame.line;
+				
+            var bp = this.findBreakpoint(url, lineNo);
             if (bp)
             {
                 if (bp.type & BP_MONITOR && !(bp.disabled & BP_MONITOR))
@@ -705,7 +801,7 @@ FirebugService.prototype =
                 return RETURN_CONTINUE;
         }
 
-        if (runningUntil)
+        if (runningUntil) // XXXjjb ?? bp and after onCall? Seems dubious
             return RETURN_CONTINUE;
         else
             return this.onBreak(frame, type, val);
@@ -735,32 +831,230 @@ FirebugService.prototype =
         }
     },
 
+	onEventScriptBreak: function(frame, type, val) 
+	{
+		try {
+			var script = frame.script;
+			var bp = this.findZeroPCBreakpoint(script, PCMAP_SOURCETEXT);		
+			if (bp == undefined)		
+				script.clearBreakpoint(0); 
+		
+			var debuggr = this.findDebugger(frame);  // sets debuggr.breakContext
+			
+	        if (debuggr) 
+	        {
+	        	if (nsIFireBugDebuggerWithEval && debuggr.QueryInterface(nsIFireBugDebuggerWithEval) ) 
+	        	{
+	        		var eventURL = fbs.getURLFromDebugger(debuggr.onEventScript, frame);
+					if (eventURL)
+					{
+						if (fbs.DBG_CREATION) ddd("onEventScriptBreak eventURL="+dFormat(script,eventURL)+"\n");
+						fbs.registerEventLevelScript(frame.script, eventURL, "event level");     // 1 is determined experimentally
+						//fbs.drainTopLevelScriptStack(eventURL, frame, frame.script, debuggr);  TODO test multiple functions in event
+					}
+	   
+					return RETURN_CONTINUE;	 
+	        	}
+	        }
+	    } catch(exc) {
+	    	ERROR("onEventScriptBreak failed: "+exc);
+	    }	
+		return RETURN_CONTINUE;
+	},
+	
+	onEvalBreak: function(frame, type, val) 
+	{ 
+		try 
+		{
+			// In onScriptHook we found a no-name script, set a bp in PC=0, and a flag. 
+			// onBreakpoint saw the flag, cleared the flag, and sent us here.
+			// Start by undoing our damage
+			var script = frame.script;
+			var bp = this.findZeroPCBreakpoint(script, PCMAP_SOURCETEXT);		
+			if (bp == undefined)
+			{
+				script.clearBreakpoint(0);
+				if (fbs.DBG_CREATION) ddd("fbs.onEvalBreak clear bp@0 for tag="+script.tag+"\n");
+			} 
+			
+			var debuggr = this.findDebugger(frame);  // sets debuggr.breakContext
+			
+	        if (!debuggr)
+	        {
+	        	ERROR("firebug-service: no debuggr for context\n"); 
+	        	return RETURN_CONTINUE;
+	        }
+	        
+	       	if (! (nsIFireBugDebuggerWithEval && debuggr.QueryInterface(nsIFireBugDebuggerWithEval)) )
+	       	{
+	        	ERROR("firebug-service: no DebuggerWithEval\n"); 
+	        	return RETURN_CONTINUE;
+	        }
+	         
+       		if (!frame.callingFrame) 
+			{
+				var topLevelURL = fbs.getURLFromDebugger(debuggr.onTopLevel, frame);
+				if (topLevelURL)
+				{
+					if (fbs.DBG_CREATION) ddd("onEvalBreak top_level: "+dFormat(script, topLevelURL)+"\n");
+
+					fbs.registerTopLevelScript(script, topLevelURL, "top-level");      
+					fbs.drainTopLevelScriptStack(topLevelURL, frame, script, debuggr);
+				}
+				else 
+				{
+					if (fbs.DBG_CREATION) ddd("onEvalBreak: no url returned from debugger side");
+				}
+				return RETURN_CONTINUE;	 // top_level
+			}
+       		else
+       		{	
+				if (fbs.DBG_CREATION) ddd("onEvalBreak eval_level\n");
+				var leveledScriptURL = fbs.getURLFromDebugger(debuggr.onEval, frame);
+				if (fbs.DBG_CREATION) ddd("onEvalBreak eval_level url="+leveledScriptURL+"\n");
+				if (leveledScriptURL)
+				{
+            		fbs.registerEvalLevelScript(script, leveledScriptURL, "eval-level", 1);           			
+					fbs.drainEvalScriptStack(leveledScriptURL, frame, script, debuggr);
+				}
+       			return RETURN_CONTINUE;
+       		}
+        } 
+		catch (exc) 
+		{
+			ERROR("onEvalBreak failed: "+exc);
+		}
+		return RETURN_CONTINUE;
+	}, 
+	
+	getURLFromDebugger: function(callback, frame) 
+	{
+		var result_url = {};
+   		
+   		var rc = callback(frame, result_url);
+         
+        if (!rc) 
+        {
+        	ERROR("firebug-service: debuggr callback for url failed \n");
+        	return;
+        }  
+        		
+        return result_url.value.getWrappedValue();
+	},
+	
+
+	drainTopLevelScriptStack: function(leveledScriptURL, frame, leveledScript, debuggr) 
+	{   	 
+		for (tag in fbs.nestedScriptStack) {
+        	var nestedScript = fbs.nestedScriptStack[tag];
+        	if (nestedScript.fileName != leveledScriptURL) 
+        		continue;
+				
+        	var lineNo = nestedScript.baseLineNumber - leveledScript.baseLineNumber + 1;
+			if (fbs.DBG_CREATION) ddd("drainTopLevelScriptStack: nestedScript.baseLineNumber - leveledScript.baseLineNumber + 1="+nestedScript.baseLineNumber+"-"+leveledScript.baseLineNumber+" + 1\n");
+        	
+			debuggr = this.reFindDebugger(frame, debuggr);
+        	debuggr.onTopLevelScript(leveledScriptURL, lineNo, nestedScript);
+        	
+			var scriptInfo = fbs.registerTopLevelScript(nestedScript, leveledScriptURL, "nested in top-level");
+       }
+       fbs.nestedScriptStack = {}; // XXXjjb TODO we lose all the moz scripts here
+	},
+	
+	drainEvalScriptStack: function(leveledScriptURL, frame, script, debuggr) 
+	{    	 
+		for (tag in fbs.nestedScriptStack) {
+        	var nestedScript = fbs.nestedScriptStack[tag];
+			if (nestedScript.fileName != script.fileName) 
+        		continue;
+        	var baseLineNumberWithEvalBuffer = nestedScript.baseLineNumber - script.baseLineNumber + 1;
+        	if (baseLineNumberWithEvalBuffer <= 0) 
+			{	
+				// happens for ppfun internally generated functions and maybe for injected script tags?
+        		ddd("Negative offset for nestedScript.baseLineNumber - script.baseLineNumber + 1 @leveledScriptURL="+nestedScript.baseLineNumber+" - "+script.baseLineNumber + "+1 @"+leveledScriptURL+" src="+nestedScript.functionSource+"\n"+script.fileName+ " vs nested "+nestedScript.fileName+"\n");       		
+        	}
+        	debuggr = this.reFindDebugger(frame, debuggr);
+        	debuggr.onEvalScript(leveledScriptURL, baseLineNumberWithEvalBuffer, nestedScript);
+        	
+        	var scriptInfo = fbs.registerEvalLevelScript(nestedScript, leveledScriptURL, "nested in eval-level",  script.baseLineNumber);
+
+       }
+       fbs.nestedScriptStack = {};
+	},
+	
     onScriptCreated: function(script)
-    {
-        var url = script.fileName;
-        if (!(url in scriptMap))
-            scriptMap[url] = [script];
-        else
-            scriptMap[url].push(script);
+    { 
+        try {
         
+	        if (!script.fileName) return;  // some internal thing?
+	        if (script.fileName.indexOf(":") == -1) return; // XStringBundle etal
+	        if (script.fileName.indexOf("chrome:") != -1) return; // can't deal with extensions (yet?)
+	        
+           	if (fbs.DBG_CREATION) 
+           	{
+           		ddd("onScriptCreated: "+script.tag+"@("+script.baseLineNumber+"-"+(script.baseLineNumber+script.lineExtent)+")"+script.fileName+"\n");
+		        ddd("onScriptCreated name: \'"+script.functionName+"\'\n"+script.functionSource+"\n");
+           	}
+           	
+           	if (script.fileName.indexOf("__firebugTemp__") != -1) return; // see spy.js
+           	
+	        if (!script.functionName) 
+	        { 	
+	        	// top or eval-level
+	    		// We need to detect eval() and grab its source. For that we need a stack frame.
+	    		// Get a frame by breakpointing the no-name script that was just created.
+	    		fbs.currentLeveledScriptTag = script.tag;
+	    		script.setBreakpoint(0);
+				if (fbs.DBG_CREATION) ddd("onScriptCreated: set BP at PC 0 in top or eval level tag="+script.tag+"\n");  
+	    	} 
+	    	else if (script.baseLineNumber == 1 && script.fileName in fbs.scriptInfoArrayByURL) 
+	    	{
+		        fbs.eventLevelScriptTag[script.tag]= true; 
+		        script.setBreakpoint(0);  // XXXjjb possible conflict with bp set by user
+		        if (fbs.DBG_CREATION) ddd("onScriptCreated: set BP at PC 0 in event level tag="+script.tag+"\n");
+	    	}
+	    	else
+	    	{
+	    		fbs.nestedScriptStack[script.tag] = script;
+				if (fbs.DBG_CREATION) ddd("onScriptCreated: stacked on "+fbs.currentLeveledScriptTag+"\n"); 
+	    	}	    	
+         }
+         catch(error)
+         { 
+         	ERROR(error);
+         }
+    },
+    
+	resetBreakpoints: function(scriptInfo) 
+	{ 
+		if (fbs.DBG_BP) ddd("resetBreakpoints: "+fbs.formatScriptInfo(scriptInfo)+"\n");   	
         // If the new script is replacing an old script with a breakpoint still
         // set in it, try to re-set the breakpoint in the new script
+		var url = scriptInfo.url;
         var urlBreakpoints = breakpoints[url];
+        var pcmap = scriptInfo.pcmap;
         if (urlBreakpoints)
-        {
-            for (var i = 0; i < urlBreakpoints.length; ++i)
-            {
+        {	
+			if (fbs.DBG_BP) ddd("resetBreakpoints total bp="+urlBreakpoints.length+" for url="+url+"\n");
+			
+			for (var i = 0; i < urlBreakpoints.length; ++i)
+            { 
                 var bp = urlBreakpoints[i];
-                var lineNo = bp.lineNo;
-                if (lineNo >= script.baseLineNumber
-                    && lineNo <= script.baseLineNumber+script.lineExtent)
-                {
-                    if (script.isLineExecutable(lineNo, PCMAP_SOURCETEXT))
+                var endScript = scriptInfo.baseLineNumber + scriptInfo.lineExtent;
+                var sourceLineNo = bp.lineNo; 
+				var lineInScript = scriptInfo.shiftFromSourceBufferToScriptNumbering(sourceLineNo);
+                if (fbs.DBG_BP) ddd("resetBreakpoints scriptInfo.baseLineNumber <= lineInScript <= endScript="+scriptInfo.baseLineNumber+"<="+lineInScript+"<="+endScript+"\n"); 
+                if (scriptInfo.baseLineNumber <= lineInScript 
+                    && lineInScript <= endScript)
+                { 
+					var script = scriptInfo.script;
+					
+                    if (script.isLineExecutable(lineInScript, pcmap))
                     {
-                        var pc = script.lineToPc(lineNo, PCMAP_SOURCETEXT);
-                        script.setBreakpoint(pc);
-
-                        bp.startLineNo = script.baseLineNumber;
+                        var pc = script.lineToPc(lineInScript, pcmap);
+                        script.setBreakpoint(pc); 
+						if (fbs.DBG_BP)ddd("set resetBreakpoints: line="+sourceLineNo+" lineInScript="+lineInScript+" pc="+pc+"\n");
+                        bp.startLineNo = scriptInfo.baseLineNumber;
                     }
                 }
             }
@@ -769,11 +1063,118 @@ FirebugService.prototype =
 
     onScriptDestroyed: function(script)
     {
-        var url = script.fileName;
-        if (url in scriptMap)
-            remove(scriptMap[url], script);
-    },
+        if (script.tag in fbs.scriptInfoByTag) 
+        {
+        	var scriptInfo = fbs.scriptInfoByTag[script.tag];
+ 			var url = scriptInfo.url;
+			if (url in fbs.scriptInfoArrayByURL)
+        		remove(fbs.scriptInfoArrayByURL[url], scriptInfo);
+        	delete fbs.scriptInfoByTag[script.tag];
+        }
+            
+        if (script.tag in fbs.nestedScriptStack) delete fbs.nestedScriptStack[script.tag];
+        if (script.tag in fbs.eventLevelScriptTag) delete fbs.eventLevelScriptTag[script.tag];
+        
 
+    },
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+	// ScriptInfo
+	// the script exists between baseLineNumber and baseLineNumber + lineExtent.
+	
+	
+	registerScriptInfo: function(script, url, typename) 
+	{
+		var scriptInfo = new Object();
+		scriptInfo.script = script;
+		scriptInfo.url = url;
+		scriptInfo.typename = typename;
+		
+		if (scriptInfo.url in fbs.scriptInfoArrayByURL)
+			fbs.scriptInfoArrayByURL[scriptInfo.url].push(scriptInfo);
+		else 
+			fbs.scriptInfoArrayByURL[scriptInfo.url]= [scriptInfo];
+		
+		fbs.scriptInfoByTag[scriptInfo.script.tag] = scriptInfo;
+		
+		return scriptInfo;
+	},			
+
+	shiftNone: function(lineNo) 
+	{
+		return lineNo;
+	},
+
+	registerTopLevelScript: function(script, url, typename) 
+	{
+		var scriptInfo = fbs.registerScriptInfo(script, url, typename);
+		scriptInfo.pcmap = PCMAP_SOURCETEXT;
+		scriptInfo.lineExtent = script.lineExtent;
+		scriptInfo.baseLineNumber = script.baseLineNumber; 
+		scriptInfo.shiftFromSourceBufferToScriptNumbering = fbs.shiftNone;
+		scriptInfo.unshiftFromSourceBufferToScriptNumbering = fbs.shiftNone;
+		
+		fbs.resetBreakpoints(scriptInfo);
+		
+		if (fbs.DBG_CREATION) ddd("registerTopLevelScript: "+fbs.formatScriptInfo(scriptInfo) +"\n");
+		
+		return scriptInfo;
+	},
+	
+	registerEvalLevelScript: function(script, url, typename, evalLineNumber) 
+	{
+		var scriptInfo = fbs.registerScriptInfo(script, url, typename);
+		scriptInfo.pcmap = PCMAP_SOURCETEXT;
+		scriptInfo.lineExtent = script.lineExtent;
+		scriptInfo.baseLineNumber = script.baseLineNumber;
+		scriptInfo.evalLineNumber = evalLineNumber;
+		scriptInfo.shiftFromSourceBufferToScriptNumbering = function(lineNo) 
+		{
+			// We've taken the eval source into a buffer starting at 1.
+			// This particular script starts at baseLineNumber relative to 1.
+			// The engine uses scriptLineNo = eval-point-lineNumber + lineNo - 1.
+			//
+			return lineNo + this.evalLineNumber - 1;
+		}
+		scriptInfo.unshiftFromSourceBufferToScriptNumbering = function(lineNo) 
+		{
+			return lineNo - this.evalLineNumber + 1;
+		}
+		fbs.resetBreakpoints(scriptInfo);
+		
+		if (fbs.DBG_CREATION) ddd("registerEvalLevelScript: "+fbs.formatScriptInfo(scriptInfo) +"\n");
+		
+		return scriptInfo;
+	},
+	
+	shiftOne: function(lineNo)
+	{
+		return lineNo + 1;	
+	},
+		
+	unshiftOne: function(lineNo)
+	{
+		return lineNo - 1;	
+	},
+	
+	registerEventLevelScript: function(script, url, typename) 
+	{
+		var scriptInfo  = fbs.registerScriptInfo(script, url, typename);
+		scriptInfo.pcmap = PCMAP_PRETTYPRINT;
+		scriptInfo.lineExtent = fbs.countLines(script);
+		scriptInfo.baseLineNumber = script.baseLineNumber;
+		scriptInfo.shiftFromSourceBufferToScriptNumbering = fbs.shiftOne;  // heursitic
+		scriptInfo.unshiftFromSourceBufferToScriptNumbering = fbs.unshiftOne;
+		fbs.resetBreakpoints(scriptInfo);
+		
+		if (fbs.DBG_CREATION) ddd( "registerEventLevelScript: "+fbs.formatScriptInfo(scriptInfo) +"\n");
+		return scriptInfo;
+	},
+	
+	formatScriptInfo: function(scriptInfo) 
+	{
+		return scriptInfo.script.tag+"@("+scriptInfo.baseLineNumber+"-"+(scriptInfo.baseLineNumber+scriptInfo.lineExtent)+")"+ scriptInfo.url+":"+scriptInfo.typename;
+	},
+	
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
 
     findDebugger: function(frame)
@@ -794,23 +1195,75 @@ FirebugService.prototype =
         }
     },
     
-    findScripts: function(url, lineNo)
+    diagnoseFindDebugger: function(frame)
+    {
+    	dumpToFileWithStack("diagnoseFindDebugger", frame);
+        var win = getFrameWindow(frame);
+        if (!win)
+            return;
+        // ddd("win.\n");
+        for (var i = 0; i < debuggers.length; ++i)
+        {
+            try
+            {
+                var debuggr = debuggers[i];
+                if (debuggr.supportsWindow(win))
+                    return debuggr;
+            }
+            catch (exc) {ddd("caught:"+exc+"\n");}
+        }
+        // ddd("tried "+debuggers.length+"\n");
+    },
+    
+    reFindDebugger: function(frame, debuggr) 
+    {
+    	var win = getFrameWindow(frame);
+    	if (debuggr.supportsWindow(win)) return debuggr; // for side-effect: context set on debugger.js
+    },
+    
+    getSourceURL: function(script)
+    {
+    	if (script.tag in fbs.scriptInfoByTag) 
+        	return fbs.scriptInfoByTag[script.tag].url;
+        else
+        	return script.fileName;
+    },
+    
+    countLines: function(script) {
+    	var lines = script.functionSource.split(/\r\n|\r|\n/);
+		if (fbs.DBG_BP) for(var i = 0; i < lines.length; i++)ddd("countLines["+(i+1)+"]("+(script.isLineExecutable(i+1, PCMAP_PRETTYPRINT)?"exe":"nox")+"="+lines[i]+"\n");
+    	return lines.length;
+    },
+    
+    findScriptInfos: function(url, lineNo)
     {    
         var hits = [];
-        
-        var scripts = scriptMap[url];
-        if (scripts)
-        {
-            for (var i = 0; i < scripts.length; ++i)
+		
+        var scriptInfos = fbs.scriptInfoArrayByURL[url]; 
+        if (scriptInfos)
+        {	        	
+            for (var i = 0; i < scriptInfos.length; ++i)
             {
-                var script = scripts[i];
-                if (lineNo >= script.baseLineNumber
-                    && lineNo <= script.baseLineNumber+script.lineExtent
-                    && (script.isLineExecutable(lineNo, PCMAP_SOURCETEXT)
-                        || script.baseLineNumber == lineNo))
-                {
-                    hits.push(script);
-                }
+	            var scriptInfo = scriptInfos[i];
+				
+				var lineInScript = scriptInfo.shiftFromSourceBufferToScriptNumbering(lineNo);   
+				
+				var offset = scriptInfo.baseLineNumber;
+				var max = offset + scriptInfo.lineExtent;	
+				var pcmap = scriptInfo.pcmap; 	
+				
+				var script = scriptInfo.script;				
+                if (fbs.DBG_BP) ddd(" findScriptInfos trying "+i+" tag="+script.tag+" offset<=lineInScript->lineInScript<=max:"+offset+"<="+lineInScript+"->"+lineInScript+"<="+max+" using pcmap="+pcmap+" isLineExe="+script.isLineExecutable(lineInScript, pcmap)+"\n");
+				
+                if (lineInScript >= offset && lineInScript <= max)
+                { 	
+					if (fbs.DBG_BP) ddd(" found script in range\n");
+                    if (script.isLineExecutable(lineInScript, pcmap))
+	                {	
+						if (fbs.DBG_BP)ddd(" found script="+script.tag+" using offset="+offset+" url="+url+"\n");
+    	                hits.push(scriptInfo);
+        	        }
+        	     }
             }
         }
         
@@ -846,11 +1299,18 @@ FirebugService.prototype =
     
         return -1;
     },
+    
+    findZeroPCBreakpoint: function(script, pcmap) 
+    {
+    	    var url = fbs.getSourceURL(script);
+    	    var line = script.pcToLine(0, pcmap);
+            return this.findBreakpoint(url, line);
+    },
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
 
-    addBreakpoint: function(type, url, lineNo, debuggr, script)
-    {
+    addBreakpoint: function(type, url, lineNo, debuggr, scriptInfo)
+    { // ddd("addBreakpoint type="+type+"\n");
         url = denormalizeURL(url);
 
         var bp = this.findBreakpoint(url, lineNo);
@@ -866,43 +1326,97 @@ FirebugService.prototype =
         }
         else
         {
-            var scripts = script ? [script] : this.findScripts(url, lineNo);
-            for (var i = 0; i < scripts.length; ++i)
+            var scriptInfos = scriptInfo ? [scriptInfo] : this.findScriptInfos(url, lineNo); 
+			if (fbs.DBG_BP) ddd("addBreakpoint found "+scriptInfos.length+" for url="+lineNo+"@"+url+"\n");
+			
+			var onlyOnReload = true;
+            for (var i = 0; i < scriptInfos.length; ++i)
             {
-                var script = scripts[i];
-                var pc = script.lineToPc(lineNo, PCMAP_SOURCETEXT);
-                script.setBreakpoint(pc);
-            }
-
-            var urlBreakpoints = breakpoints[url];
-            if (!urlBreakpoints)
-                breakpoints[url] = urlBreakpoints = [];
-
-            bp = {type: type, href: url, lineNo: lineNo, disabled: 0,
-                    startLineNo: scripts.length ? scripts[0].baseLineNumber : -1, debuggr: debuggr,
-                    condition: ""};
-            urlBreakpoints.push(bp);
-            ++breakpointCount;
+                scriptInfo = scriptInfos[i];
+				var script = scriptInfo.script;
+				var pcmap = scriptInfo.pcmap;
+				
+				var lineInScript = scriptInfo.shiftFromSourceBufferToScriptNumbering(lineNo);
+				var pc = script.lineToPc(lineInScript, pcmap);
+                script.setBreakpoint(pc);  
+				
+				if (fbs.DBG_BP) ddd("setBreakpoint on lineNo="+lineNo+" using pcmap="+pcmap+" pc="+pc+"\n");
+				
+				var firstSourceLine = scriptInfo.unshiftFromSourceBufferToScriptNumbering(script.baseLineNumber);
+				var bp = fbs.recordBreakpoint(type, url, lineNo, debuggr, firstSourceLine);
+				
+				onlyOnReload = false;
+			}
+			if (onlyOnReload)
+			{
+				var bp = fbs.recordBreakpoint(type | BP_ONRELOAD, url, lineNo, debuggr);
+			} 
         }
 
         return bp;
     },
 
-    removeBreakpoint: function(type, url, lineNo, script)
+	recordBreakpoint: function(type, url, lineNo, debuggr, functionDeclarationLine)
+	{
+				var urlBreakpoints = breakpoints[url];
+          		if (!urlBreakpoints)
+                	breakpoints[url] = urlBreakpoints = [];
+
+            	bp = {type: type, href: url, lineNo: lineNo, disabled: 0,
+                    startLineNo: functionDeclarationLine, debuggr: debuggr,
+                    condition: ""};
+            	urlBreakpoints.push(bp);
+            	++breakpointCount;
+				return bp;
+	},
+
+    removeBreakpoint: function(type, url, lineNo, script) // xxxJJB script arg not used?
     {
         url = denormalizeURL(url);
+		if (fbs.DBG_BP) ddd("removeBreakpoint for url= "+url+"\n");
+		
         var urlBreakpoints = breakpoints[url];
         if (!urlBreakpoints)
             return false;
-        
+			
+        if (fbs.DBG_BP) ddd("removeBreakpoint need to check bps="+urlBreakpoints.length+"\n");
+		
         for (var i = 0; i < urlBreakpoints.length; ++i)
         {
             var bp = urlBreakpoints[i];
+			
+			if (fbs.DBG_BP) ddd("removeBreakpoint checking bp.lineNo vs lineNo="+bp.lineNo+" vs "+lineNo+"\n");
+			
             if (bp.lineNo == lineNo)
             {
                 bp.type &= ~type;
-                if (!bp.type)
+				
+                if (!(bp.type & !BP_ONRELOAD) )
                 {
+					// Check all scripts that may be defined on this line of url
+					// xxxJJB this is expensive, we could track the scripts
+					jsd.enumerateScripts({enumerateScript: function(script)
+                    {
+                        if (script)
+                        {
+							var scriptInfo = fbs.scriptInfoByTag[script.tag];
+							
+							if (scriptInfo)
+							{
+								if (fbs.DBG_BP) ddd("removeBreakpoint checking "+script.tag+" at line="+lineNo+"\n");
+								var pcmap = scriptInfo.pcmap;
+								if(scriptInfo.url == url
+							  		&& script.isLineExecutable(lineNo, pcmap))
+                        		{
+									var lineInScript = scriptInfo.shiftFromSourceBufferToScriptNumbering(lineNo);
+                            		var pc = script.lineToPc(lineInScript, pcmap);
+                            		script.clearBreakpoint(pc); 
+									if (fbs.DBG_BP) ddd("removeBreakpoint at "+lineNo+"@"+url+"\n");
+                        		}
+							}
+                        }
+                    }});
+					
                     urlBreakpoints.splice(i, 1);
                     --breakpointCount;
 
@@ -917,19 +1431,7 @@ FirebugService.prototype =
                     
                     if (!urlBreakpoints.length)
                         delete breakpoints[url];
-                    
-                    // Theoretically, there should only be one script to be found here,
-                    // but due to leaks sometimes we'll have multiple scripts with the
-                    // breakpoint set, so we need to be sure to clear all of them
-                    jsd.enumerateScripts({enumerateScript: function(script)
-                    {
-                        if (script && script.fileName == url
-                            && script.isLineExecutable(lineNo, PCMAP_SOURCETEXT))
-                        {
-                            var pc = script.lineToPc(lineNo, PCMAP_SOURCETEXT);
-                            script.clearBreakpoint(pc);
-                        }
-                    }});
+                                        
                 }
                 
                 return true;
@@ -1066,21 +1568,23 @@ FirebugService.prototype =
             onScriptDestroyed: hook(this.onScriptDestroyed)
         };
 
-        scriptMap = {};
-        jsd.enumerateScripts({enumerateScript: function(script)
+        fbs.scriptInfoArrayByURL = {};  
+		/*
+		jsd.enumerateScripts({enumerateScript: function(script)
         {
-            var url = script.fileName;
+            var url = script.fileName;  
             if (!(url in scriptMap))
                 scriptMap[url] = [script];
             else
                 scriptMap[url].push(script);
         }});
+        */
     },
 
     unhookScripts: function()
     {
         jsd.scriptHook = null;
-        scriptMap = null;
+        fbs.scriptInfoArrayByURL = null;
     }
 };
 
@@ -1195,7 +1699,10 @@ function hook(fn, rv)
         }
         catch (exc)
         {
-            ERROR("Error in hook: " + exc);
+        	var msg = "Error in hook: " + exc +" stack=";
+            for (var frame = Components.stack; frame; frame = frame.caller)
+        		msg += frame.filename + "@" + frame.lineNumber + ";\n"; 
+       		ERROR(msg);
             return rv;
         }
     }
@@ -1205,10 +1712,10 @@ function getFrameWindow(frame)
 {
     try
     {
-        var result = {};
-        frame.eval("window", "", 1, result);
+        var result_frameWindow = {};
+        frame.eval("window", "", 1, result_frameWindow);
 
-        var win = result.value.getWrappedValue();
+        var win = result_frameWindow.value.getWrappedValue();
         return getRootWindow(win);
     }
     catch (exc)
@@ -1235,24 +1742,21 @@ function countFrames(frame)
     return frameCount;
 }
 
-function findExecutableLine(script, lineNo)
+function findFirstExecutableLine(script)
 {
-    var max = script.baseLineNumber + script.lineExtent;
-    for (; lineNo <= max; ++lineNo)
-    {
-        if (script.isLineExecutable(lineNo, PCMAP_SOURCETEXT))
-            return lineNo;
-    }
-    
-    return -1;
+	var scriptInfo = fbs.scriptInfoByTag[script.tag];
+	var url = scriptInfo.tag;
+	var pcmap = scriptInfo.pcmap;
+	var line = script.pcToLine(0, pcmap);
+	return line;
 }
 
 function evaluateCondition(frame, condition)
 {
-    var result = {};
+    var result_condition = {};
     frame.scope.refresh();
-    var ok = frame.eval(condition, "", 1, result);
-    return ok && !!result.value.getWrappedValue();
+    var ok = frame.eval(condition, "", 1, result_condition);
+    return ok && !!result_condition.value.getWrappedValue();
 }
 
 function remove(list, item)
@@ -1295,11 +1799,56 @@ function ERROR(text)
     consoleService.logStringMessage(text + "");
 }
 
+
 function ddd(text)
 {
-    ERROR(text);
+    if (fbs.DBG_BP || fbs.DBG_CREATION) 
+		dumpToFile(text);
+	else 
+    	ERROR(text);
 }
 
+function dFormat(script, url) 
+{
+	return script.tag+"@("+script.baseLineNumber+"-"+(script.baseLineNumber+script.lineExtent)+")"+ url;
+}
+
+function getDumpStream()
+{
+    var f = CC("@mozilla.org/file/local;1").createInstance(CI("nsILocalFile"));
+    f.initWithPath("c:\\download\\tmp\\firebug.txt");
+    if( f.exists() == true ) f.remove( false );
+    if ( f.exists() == false ) {
+    	f.create(Components.interfaces.nsIFile.NORMAL_FILE_TYPE, 420 );
+    	ERROR("creating file");
+    } else {
+    	ERROR("file exists");
+    }
+    var stream = CC("@mozilla.org/network/file-output-stream;1")
+        .createInstance(CI("nsIFileOutputStream"));
+    stream.init(f, 0x04 | 0x08 | 0x10, 424, 0);
+    return stream;
+}
+var dumpStream;
+
+function dumpToFile(text) {
+	if (!dumpStream) dumpStream = getDumpStream();
+    dumpStream.write(text, text.length);
+    dumpStream.flush();
+}
+
+function dumpToFileWithStack(text, frame) {
+	if (!dumpStream) dumpStream = getDumpStream();
+    dumpStream.write(text, text.length);
+	text = " stack: \n";
+	while(frame) {
+		text += frame.line+"@"+frame.script.fileName + "\n";
+        frame = frame.callingFrame;
+	}
+	text += "-------------------------------------\n";
+	dumpStream.write(text, text.length); 
+    dumpStream.flush();
+}
 function dumpit(text)
 {
     var f = CC("@mozilla.org/file/local;1").createInstance(CI("nsILocalFile"));
@@ -1312,3 +1861,31 @@ function dumpit(text)
     stream.flush();
     stream.close();
 }
+
+function dumpStack() 
+{
+   	var str = "<top>";
+	var frame = Components.stack;
+    while (frame) 
+    {
+        str += "\n" + frame;  
+   	    frame = frame.caller;
+    }
+	str += "\n<bottom>";
+    return str;
+}
+var hD="0123456789ABCDEF";
+function d2h(d) {
+	var h = hD.substr(d&15,1);
+	while(d>15) {d>>=4;h=hD.substr(d&15,1)+h;}
+	return h;
+}
+
+function getStackDump()
+{
+    var lines = [];
+    for (var frame = Components.stack; frame; frame = frame.caller)
+        lines.push(frame.filename + " (" + frame.lineNumber + ")");
+    
+    return lines.join("\n");
+};

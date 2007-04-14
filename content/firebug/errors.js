@@ -53,7 +53,6 @@ const pointlessErrors =
 {
     "uncaught exception: Permission denied to call method Location.toString": 1,
     "uncaught exception: Permission denied to get property Window.writeDebug": 1,
-    "uncaught exception: Permission denied to get property XULElement.accessKey": 1,
     "this.docShell has no properties": 1,
     "aDocShell.QueryInterface(Components.interfaces.nsIWebNavigation).currentURI has no properties": 1
 };
@@ -160,9 +159,22 @@ var Errors = Firebug.Errors = extend(Firebug.Module,
 
                 if (!isWarning)    
                     this.increaseCount(context);
-    
-                var error = new ErrorMessage(object.errorMessage, object.sourceName,
-                        object.lineNumber, object.sourceLine, category, context);
+    			var sourceName = object.sourceName;
+    			var lineNumber = object.lineNumber;
+    			var trace = Firebug.errorStackTrace;
+    			if (trace) 
+    			{ 
+    				var stack_frame = trace.frames[0];
+    				if (stack_frame) 
+    				{
+						sourceName = stack_frame.href;
+						lineNumber = stack_frame.lineNo;
+					}
+					var correctedError = object.init(object.errorMessage, sourceName, object.sourceLine,lineNumber, object.columnNumber, object.flags, object.category); 
+						
+    			}
+                var error = new ErrorMessage(object.errorMessage, sourceName,
+                        lineNumber, object.sourceLine, category, context);
                 
                 var className = isWarning ? "warningMessage" : "errorMessage";
                 Firebug.Console.log(error, context,  className);
@@ -175,7 +187,8 @@ var Errors = Firebug.Errors = extend(Firebug.Module,
         }
         catch (exc)
         {
-            ERROR("Error while reporting error: " + exc);
+        	// Errors prior to console init will come out here, eg error message from Firefox startup jjb.
+            // ERROR("Error while reporting error: " + exc);
         }
     },
 

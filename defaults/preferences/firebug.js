@@ -1,6 +1,6 @@
 
 // Global
-pref("extensions.firebug.disabledAlways", true);
+pref("extensions.firebug.disabledAlways", false);
 pref("extensions.firebug.disabledFile", true);
 pref("extensions.firebug.defaultPanelName", "html");
 pref("extensions.firebug.throttleMessages", true);
@@ -37,6 +37,10 @@ pref("extensions.firebug.showComputedStyle", false);
 
 // Script
 pref("extensions.firebug.breakOnErrors", false);
+pref("extensions.firebug.useDebugAdapter", false);
+pref("extensions.firebug.useFirstLineForEvalName", false);
+pref("extensions.firebug.debugFirebug_CREATION", false);
+pref("extensions.firebug.debugFirebug_BP", false);
 
 // DOM
 pref("extensions.firebug.showUserProps", true);

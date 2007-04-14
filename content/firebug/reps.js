@@ -204,7 +204,7 @@ this.Func = domplate(Firebug.Rep,
     
     inspectObject: function(fn, context)
     {
-        var sourceLink = findSourceForFunction(fn);
+        var sourceLink = findSourceForFunction(fn, context);
         if (sourceLink)
             context.chrome.select(sourceLink);
     },
@@ -268,7 +268,7 @@ this.jsdScript = domplate(Firebug.Rep,
     
     inspectObject: function(script, context)
     {
-        var sourceLink = getSourceForScript(script);
+        var sourceLink = getSourceForScript(script, context);
         if (sourceLink)
             context.chrome.select(sourceLink);
     },
@@ -1070,11 +1070,11 @@ this.SourceFile = domplate(this.SourceLink,
 
 // ************************************************************************************************
 
-this.StackFrame = domplate(Firebug.Rep,
-{
-    tag:
-        OBJECTBLOCK(
-            A({class: "objectLink", _repObject: "$object.fn"}, "$object|getCallName"),
+this.StackFrame = domplate(Firebug.Rep,  // XXXjjb Since the repObject is fn the stack does not have correct line numbers
+{    
+    tag:  
+        OBJECTBLOCK(  
+            A({class: "objectLink", _repObject: "$object"}, "$object|getCallName"),
             "(",
             FOR("arg", "$object|argIterator",
                 TAG("$arg.tag", {object: "$arg.value"}),
@@ -1124,7 +1124,20 @@ this.StackFrame = domplate(Firebug.Rep,
     supportsObject: function(object)
     {
         return object instanceof StackFrame;
-    }    
+    },
+    
+    inspectObject: function(stackFrame, context)
+    {
+        var sourceLink = new SourceLink(stackFrame.href, stackFrame.lineNo, "js");
+        context.chrome.select(sourceLink);
+    },
+    
+    getTooltip: function(stackFrame, context)
+    {
+        return $STRF("Line", [stackFrame.href, stackFrame.lineNo]);
+    },
+    
+        
 });
 
 // ************************************************************************************************
@@ -1154,16 +1167,18 @@ this.jsdStackFrame = domplate(Firebug.Rep,
     
     supportsObject: function(object)
     {
-        return object instanceof jsdIStackFrame;
+        return (object instanceof jsdIStackFrame) && (object.isValid);
     },
         
     getTitle: function(frame, context)
-    {
+    { 
+    	if (!frame.isValid) return "(invalid frame)"; // XXXjjb avoid frame.script == null
         return getFunctionName(frame.script, context);
     },
 
     getTooltip: function(frame, context)
     {
+    	if (!frame.isValid) return "(invalid frame)";  // XXXjjb avoid frame.script == null
         return $STRF("Line", [frame.script.fileName, frame.line]);
     },
 

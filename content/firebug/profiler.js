@@ -101,7 +101,7 @@ Firebug.Profiler = extend(Firebug.Module,
         {
             if (script.callCount)
             {
-                url = normalizeURL(script.fileName);
+                url = normalizeURL(script.fileName);  // XXXjjb TODO evalSourceURLByTag
                 if (url in sourceFileMap)
                 {
                     var call = new ProfileCall(script, context, script.callCount, script.totalExecutionTime,
