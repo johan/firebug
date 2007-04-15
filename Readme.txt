@@ -16,7 +16,8 @@ Did I mention this was experimental?
 Known problems:
  Firefox crashes more often: I don't completely understand the rules for firebug-service
  and JSD interface.
- Very large evals() will take much more time. UseFirstLine may fix this. 
+ Very large evals() will take much more time. UseFirstLine may fix this.
+ There are a ton of if(DEBUG) statements that need to be culled out for production version. 
 
 Please report additional problems to Fireclipse project on sourceforge
  
