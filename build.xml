@@ -1,74 +1,130 @@
 <?xml version="1.0" ?>
 
-<!-- This Ant build file was contributed by Paul McLanahan.  It is still untested, so please, if
-     you attempt to use it and have troubles, contact joe@joehewitt.com and pmclanahan@gmail.com. -->
+<!-- This Ant build file was contributed by Paul McLanahan.  pmclanahan@gmail.com.
+	Added template and version numbers johnjbarton@johnjbarton.com 
+-->
 
-<project name="firebug" default="createDistributionXPI">
+<project name="firebug" default="createBranchXPI">
 
-<!-- Project directories -->
-<property name="src_dir" location="." />
-<property name="build_dir" location="./build" />
-<property name="dist_dir" location="./dist" />
-<property name="excludes" value="**/.*, **/*.jar, **/*.db" />
-<property name="components_dir" location="${src_dir}/components" />
+	<!--
+		RELEASE=88
+		BRANCH=eval
+		TRUNK=1.05
+		-->
+	<property file="branch.properties" />
+	
+	<!-- update.path is URL to update.rdf -->
+	<property file="local.properties"/>
+	<!-- Project directories -->
+	<property name="src_dir" location="." />
+	<property name="build_dir" location="./build" />
+	<property name="dist_dir" location="./dist" />
+	<property name="excludes" value="**/.*, **/*.jar, **/*.db" />
+	<property name="components_dir" location="${src_dir}/components" />
+	
+	<!-- Targets -->
+	<target name="clean">
+		<delete dir="${build_dir}" />
+		<delete dir="${dist_dir}" />
+	</target>
+	
+	<target name="createChromeJAR">
+		<mkdir dir="${build_dir}" />
+		<zip destfile="${build_dir}/${ant.project.name}.jar" update="true"
+			basedir="${src_dir}"
+			includes="content/**, locale/**, skin/**"
+			excludes="${excludes}"
+		/>
+	</target>
+	
+	<target name="createPlatformJARs">
+		<mkdir dir="${build_dir}/Darwin" />
+		<mkdir dir="${build_dir}/Linux" />
+		<mkdir dir="${build_dir}/linux-gnu" />
+		<mkdir dir="${build_dir}/WINNT" />
+		<zip destfile="${build_dir}/Darwin/${ant.project.name}.jar" update="true"
+			basedir="${src_dir}/platform/Darwin"
+			includes="skin/**"
+			excludes="${excludes}"
+		/>
+		<zip destfile="${build_dir}/Linux/${ant.project.name}.jar" update="true"
+			basedir="${src_dir}/platform/Linux"
+			includes="skin/**"
+			excludes="${excludes}"
+		/>
+		<zip destfile="${build_dir}/linux-gnu/${ant.project.name}.jar" update="true"
+			basedir="${src_dir}/platform/linux-gnu"
+			includes="skin/**"
+			excludes="${excludes}"
+		/>
+		<zip destfile="${build_dir}/WINNT/${ant.project.name}.jar" update="true"
+			basedir="${src_dir}/platform/WINNT"
+			includes="skin/**"
+			excludes="${excludes}"
+		/>
+	</target>
+	
+	<target name="zipIntoXPI" depends="clean, createChromeJAR, createPlatformJARs">
+		<mkdir dir="${dist_dir}" />
+		<zip destfile="${dist_dir}/${ant.project.name}.xpi" update="true">
+			<zipfileset dir="${build_dir}" includes="${ant.project.name}.jar" prefix="chrome" />
+			<zipfileset dir="${src_dir}" includes="icons/**" prefix="chrome" excludes="${excludes}" />
+			<zipfileset dir="${src_dir}/platform" includes="**" prefix="platform" excludes="${excludes}, **/skin/**" />
+			<zipfileset dir="${build_dir}/Darwin" includes="${ant.project.name}.jar" prefix="platform/Darwin/chrome" />
+			<zipfileset dir="${build_dir}/Linux" includes="${ant.project.name}.jar" prefix="platform/Linux/chrome" />
+			<zipfileset dir="${build_dir}/linux-gnu" includes="${ant.project.name}.jar" prefix="platform/linux-gnu/chrome" />
+			<zipfileset dir="${build_dir}/WINNT" includes="${ant.project.name}.jar" prefix="platform/WINNT/chrome" />
+			<zipfileset dir="${src_dir}/components" includes="*.js" prefix="components" />
+			<zipfileset dir="${src_dir}/components" includes="*.xpt" prefix="components" />
+			<zipfileset dir="${src_dir}/defaults" includes="**" prefix="defaults" excludes="${excludes}" />
+			<zipfileset dir="${src_dir}" includes="install.rdf, *.manifest" />
+		</zip>
+	</target>
+	<target name="createDistributionXPI" depends="zipIntoXPI" >
+		<copy file="${dist_dir}/${ant.project.name}.xpi" tofile="${dist_dir}/${ant.project.name}.xpi.zip" />
+	</target>
 
-<!-- Targets -->
-<target name="clean">
-<delete dir="${build_dir}" />
-<delete dir="${dist_dir}" />
-</target>
+	<target name="createBranchXPI" depends="version, expand-templates, zipIntoXPI" >
+		<move file="${dist_dir}/firebug.xpi" tofile="${dist_dir}/${FIREBUG-XPI}"/>
+		<copy file="update.rdf" tofile="${dist_dir}/update.rdf" />
+	</target>
+	
 
-<target name="createChromeJAR">
-<mkdir dir="${build_dir}" />
-<zip destfile="${build_dir}/${ant.project.name}.jar" update="true"
-basedir="${src_dir}"
-includes="content/**, locale/**, skin/**"
-excludes="${excludes}"
-/>
-</target>
+	<target name="expand-templates" depends="version" description="Fill in version info">
+		<copy file="${src_dir}/install.rdf.tpl.xml"
+               tofile="install.rdf"
+               overwrite="true">
+               <filterchain>
+                       <replacetokens>
+                            <token key="VERSION" value="${VERSION}"/>
+							<token key="UPDATEPATH" value="${update.path}"/>
+                      		<token key="EXPERIMENTORURL" value="http://www.almaden.ibm.com/u/bartonjj"/>
+                       </replacetokens>
+               </filterchain>        
+		</copy>
+		<copy file="${src_dir}/update.rdf.tpl.xml"
+               tofile="update.rdf"
+               overwrite="true">
+               <filterchain>
+                       <replacetokens>
+                            <token key="VERSION" value="${VERSION}"/>
+							<token key="UPDATEPATH" value="${update.path}"/>
+                      		<token key="EXPERIMENTORURL" value="http://www.almaden.ibm.com/u/bartonjj"/>
+                       </replacetokens>
+               </filterchain>        
+		</copy>
+		
+	</target>
 
-<target name="createPlatformJARs">
-<mkdir dir="${build_dir}/Darwin" />
-<mkdir dir="${build_dir}/Linux" />
-<mkdir dir="${build_dir}/linux-gnu" />
-<mkdir dir="${build_dir}/WINNT" />
-<zip destfile="${build_dir}/Darwin/${ant.project.name}.jar" update="true"
-basedir="${src_dir}/platform/Darwin"
-includes="skin/**"
-excludes="${excludes}"
-/>
-<zip destfile="${build_dir}/Linux/${ant.project.name}.jar" update="true"
-basedir="${src_dir}/platform/Linux"
-includes="skin/**"
-excludes="${excludes}"
-/>
-<zip destfile="${build_dir}/linux-gnu/${ant.project.name}.jar" update="true"
-basedir="${src_dir}/platform/linux-gnu"
-includes="skin/**"
-excludes="${excludes}"
-/>
-<zip destfile="${build_dir}/WINNT/${ant.project.name}.jar" update="true"
-basedir="${src_dir}/platform/WINNT"
-includes="skin/**"
-excludes="${excludes}"
-/>
-</target>
+	<target name="version" description="Compute version number">
+		<tstamp/>
+		<property name="build_dir" location="./build" />		
+		<property name="VERSION"  value="1.1${BRANCH}.${RELEASE}.${TRUNK}"/>
+		<property name="UPDATEPATH" value="${update.path}" />
+		<mkdir dir="${build_dir}/dist" />
+		<property name="dist_dir" location="${build_dir}/dist" />
+		<property name="FIREBUG-XPI" value="firebug-${VERSION}.xpi"/>
+	</target>
 
-<target name="createDistributionXPI" depends="clean, createChromeJAR, createPlatformJARs">
-<mkdir dir="${dist_dir}" />
-<zip destfile="${dist_dir}/${ant.project.name}.xpi" update="true">
-<zipfileset dir="${build_dir}" includes="${ant.project.name}.jar" prefix="chrome" />
-<zipfileset dir="${src_dir}" includes="icons/**" prefix="chrome" excludes="${excludes}" />
-<zipfileset dir="${src_dir}/platform" includes="**" prefix="platform" excludes="${excludes}, **/skin/**" />
-<zipfileset dir="${build_dir}/Darwin" includes="${ant.project.name}.jar" prefix="platform/Darwin/chrome" />
-<zipfileset dir="${build_dir}/Linux" includes="${ant.project.name}.jar" prefix="platform/Linux/chrome" />
-<zipfileset dir="${build_dir}/linux-gnu" includes="${ant.project.name}.jar" prefix="platform/linux-gnu/chrome" />
-<zipfileset dir="${build_dir}/WINNT" includes="${ant.project.name}.jar" prefix="platform/WINNT/chrome" />
-<zipfileset dir="${src_dir}/components" includes="*.js" prefix="components" />
-<zipfileset dir="${src_dir}/components" includes="*.xpt" prefix="components" />
-<zipfileset dir="${src_dir}/defaults" includes="**" prefix="defaults" excludes="${excludes}" />
-<zipfileset dir="${src_dir}" includes="install.rdf, *.manifest" />
-</zip>
-<copy file="${dist_dir}/${ant.project.name}.xpi" tofile="${dist_dir}/${ant.project.name}.xpi.zip" />
-</target>
+
 </project>
