@@ -1,4 +1,4 @@
-firebug branches/eval
+firebug branches/eval johnjbarton@johnjbarton.com aka johnjbarton.com@gmail.com
 
 This is an experimental branch of Firebug implementing 
  eval() debugging, 
