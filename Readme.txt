@@ -25,9 +25,15 @@ http://sourceforge.net/tracker/?group_id=189983&atid=931513
 
 Building:
 
- 1) Create local.properties with one line 
+ 1) svn co https://fbug.googlecode.com/svn/branches/eval fbugEval
+
+ 2) Create fbugEval/local.properties with one line 
  update.rdf=URL-base-to-distribution-directory
  
- 2) ant 
+ 3) cd fbugEval; ant 
  
- 3) copy dist/* to URL-base-to-distribution-directory
+ 4) copy dist/* to URL-base-to-distribution-directory
+ 
+ --
+ This file from
+ https://fbug.googlecode.com/svn/branches/eval/Readme.txt
