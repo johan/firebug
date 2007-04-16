@@ -69,7 +69,7 @@ const scriptBlockSize = 20;
 const tooltipTimeout = 300;
 
 const reLineNumber = /^[^\\]?#(\d*)$/;
-const reJavascript = /\s*javascript:\s*(.*)/; 
+
 var reEval =  /\s*eval\s*\(([^)]*)\)/m;        // eval ( $1 )
 var reHTM = /\.[hH][tT][mM]/;
 var reURIinComment = /\/\/@\ssourceURL=\s*(.*)\s*$/m;
@@ -959,7 +959,7 @@ Firebug.Debugger = extend(Firebug.Module,
 	{	
 		if (context && context.sourceCache)
     	{
-    		var in_url = reJavascript.exec(url);
+    		var in_url = FBL.reJavascript.exec(url);
     		if (in_url)
     		{
     			var m = reEval.exec(in_url[1]);

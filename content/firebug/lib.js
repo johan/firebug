@@ -50,6 +50,7 @@ var finder = this.finder = this.CCIN("@mozilla.org/embedcomp/rangefind;1", "nsIF
 var reNotWhitespace = /[^\s]/;
 var reSplitFile = /:\/{1,3}(.*?)\/([^\/]*?)\/?($|\?.*)/;
 this.reDataURL = /data:text\/javascript;fileName=([^;]*);baseLineNumber=(\d*?),((?:.*?%0A)|(?:.*))/g;
+this.reJavascript = /\s*javascript:\s*(.*)/;
 var reSplitLines = /\r\n|\r|\n/;
 var reFunctionArgNames = /function ([^(]*)\(([^)]*)\)/;
 var reGuessFunction = /['"]?([0-9A-Za-z_]+)['"]?\s*[:=]\s*(function|eval|new Function)/;
@@ -4621,12 +4622,12 @@ this.dumpProperties = function(header, obj)
 this.DBG_BP = false;
 this.DBG_TOPLEVEL = false;
 this.DBG_STACK = false;
-this.DBG_UI_LOOP = true;
+this.DBG_UI_LOOP = false;
 this.DBG_ERRORS = false;
 this.DBG_EVENTS = false;
 this.DBG_FUNCTION_NAMES = false;
-this.DBG_EVAL = true;
-this.DBG_CACHE = true;
+this.DBG_EVAL = false;
+this.DBG_CACHE = false;
 
 // ************************************************************************************************
 

@@ -83,6 +83,16 @@ top.SourceCache.prototype =
             
             return lines;
         }
+		
+		var j = FBL.reJavascript.exec(url);
+		if (j) 
+		{
+			var src = url.substring(FBL.reJavascript.lastIndex);
+			var lines = src.split(/\r\n|\r|\n/);
+            this.cache[url] = lines;
+            
+            return lines;
+		}
         
         var charset = this.context.window.document.characterSet;
         
