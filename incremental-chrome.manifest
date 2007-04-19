@@ -1,0 +1,6 @@
+content firebug 				content/firebug/ xpcnativewrappers=no
+skin	firebug	classic/1.0		skin/classic/
+locale	firebug	en-US			locale/en-US/
+
+overlay chrome://browser/content/browser.xul         chrome://firebug/content/browserOverlay.xul
+overlay chrome://global/content/customizeToolbar.xul         chrome://firebug/content/customizeToolbarOverlay.xul
