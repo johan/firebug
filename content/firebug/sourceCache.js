@@ -135,8 +135,12 @@ top.SourceCache.prototype =
         }
         catch (exc)
         {
-        	ERROR("sourceCache.load fails channel.open for url="+url+ " cause:"+exc+"\n");
-            return;
+			var isCache = (channel instanceof nsICachingChannel)?"nsICachingChannel":"NOT caching channel";
+			var isUp = (channel instanceof nsIUploadChannel)?"nsIUploadChannel":"NOT nsIUploadChannel";
+			FBL.sysout(url+" vs "+this.context.browser.contentWindow.location.href+" and "+isCache+" "+isUp+"\n");
+        	FBL.dumpProperties("sourceCache.load fails channel.open for url="+url+ " cause:", exc);
+			FBL.dumpProperties("sourceCache.load fails channel=", channel);
+			return;
         }
         
         try
