@@ -326,6 +326,8 @@ this.iterateWindows = function(win, handler)
 
     handler(win);
     
+	if (win == top) return; // XXXjjb hack for chromeBug
+	
     for (var i = 0; i < win.frames.length; ++i)
     {
         var subWin = win.frames[i];
@@ -1528,6 +1530,14 @@ this.getStackFrameId = function()
     return null;
 };
 
+this.getUniqueId = function() {
+	return this.getRandomInt(0,65536);
+}
+
+this.getRandomInt = function(min, max) {
+  return Math.floor(Math.random() * (max - min + 1) + min);
+}
+
 // ************************************************************************************************
 // Event Monitoring
 
@@ -1874,9 +1884,10 @@ this.updateScriptFiles = function(context, reload)
             var scripts = win.document.documentElement.getElementsByTagName("script");
             for (var i = 0; i < scripts.length; ++i)
             {
-                var script = scripts[i];
-                var url = this.normalizeURL(script.src ? script.src : win.location.href);
+                var scriptSrc = scripts[i].getAttribute('src'); // for XUL use attribute 
+                var url = this.normalizeURL(scriptSrc ? scriptSrc : win.location.href);
                 addFile(url);
+				if (FBL.DBG_SOURCEFILES) FBL.sysout("updateScriptFiles script tag#"+i+" adding "+url+" to context="+context.uid+"\n");
             }
         }, this));
 
@@ -1884,7 +1895,6 @@ this.updateScriptFiles = function(context, reload)
 			this.addSourceFilesByURL(sourceFiles, sourceFileMap, context.evalSourceFilesByURL);
 		if (context.eventSourceFilesByURL) 
 			this.addSourceFilesByURL(sourceFiles, sourceFileMap, context.eventSourceFilesByURL);
-
 
         addFile(context.window.location.href);
     }
@@ -2059,12 +2069,22 @@ this.isShift = function(event)
 
 this.dispatch = function(listeners, name, args)
 {
-    for (var i = 0; i < listeners.length; ++i)
+	if (FBL.DBG_WINDOWS)
+		FBL.sysout("dispatch "+name+" to "+listeners.length+" listeners\n");
+		
+	try {
+	    for (var i = 0; i < listeners.length; ++i)
+	    {
+	        var listener = listeners[i];
+	        if (name in listener)
+	            listener[name].apply(listener, args);
+	    }		
+	}
+	catch (exc)
     {
-        var listener = listeners[i];
-        if (name in listener)
-            listener[name].apply(listener, args);
-    }
+            FBL.dumpProperties(" Exception in lib.dispatch "+ name, exc); // XXXjjb
+    }	
+
 };
 
 // ************************************************************************************************
@@ -4614,9 +4634,18 @@ this.sysout = function(msg)
 
 this.dumpProperties = function(header, obj) 
 {
-	this.sysout(header+"\n");
+	this.sysout(header+" isA "+obj+" contains:\n");
 	for (p in obj) 
-		this.sysout("["+p+"]="+obj[p]+";\n");
+	{
+		try 
+		{
+			this.sysout("["+p+"]="+obj[p]+";\n");
+		}
+		catch (e) 
+		{
+			this.sysout("dumpProperties failed:"+e+"\n");
+		}
+	} 	
 }
 
 this.DBG_BP = false;
@@ -4628,6 +4657,9 @@ this.DBG_EVENTS = false;
 this.DBG_FUNCTION_NAMES = false;
 this.DBG_EVAL = false;
 this.DBG_CACHE = false;
+this.DBG_SOURCEFILES =false;
+this.DBG_WINDOWS = false;
+this.DBG_NET = false;
 
 // ************************************************************************************************
 

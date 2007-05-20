@@ -78,7 +78,7 @@ top.TabWatcher =
         // Store contexts where they can be accessed externally
         this.contexts = contexts;
 
-        this.owner = owner;
+        this.owner = owner;  // Firebug object
         this.addListener(owner);
 
         if (tabBrowser)
@@ -180,14 +180,23 @@ top.TabWatcher =
             
             context = this.owner.createTabContext(win, browser, browser.chrome, persistedState);
             contexts.push(context);
+			if (FBL.DBG_WINDOWS) {
+				context.uid = FBL.getUniqueId();
+				FBL.sysout("tabWatcher created context with id="+context.uid+"\n");
+			}
+           
+           	this.dispatch("initContext", [context]);
             
-            this.dispatch("initContext", [context]);
-            
-            win.addEventListener("pagehide", onUnloadTopWindow, true);
-            win.addEventListener("pageshow", onLoadWindowContent, true);
-            win.addEventListener("DOMContentLoaded", onLoadWindowContent, true);
+            if (!context.runDisconnectedFromWindow)  // may be set by initContext listeners, eg chromeBug
+			{
+				win.addEventListener("pagehide", onUnloadTopWindow, true);
+            	win.addEventListener("pageshow", onLoadWindowContent, true);
+            	win.addEventListener("DOMContentLoaded", onLoadWindowContent, true);
+			}
         }
+		// XXXjjb at this point we either have context or we just pushed null into contexts and sent it to init...
         
+		// This is one of two places that loaded is set.
         if (context)
             context.loaded = !context.browser.webProgress.isLoadingDocument;
 
@@ -208,6 +217,8 @@ top.TabWatcher =
             this.watchContext(win, null, isSystem);
             return;
         }
+		if (FBL.DBG_WINDOWS)	
+			FBL.sysout("watchLoadedTopWindow context="+(context?(context.uid+" loaded="+context.loaded):'undefined')+"\n");
 
         if (context && !context.loaded)
         {
@@ -228,10 +239,22 @@ top.TabWatcher =
         // are called several times, so we have to avoid dispatching watchWindow
         // more than once
         var href = win.location.href;
+		
+		if (FBL.DBG_WINDOWS) {
+			FBL.sysout("watchWindow for href="+href+" context="+context+"\n");
+			if (context)
+				for (var i = 0; i < context.windows.length; i++) 
+					FBL.sysout("watchWindow context("+context.uid+").windows["+i+"]="+context.windows[i].location.href+"\n");
+		}
+
+			
         if (context && context.windows.indexOf(win) == -1 && href != aboutBlank)
         {
             context.windows.push(win);
-
+			
+			if (FBL.DBG_WINDOWS)
+				FBL.sysout("watchWindow sets context for href="+href+"\n");
+				
             var eventType = (win.parent == win) ? "pagehide" : "unload";
             win.addEventListener(eventType, onUnloadWindow, false);
             this.dispatch("watchWindow", [context, win]);
@@ -354,7 +377,14 @@ top.TabWatcher =
                 return browser;
             }
         }
-
+		
+		// XXXjjb Allows eg chromebug
+		if (this.owner.otherBrowsers){
+			if (FBL.DBG_WINDOWS)
+				FBL.sysout("getBrowserByWindow returning otherBrowsers= "+this.owner.otherBrowsers[win]+"\n");
+			return this.owner.otherBrowsers[win];
+		}
+		
         return null;
     },
 
@@ -376,8 +406,11 @@ top.TabWatcher =
         remove(listeners, listener);
     },
 
-    dispatch: function(name, args)
+    dispatch: function(name, args)   // XXXjjb can't we use FBL.dispatch?
     {
+		if (FBL.DBG_WINDOWS)
+			FBL.sysout("TabWatcher.dispatch "+name+" to "+listeners.length+" listeners\n");
+
         for (var i = 0; i < listeners.length; ++i)
         {
             var listener = listeners[i];
@@ -389,7 +422,7 @@ top.TabWatcher =
                 }
                 catch (exc)
                 {
-                    ERROR(exc + " in dispatch "+ name); // XXXjjb
+                    FBL.dumpProperties(" Exception in TabWatcher.dispatch "+ name, exc); // XXXjjb
                 }
             }
         }
@@ -427,6 +460,9 @@ var TabProgressListener = extend(BaseProgressListener,
 {
     onLocationChange: function(progress, request, location)
     {
+		if (FBL.DBG_WINDOWS && (progress.DOMWindow.parent == progress.DOMWindow) && location && location.href)
+			FBL.sysout("TabProgressListener to location="+location.href+"\n");
+
         // Only watch windows that are their own parent - e.g. not frames
         if (progress.DOMWindow.parent == progress.DOMWindow)
             TabWatcher.watchTopWindow(progress.DOMWindow, location);
@@ -449,12 +485,16 @@ var FrameProgressListener = extend(BaseProgressListener,
 {
     onStateChange: function(progress, request, flag, status)
     {
+		if (FBL.DBG_WINDOWS) 
+				FBL.sysout("FrameProgressListener "+getStateDescription(flag)+" for uri="+safeGetName(request)+"\n");
+								
         // We need to get the hook in as soon as the new DOMWindow is created, but before
         // it starts executing any scripts in the page.  After lengthy analysis, it seems
         // that the start of these "dummy" requests is the only state that works.
         if (flag & STATE_IS_REQUEST && flag & STATE_START)
         {
-            if (safeGetName(request) == dummyURI)
+			var safeURI = safeGetName(request);
+            if (safeURI && (safeURI == dummyURI || safeURI == "about:document-onload-blocker") )
             {
                 // Another weird edge case here - when opening a new tab with about:blank,
                 // "unload" is dispatched to the document, but onLocationChange is not called
@@ -465,12 +505,15 @@ var FrameProgressListener = extend(BaseProgressListener,
 
                 TabWatcher.watchWindow(win);
             }
+			return; // XXXjjb Joe, seems like this should not fall thru but maybe its ok.
         }
 
         // Later I discovered that XHTML documents don't dispatch the dummy requests, so this
         // is our best shot here at hooking them.  
-        if (flag & STATE_IS_DOCUMENT && flag & STATE_TRANSFERRING)
-            TabWatcher.watchWindow(progress.DOMWindow);
+        //if (flag & STATE_IS_DOCUMENT && flag & STATE_TRANSFERRING)
+        //    TabWatcher.watchWindow(progress.DOMWindow);
+		// And later than that jjb found that xml at least uses about:document-onload-blocker
+		// BUT I need to check script activity.....
     }
 });
 
@@ -510,7 +553,10 @@ function onUnloadTopWindow(event)
 }
 
 function onLoadWindowContent(event)
-{
+{ 
+	if (FBL.DBG_WINDOWS)
+		FBL.sysout("onLoadWindowContent event.type="+event.type+"\n");
+
     var win = event.currentTarget;
     try
     {
@@ -569,6 +615,30 @@ function safeGetURI(browser)
     }
 }
 
+
+
+function getStateDescription(flag) {
+	var state = "";
+	if (flag & nsIWebProgressListener.STATE_START) state += "STATE_START ";
+	else if (flag & nsIWebProgressListener.STATE_REDIRECTING) state += "STATE_REDIRECTING ";
+	else if (flag & nsIWebProgressListener.STATE_TRANSFERRING) state += "STATE_TRANSFERRING ";
+	else if (flag & nsIWebProgressListener.STATE_NEGOTIATING) state += "STATE_NEGOTIATING ";
+	else if (flag & nsIWebProgressListener.STATE_STOP) state += "STATE_STOP ";
+
+	if (flag & nsIWebProgressListener.STATE_IS_REQUEST) state += "STATE_IS_REQUEST ";
+	if (flag & nsIWebProgressListener.STATE_IS_DOCUMENT) state += "STATE_IS_DOCUMENT ";
+	if (flag & nsIWebProgressListener.STATE_IS_NETWORK) state += "STATE_IS_NETWORK ";
+	if (flag & nsIWebProgressListener.STATE_IS_WINDOW) state += "STATE_IS_WINDOW ";
+	if (flag & nsIWebProgressListener.STATE_RESTORING) state += "STATE_RESTORING ";
+	if (flag & nsIWebProgressListener.STATE_IS_INSECURE) state += "STATE_IS_INSECURE ";
+	if (flag & nsIWebProgressListener.STATE_IS_BROKEN) state += "STATE_IS_BROKEN ";
+	if (flag & nsIWebProgressListener.STATE_IS_SECURE) state += "STATE_IS_SECURE ";
+	if (flag & nsIWebProgressListener.STATE_SECURE_HIGH) state += "STATE_SECURE_HIGH ";
+	if (flag & nsIWebProgressListener.STATE_SECURE_MED) state += "STATE_SECURE_MED ";
+	if (flag & nsIWebProgressListener.STATE_SECURE_LOW) state += "STATE_SECURE_LOW ";
+	
+	return state;
+}
 // ************************************************************************************************
     
 }});

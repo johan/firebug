@@ -641,7 +641,10 @@ FirebugService.prototype =
 		
     	fbs.DBG_CREATION = prefs.getBoolPref("extensions.firebug.debugFirebug_CREATION");
 		fbs.DBG_BP = prefs.getBoolPref("extensions.firebug.debugFirebug_BP");
-        
+		
+        if (fbs.DBG_CREATION || fbs.DBG_BP) 
+			ddd("start fbs debug log"+Date()+"\n\n");
+			
 		if (enabledDebugger)
             return;
     
@@ -881,7 +884,7 @@ FirebugService.prototype =
 			
 	        if (!debuggr)
 	        {
-	        	ERROR("firebug-service: no debuggr for context\n"); 
+	        	if (fbs.DBG_BP) ddd("firebug-service: no debuggr for frame.fileName="+frame.script.fileName+"\n"); 
 	        	return RETURN_CONTINUE;
 	        }
 	        
@@ -988,7 +991,7 @@ FirebugService.prototype =
         
 	        if (!script.fileName) return;  // some internal thing?
 	        if (script.fileName.indexOf(":") == -1) return; // XStringBundle etal
-	        if (script.fileName.indexOf("chrome:") != -1) return; // can't deal with extensions (yet?)
+	        //if (script.fileName.indexOf("chrome:") != -1) return; // can't deal with extensions (yet?)
 	        
            	if (fbs.DBG_CREATION) 
            	{
@@ -1191,7 +1194,7 @@ FirebugService.prototype =
                 if (debuggr.supportsWindow(win))
                     return debuggr;
             }
-            catch (exc) {}
+            catch (exc) { ERROR("firebug-service findDebugger: "+exc)}
         }
     },
     
@@ -1231,7 +1234,6 @@ FirebugService.prototype =
     
     countLines: function(script) {
     	var lines = script.functionSource.split(/\r\n|\r|\n/);
-		if (fbs.DBG_BP) for(var i = 0; i < lines.length; i++)ddd("countLines["+(i+1)+"]("+(script.isLineExecutable(i+1, PCMAP_PRETTYPRINT)?"exe":"nox")+"="+lines[i]+"\n");
     	return lines.length;
     },
     
@@ -1569,16 +1571,13 @@ FirebugService.prototype =
         };
 
         fbs.scriptInfoArrayByURL = {};  
-		/*
+		
 		jsd.enumerateScripts({enumerateScript: function(script)
         {
             var url = script.fileName;  
-            if (!(url in scriptMap))
-                scriptMap[url] = [script];
-            else
-                scriptMap[url].push(script);
+            fbs.registerTopLevelScript(script, url, "enumerated");  
         }});
-        */
+        
     },
 
     unhookScripts: function()
@@ -1720,7 +1719,8 @@ function getFrameWindow(frame)
     }
     catch (exc)
     {
-        return null;
+        ERROR("firebug-service getFrameWindow fails: "+exc);  // FBS.DBG_WINDOWS
+		return null;
     }
 }
 
