@@ -53,6 +53,7 @@ const pointlessErrors =
 {
     "uncaught exception: Permission denied to call method Location.toString": 1,
     "uncaught exception: Permission denied to get property Window.writeDebug": 1,
+	"uncaught exception: Permission denied to get property XULElement.accessKey": 1,
     "this.docShell has no properties": 1,
     "aDocShell.QueryInterface(Components.interfaces.nsIWebNavigation).currentURI has no properties": 1
 };
