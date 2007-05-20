@@ -347,9 +347,10 @@ function httpSendWrapper(spy, text)
 
     var netProgress = spy.context.netProgress;
     if (netProgress)
-        netProgress.post(netProgress.requestedFile,
-                [spy.request.channel, spy.sendTime, null, "xhr"]);
-
+	{
+        var file = netProgress.post(netProgress.requestedFile,
+                [spy.request.channel, spy.sendTime, spy.win, "xhr"]);  // XXXjjb supply win to requestedFile
+	}
     // Synchronous calls should call onreadystatechange themselves, but they don't,
     // so we have to do it ourselves here
     if (!spy.async && onreadystatechange)
@@ -398,6 +399,9 @@ function onHTTPSpyLoad(spy)
         netProgress.post(netProgress.stopFile,
                 [spy.request.channel, now, spy.postText, spy.responseText]);
 
+	if (FBL.DBG_NET) 
+		FBL.sysout("onHTTPSpyLoad netProgress:"+netProgress+" responseTime="+responseTime+" spy.responseText "+spy.responseText.length +"bytes\n");
+		
     if (spy.logRow)
     {
         updateLogRow(spy, responseTime);
