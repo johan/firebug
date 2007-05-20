@@ -888,7 +888,7 @@ NetPanel.prototype = domplate(Firebug.Panel,
     
     updateTimeline: function(rightNow)
     {
-        var rootFile = this.context.netProgress.rootFile;
+        var rootFile = this.context.netProgress.rootFile; // XXXjjb never read?
         var tbody = this.table.firstChild;
 
         // XXXjoe Don't update rows whose phase is done and layed out already
@@ -1000,16 +1000,28 @@ function NetProgress(context)
         {
             var file = handler.apply(this, args);
             if (file)
+			{
                 panel.updateFile(file);
+				return file;				
+			}
         }
         else
             queue.push(handler, args);
+			
+		if (FBL.DBG_NET) 
+			FBL.dumpProperties( " net.post.args "+(panel?" applied":"queued @"+(queue.length-2)), args);
     };
     
     this.flush = function()
     {
         for (var i = 0; i < queue.length; i += 2)
         {
+			if (FBL.DBG_NET) 
+			{
+				FBL.dumpProperties("net.flush handler("+i+")", queue[i]);
+				FBL.dumpProperties("net.flush args ", queue[i+1]);
+			}
+			
             var file = queue[i].apply(this, queue[i+1]);
             if (file)
                 panel.updateFile(file);
@@ -1054,13 +1066,14 @@ NetProgress.prototype =
     
     respondedTopWindow: function(request, time, webProgress)
     {
-        this.requestedFile(request, time, webProgress);
+		var win = webProgress ? safeGetWindow(webProgress) : null; 
+        this.requestedFile(request, time, win);
         return this.respondedFile(request, time);
     },
     
-    requestedFile: function(request, time, webProgress, category)
+    requestedFile: function(request, time, win, category) // XXXjjb 3rd arg was webProgress, pulled safeGetWindow up
     {
-        var win = webProgress ? safeGetWindow(webProgress) : null;
+        // XXXjjb to allow spy to pass win.  var win = webProgress ? safeGetWindow(webProgress) : null;
         var file = this.getRequestFile(request, win);
         if (file)
         {
@@ -1075,9 +1088,14 @@ NetProgress.prototype =
             
             this.awaitFile(request, file);
             this.extendPhase(file);
+			
+            if (FBL.DBG_NET)
+				FBL.dumpProperties("net.requestedFile file", file);
             
-            return file;
-        }
+			return file;
+        } 
+		else
+			if (FBL.DBG_NET) FBL.dumpProperties("net.requestedFile no file for request=", request);
     },
     
     respondedFile: function(request, time)
@@ -1149,6 +1167,8 @@ NetProgress.prototype =
             
             return file;
         }
+		else
+			if (FBL.DBG_NET) FBL.dumpProperties("stopfile no file for request=", request);
     },
 
     cacheEntryReady: function(request, file, size)
@@ -1195,7 +1215,7 @@ NetProgress.prototype =
             }
 
             if (!this.rootFile)
-                this.rootFile = file;
+                this.rootFile = file;  // don't set file.previousFile
             else
                 file.previousFile = this.files[this.files.length-1];
 
@@ -1218,7 +1238,7 @@ NetProgress.prototype =
             var index = this.windows.indexOf(win);
             if (index == -1)
             {
-                var doc = new NetDocument(win);
+                var doc = new NetDocument(win);  // XXXjjb arg ignored
                 if (win.parent != win)
                     doc.parent = this.getRequestDocument(win.parent);
 
@@ -1346,7 +1366,8 @@ NetProgress.prototype =
         if (topic == "http-on-modify-request")
         {
             var webProgress = getRequestWebProgress(request, this);
-            this.post(requestedFile, [request, now(), webProgress]);
+			var win = webProgress ? safeGetWindow(webProgress) : null;
+            this.post(requestedFile, [request, now(), win]);
         }
         else
         {
@@ -1417,6 +1438,11 @@ function NetFile(href, document)
 {
     this.href = href;
     this.document = document
+	
+	if (FBL.DBG_NET) {
+		this.uid = FBL.getUniqueId();
+		FBL.dumpProperties("NetFile", this);
+	}
 }
 
 NetFile.prototype = 
@@ -1790,7 +1816,10 @@ Firebug.NetMonitor.NetInfoBody = domplate(Firebug.Rep,
     },
     
     updateInfo: function(netInfoBox, file, context)
-    {
+    { 
+		if (FBL.DBG_NET) 
+			FBL.dumpProperties("updateInfo file", file);
+			
         var tab = netInfoBox.selectedTab;
         if (hasClass(tab, "netInfoParamsTab"))
         {
@@ -1859,7 +1888,7 @@ Firebug.NetMonitor.NetInfoBody = domplate(Firebug.Rep,
                     ? file.responseText
                     : context.sourceCache.loadText(file.href);
                 
-                if (text)
+                if (text != undefined)
                     insertWrappedText(text, responseTextBox);
             }
         }
