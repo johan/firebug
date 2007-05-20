@@ -1790,7 +1790,7 @@ Firebug.NetMonitor.NetInfoBody = domplate(Firebug.Rep,
             {
                 netInfoBox.postPresented  = true;
 
-                var text = getPostText(file);
+                var text = getPostText(file, context);
                 if (text)
                 {
                     if (isURLEncodedFile(file, text))
