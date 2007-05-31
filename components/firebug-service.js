@@ -941,7 +941,8 @@ FirebugService.prototype =
         	if (baseLineNumberWithEvalBuffer <= 0) 
 			{	
 				// happens for ppfun internally generated functions and maybe for injected script tags?
-        		ddd("Negative offset for nestedScript.baseLineNumber - script.baseLineNumber + 1 @leveledScriptURL="+nestedScript.baseLineNumber+" - "+script.baseLineNumber + "+1 @"+leveledScriptURL+" src="+nestedScript.functionSource+"\n"+script.fileName+ " vs nested "+nestedScript.fileName+"\n");       		
+				if (fbs.DBG_CREATION) 
+        			ddd("Negative offset for nestedScript.baseLineNumber - script.baseLineNumber + 1 @leveledScriptURL="+nestedScript.baseLineNumber+" - "+script.baseLineNumber + "+1 @"+leveledScriptURL+" src="+nestedScript.functionSource+"\n"+script.fileName+ " vs nested "+nestedScript.fileName+"\n");       		
         	}
         	debuggr = this.reFindDebugger(frame, debuggr);
         	debuggr.onEvalScript(leveledScriptURL, baseLineNumberWithEvalBuffer, nestedScript);

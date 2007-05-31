@@ -102,6 +102,8 @@ top.SourceCache.prototype =
         }
         catch (exc)
         {
+			if (url.startsWith('chrome'))  // chrome urls cannot be read with this code.
+				return;
 			var isCache = (channel instanceof nsICachingChannel)?"nsICachingChannel":"NOT caching channel";
 			var isUp = (channel instanceof nsIUploadChannel)?"nsIUploadChannel":"NOT nsIUploadChannel";
 			FBL.sysout(url+" vs "+this.context.browser.contentWindow.location.href+" and "+isCache+" "+isUp+"\n");

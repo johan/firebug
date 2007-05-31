@@ -100,7 +100,7 @@ top.TabWatcher =
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
 
     /**
-     * Attaches to a top-level window.
+     * Attaches to a top-level window. Creates context unless we just re-activated on an existing context
      */
     watchTopWindow: function(win, uri)
     {
@@ -147,9 +147,10 @@ top.TabWatcher =
             
             context = this.owner.createTabContext(win, browser, browser.chrome, persistedState);
             contexts.push(context);
+			
 			if (FBL.DBG_WINDOWS) {
 				context.uid = FBL.getUniqueId();
-				FBL.sysout("tabWatcher created context with id="+context.uid+"\n");
+				FBL.sysout("tabWatcher created context with id="+context.uid+" for uri="+uri+" and win.location.href="+win.location.href+"\n");
 			}
            
            	this.dispatch("initContext", [context]);
@@ -163,10 +164,12 @@ top.TabWatcher =
         }
 		// XXXjjb at this point we either have context or we just pushed null into contexts and sent it to init...
         
-		// This is one of two places that loaded is set.
+		// This is one of two places that loaded is set. The other is in watchLoadedTopWindow
         if (context)
             context.loaded = !context.browser.webProgress.isLoadingDocument;
-
+		if (FBL.DBG_WINDOWS && context.loaded)
+			FBL.sysout("***************> Context loaded in tabWatcher.watchTopWindow\n");
+			
         this.watchContext(win, context);
     },
 
@@ -184,12 +187,15 @@ top.TabWatcher =
             this.watchContext(win, null, isSystem);
             return;
         }
+		
 		if (FBL.DBG_WINDOWS)	
 			FBL.sysout("watchLoadedTopWindow context="+(context?(context.uid+" loaded="+context.loaded):'undefined')+"\n");
 
         if (context && !context.loaded)
         {
             context.loaded = true;
+			if (FBL.DBG_WINDOWS)
+				FBL.sysout("***************> Context loaded in tabWatcher.watchLoadedTopWindow\n");
             this.dispatch("loadedContext", [context]);
         }
     },
@@ -229,7 +235,7 @@ top.TabWatcher =
     },
 
     /**
-     * Detaches from a top-level window.
+     * Detaches from a top-level window. Destroys context
      */
     unwatchTopWindow: function(win)
     {
@@ -250,7 +256,7 @@ top.TabWatcher =
     },
     
     /**
-     * Attaches to the window inside a browser.
+     * Attaches to the window inside a browser because of user-activation
      */
     watchBrowser: function(browser)
     {
@@ -348,7 +354,7 @@ top.TabWatcher =
 		// XXXjjb Allows eg chromebug
 		if (this.owner.otherBrowsers){
 			if (FBL.DBG_WINDOWS)
-				FBL.sysout("getBrowserByWindow returning otherBrowsers= "+this.owner.otherBrowsers[win]+"\n");
+				FBL.dumpProperties("getBrowserByWindow returning otherBrowsers= ", this.owner.otherBrowsers[win]);
 			return this.owner.otherBrowsers[win];
 		}
 		
@@ -427,12 +433,20 @@ var TabProgressListener = extend(BaseProgressListener,
 {
     onLocationChange: function(progress, request, location)
     {
-		if (FBL.DBG_WINDOWS && (progress.DOMWindow.parent == progress.DOMWindow) && location && location.href)
-			FBL.sysout("TabProgressListener to location="+location.href+"\n");
-
         // Only watch windows that are their own parent - e.g. not frames
         if (progress.DOMWindow.parent == progress.DOMWindow)
-            TabWatcher.watchTopWindow(progress.DOMWindow, location);
+		{
+ 			if (FBL.DBG_WINDOWS)
+				FBL.sysout("TabProgressListener.onLocationChange to location="+(location?location.href:"null location")+"\n");
+				
+			// Usually pagehide will raise and clear context, but XSLT does not raise pagehide.
+			// So we assume that location change means the context is bad, clear it so a new one will be created.
+			var context = TabWatcher.getContextByWindow(progress.DOMWindow);
+			if (context)
+				TabWatcher.unwatchTopWindow(progress.DOMWindow); 
+			
+			TabWatcher.watchTopWindow(progress.DOMWindow, location);
+		}
     },
 
     onStateChange: function(progress, request, flag, status)
@@ -455,21 +469,23 @@ var FrameProgressListener = extend(BaseProgressListener,
 		if (FBL.DBG_WINDOWS) 
 				FBL.sysout("FrameProgressListener "+getStateDescription(flag)+" for uri="+safeGetName(request)+"\n");
 								
-        // We need to get the hook in as soon as the new DOMWindow is created, but before
-        // it starts executing any scripts in the page.  After lengthy analysis, it seems
-        // that the start of these "dummy" requests is the only state that works.
         if (flag & STATE_IS_REQUEST && flag & STATE_START)
         {
+        	// We need to get the hook in as soon as the new DOMWindow is created, but before
+        	// it starts executing any scripts in the page.  After lengthy analysis, it seems
+        	// that the start of these "dummy" requests is the only state that works.
+				
 			var safeURI = safeGetName(request);
             if (safeURI && (safeURI == dummyURI || safeURI == "about:document-onload-blocker") )
             {
+				var win = progress.DOMWindow;
                 // Another weird edge case here - when opening a new tab with about:blank,
                 // "unload" is dispatched to the document, but onLocationChange is not called
                 // again, so we have to call watchTopWindow here
-                var win = progress.DOMWindow;
-                if (win.parent == win && win.location.href == "about:blank")
+               
+                if (win.parent == win && (win.location.href == "about:blank"  || safeURI == "about:document-onload-blocker"))
                     TabWatcher.watchTopWindow(win, null);
-
+				
                 TabWatcher.watchWindow(win);
             }
 			return; // XXXjjb Joe, seems like this should not fall thru but maybe its ok.
@@ -481,6 +497,26 @@ var FrameProgressListener = extend(BaseProgressListener,
         //    TabWatcher.watchWindow(progress.DOMWindow);
 		// And later than that jjb found that xml at least uses about:document-onload-blocker
 		// BUT I need to check script activity.....
+		
+		// XSLT does not raise DOMContentLoaded so we never know to set the context.loaded.
+		// As a fall back we set it here.
+		if (flag & STATE_IS_DOCUMENT && flag & STATE_STOP)
+        {
+			var win = progress.DOMWindow;
+            var context = TabWatcher.getContextByWindow(win);
+			if (context && !context.onLoadWindowContent && win.parent == win) 
+			{
+				var safeURI = safeGetName(request);
+				if (FBL.DBG_WINDOWS)
+					FBL.sysout("FrameProgressListener no onLoadWindowContent "+(safeURI?"safeURI="+safeURI : "undefined safeURI")+"\n"); 
+				if (win.location && win.location.href == safeURI){
+					var fakeEvent = {type:"fake", currentTarget: win};  // TODO refactor onLoadWindowContent
+					onLoadWindowContent(fakeEvent);
+				}
+					
+			}
+            	
+		}
     }
 });
 
@@ -515,14 +551,14 @@ function isSystemPage(win)
 }
 
 function onUnloadTopWindow(event)
-{
+{ 
     TabWatcher.unwatchTopWindow(event.currentTarget);
 }
 
 function onLoadWindowContent(event)
 { 
 	if (FBL.DBG_WINDOWS)
-		FBL.sysout("onLoadWindowContent event.type="+event.type+"\n");
+		FBL.sysout("tabWatcher.onLoadWindowContent event.type="+event.type+"\n");
 
     var win = event.currentTarget;
     try
@@ -537,6 +573,11 @@ function onLoadWindowContent(event)
     }
     catch (exc) {}
     
+	// Signal that we got the onLoadWindowContent event. This prevents the FrameProgressListener from sending it.
+	var context = TabWatcher.getContextByWindow(win);
+	if (context)
+		context.onLoadWindowContent = true;
+	
     // Calling this after a timeout because I'm finding some cases where calling
     // it here causes freezeup when this results in loading a script file. This fixes that.
     setTimeout(function()

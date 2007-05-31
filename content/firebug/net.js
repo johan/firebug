@@ -1163,7 +1163,7 @@ NetProgress.prototype =
         var index = this.requests.indexOf(request);
         if (index == -1)
         {
-            var file = this.requestMap[request.name];
+            var file = this.requestMap[name];
             if (file)
                 return file;
 
@@ -1188,7 +1188,7 @@ NetProgress.prototype =
 
             file.request = request;
             file.index = this.files.length;
-            this.requestMap[request.name] = file;
+            this.requestMap[name] = file;
             this.requests.push(request);
             this.files.push(file);
             
@@ -1257,6 +1257,8 @@ NetProgress.prototype =
 
     arriveFile: function(file, request)
     {
+		if (FBL.DBG_NET)
+			FBL.sysout("net.arriveFile for file.href="+file.href+" and request.name="+safeGetName(request)+"\n");
         delete this.requestMap[file.href];
 
         var index = this.pending.indexOf(file);
