@@ -1174,7 +1174,7 @@ this.getElementXML = function(element)
                 if (attr.localName.indexOf("firebug-") == 0)
                     continue;
             
-                xml.push(' ', attr.localName, '="', attr.nodeValue, '"');
+                xml.push(' ', attr.localName, '=', escapeHTMLAttribute(attr.nodeValue));
             }
         
             if (elt.firstChild)
@@ -1219,6 +1219,33 @@ this.escapeJS = function(value)
 {
     return value.replace(/\r/g, "\\r").replace(/\n/g, "\\n").replace('"', '\\"', "g");
 };
+
+function escapeHTMLAttribute(value)
+{
+    function replaceChars(ch)
+    {
+        switch (ch)
+        {
+            case "&":
+                return "&amp;";
+            case "'":
+                return apos;
+            case '"':
+                return quot;
+        }
+        return "?";
+    };
+    var apos = "&#39;", quot = "&quot;", around = '"';
+    if( value.indexOf('"') == -1 ) {
+        quot = '"';
+        apos = "'";
+    } else if( value.indexOf("'") == -1 ) {
+        quot = '"';
+        around = "'";
+    }
+    return around + (String(value).replace(/[&'"]/g, replaceChars)) + around;
+}
+
 
 function escapeHTML(value)
 {
