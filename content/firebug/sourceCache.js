@@ -73,8 +73,8 @@ top.SourceCache.prototype =
         }
         catch (exc)
         {
-			if (FBL.DBG_CACHE) FBL.sysout("sourceCache for window="+this.context.window.location.href+" error: \n"+FBL.getStackDump()+"\n");
-			if (FBL.DBG_CACHE) FBL.dumpProperties(this.cache);
+			if (FBTrace.DBG_CACHE) FBTrace.sysout("sourceCache for window="+this.context.window.location.href+" error: \n"+FBL.getStackDump()+"\n");
+			if (FBTrace.DBG_CACHE) FBTrace.dumpProperties(this.cache);
         	ERROR("sourceCache.load fails newChannel for url="+url+ " cause:"+exc+"\n");
             return;
         }
@@ -102,13 +102,14 @@ top.SourceCache.prototype =
         }
         catch (exc)
         {
-			if (url.startsWith('chrome'))  // chrome urls cannot be read with this code.
+			
+			if (FBL.reChrome.test(url))  // chrome urls cannot be read with this code.
 				return;
 			var isCache = (channel instanceof nsICachingChannel)?"nsICachingChannel":"NOT caching channel";
 			var isUp = (channel instanceof nsIUploadChannel)?"nsIUploadChannel":"NOT nsIUploadChannel";
-			FBL.sysout(url+" vs "+this.context.browser.contentWindow.location.href+" and "+isCache+" "+isUp+"\n");
-        	FBL.dumpProperties("sourceCache.load fails channel.open for url="+url+ " cause:", exc);
-			FBL.dumpProperties("sourceCache.load fails channel=", channel);
+			FBTrace.sysout(url+" vs "+this.context.browser.contentWindow.location.href+" and "+isCache+" "+isUp+"\n");
+        	FBTrace.dumpProperties("sourceCache.load fails channel.open for url="+url+ " cause:", exc);
+			FBTrace.dumpProperties("sourceCache.load fails channel=", channel);
 			return;
         }
         
@@ -144,7 +145,7 @@ top.SourceCache.prototype =
     
     store: function(url, text)
     {
-		if (FBL.DBG_CACHE) FBL.sysout("sourceCache for window="+this.context.window.location.href+" store url="+url+"\n");
+		if (FBTrace.DBG_CACHE) FBTrace.sysout("sourceCache for window="+this.context.window.location.href+" store url="+url+"\n");
         var lines = splitLines(text);
         return this.cache[url] = lines;
     },

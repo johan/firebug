@@ -148,27 +148,24 @@ top.TabWatcher =
             context = this.owner.createTabContext(win, browser, browser.chrome, persistedState);
             contexts.push(context);
 			
-			if (FBL.DBG_WINDOWS) {
+			if (FBTrace.DBG_WINDOWS) {
 				context.uid = FBL.getUniqueId();
-				FBL.sysout("tabWatcher created context with id="+context.uid+" for uri="+uri+" and win.location.href="+win.location.href+"\n");
+				FBTrace.sysout("tabWatcher created context with id="+context.uid+" for uri="+uri+" and win.location.href="+win.location.href+"\n");
 			}
            
            	this.dispatch("initContext", [context]);
             
-            if (!context.runDisconnectedFromWindow)  // may be set by initContext listeners, eg chromeBug
-			{
-				win.addEventListener("pagehide", onUnloadTopWindow, true);
-            	win.addEventListener("pageshow", onLoadWindowContent, true);
-            	win.addEventListener("DOMContentLoaded", onLoadWindowContent, true);
-			}
+			win.addEventListener("pagehide", onUnloadTopWindow, true);
+           	win.addEventListener("pageshow", onLoadWindowContent, true);
+           	win.addEventListener("DOMContentLoaded", onLoadWindowContent, true);
         }
 		// XXXjjb at this point we either have context or we just pushed null into contexts and sent it to init...
         
 		// This is one of two places that loaded is set. The other is in watchLoadedTopWindow
         if (context)
             context.loaded = !context.browser.webProgress.isLoadingDocument;
-		if (FBL.DBG_WINDOWS && context.loaded)
-			FBL.sysout("***************> Context loaded in tabWatcher.watchTopWindow\n");
+		if (FBTrace.DBG_WINDOWS && context.loaded)
+			FBTrace.sysout("***************> Context loaded in tabWatcher.watchTopWindow\n");
 			
         this.watchContext(win, context);
     },
@@ -188,14 +185,14 @@ top.TabWatcher =
             return;
         }
 		
-		if (FBL.DBG_WINDOWS)	
-			FBL.sysout("watchLoadedTopWindow context="+(context?(context.uid+" loaded="+context.loaded):'undefined')+"\n");
+		if (FBTrace.DBG_WINDOWS)	
+			FBTrace.sysout("watchLoadedTopWindow context="+(context?(context.uid+" loaded="+context.loaded):'undefined')+"\n");
 
         if (context && !context.loaded)
         {
             context.loaded = true;
-			if (FBL.DBG_WINDOWS)
-				FBL.sysout("***************> Context loaded in tabWatcher.watchLoadedTopWindow\n");
+			if (FBTrace.DBG_WINDOWS)
+				FBTrace.sysout("***************> Context loaded in tabWatcher.watchLoadedTopWindow\n");
             this.dispatch("loadedContext", [context]);
         }
     },
@@ -213,11 +210,11 @@ top.TabWatcher =
         // more than once
         var href = win.location.href;
 		
-		if (FBL.DBG_WINDOWS) {
-			FBL.sysout("watchWindow for href="+href+" context="+context+"\n");
+		if (FBTrace.DBG_WINDOWS) {
+			FBTrace.sysout("watchWindow for href="+href+" context="+context+"\n");
 			if (context)
 				for (var i = 0; i < context.windows.length; i++) 
-					FBL.sysout("watchWindow context("+context.uid+").windows["+i+"]="+context.windows[i].location.href+"\n");
+					FBTrace.sysout("watchWindow context("+context.uid+").windows["+i+"]="+context.windows[i].location.href+"\n");
 		}
 
 			
@@ -225,8 +222,8 @@ top.TabWatcher =
         {
             context.windows.push(win);
 			
-			if (FBL.DBG_WINDOWS)
-				FBL.sysout("watchWindow sets context for href="+href+"\n");
+			if (FBTrace.DBG_WINDOWS)
+				FBTrace.sysout("watchWindow sets context for href="+href+"\n");
 				
             var eventType = (win.parent == win) ? "pagehide" : "unload";
             win.addEventListener(eventType, onUnloadWindow, false);
@@ -325,7 +322,10 @@ top.TabWatcher =
         while (win && win.parent != win)
             win = win.parent;
         
-        for (var i = 0; i < contexts.length; ++i)
+		if (FBTrace.DBG_WINDOWS)  // XXXjjb This shows a lot of calls to getContextByWindow, can some be avoided?
+			FBTrace.sysout("tabWatcher.getContextByWindow win.location "+(win.location?win.location.href:"(undefined)")+"\n");
+        
+		for (var i = 0; i < contexts.length; ++i)
         {
             var context = contexts[i];
             if (context.window == win)
@@ -353,8 +353,8 @@ top.TabWatcher =
 		
 		// XXXjjb Allows eg chromebug
 		if (this.owner.otherBrowsers){
-			if (FBL.DBG_WINDOWS)
-				FBL.dumpProperties("getBrowserByWindow returning otherBrowsers= ", this.owner.otherBrowsers[win]);
+			if (FBTrace.DBG_WINDOWS)
+				FBTrace.dumpProperties("getBrowserByWindow returning otherBrowsers= ", this.owner.otherBrowsers[win]);
 			return this.owner.otherBrowsers[win];
 		}
 		
@@ -379,10 +379,10 @@ top.TabWatcher =
         remove(listeners, listener);
     },
 
-    dispatch: function(name, args)   // XXXjjb can't we use FBL.dispatch?
+    dispatch: function(name, args)   
     {
-		if (FBL.DBG_WINDOWS)
-			FBL.sysout("TabWatcher.dispatch "+name+" to "+listeners.length+" listeners\n");
+		if (FBTrace.DBG_WINDOWS)
+			FBTrace.sysout("TabWatcher.dispatch "+name+" to "+listeners.length+" listeners\n");
 
         for (var i = 0; i < listeners.length; ++i)
         {
@@ -395,7 +395,8 @@ top.TabWatcher =
                 }
                 catch (exc)
                 {
-                    FBL.dumpProperties(" Exception in TabWatcher.dispatch "+ name, exc); // XXXjjb
+                    FBTrace.dumpProperties(" Exception in TabWatcher.dispatch "+ name, exc); // XXXjjb
+                    FBTrace.dumpProperties(" Exception in TabWatcher.dispatch for listener[name]:", listener[name]); 
                 }
             }
         }
@@ -436,8 +437,8 @@ var TabProgressListener = extend(BaseProgressListener,
         // Only watch windows that are their own parent - e.g. not frames
         if (progress.DOMWindow.parent == progress.DOMWindow)
 		{
- 			if (FBL.DBG_WINDOWS)
-				FBL.sysout("TabProgressListener.onLocationChange to location="+(location?location.href:"null location")+"\n");
+ 			if (FBTrace.DBG_WINDOWS)
+				FBTrace.sysout("TabProgressListener.onLocationChange to location="+(location?location.href:"null location")+"\n");
 				
 			// Usually pagehide will raise and clear context, but XSLT does not raise pagehide.
 			// So we assume that location change means the context is bad, clear it so a new one will be created.
@@ -466,8 +467,8 @@ var FrameProgressListener = extend(BaseProgressListener,
 {
     onStateChange: function(progress, request, flag, status)
     {
-		if (FBL.DBG_WINDOWS) 
-				FBL.sysout("FrameProgressListener "+getStateDescription(flag)+" for uri="+safeGetName(request)+"\n");
+		if (FBTrace.DBG_WINDOWS) 
+				FBTrace.sysout("FrameProgressListener "+getStateDescription(flag)+" for uri="+safeGetName(request)+"\n");
 								
         if (flag & STATE_IS_REQUEST && flag & STATE_START)
         {
@@ -507,8 +508,8 @@ var FrameProgressListener = extend(BaseProgressListener,
 			if (context && !context.onLoadWindowContent && win.parent == win) 
 			{
 				var safeURI = safeGetName(request);
-				if (FBL.DBG_WINDOWS)
-					FBL.sysout("FrameProgressListener no onLoadWindowContent "+(safeURI?"safeURI="+safeURI : "undefined safeURI")+"\n"); 
+				if (FBTrace.DBG_WINDOWS)
+					FBTrace.sysout("FrameProgressListener no onLoadWindowContent "+(safeURI?"safeURI="+safeURI : "undefined safeURI")+"\n"); 
 				if (win.location && win.location.href == safeURI){
 					var fakeEvent = {type:"fake", currentTarget: win};  // TODO refactor onLoadWindowContent
 					onLoadWindowContent(fakeEvent);
@@ -545,7 +546,7 @@ function isSystemPage(win)
     {
         // Sometimes documents just aren't ready to be manipulated here, but don't let that
         // gum up the works
-        ERROR(exc)
+        ERROR("tabWatcher.isSystemPage document not ready:"+ exc);
         return false;
     }
 }
@@ -557,8 +558,8 @@ function onUnloadTopWindow(event)
 
 function onLoadWindowContent(event)
 { 
-	if (FBL.DBG_WINDOWS)
-		FBL.sysout("tabWatcher.onLoadWindowContent event.type="+event.type+"\n");
+	if (FBTrace.DBG_WINDOWS)
+		FBTrace.sysout("tabWatcher.onLoadWindowContent event.type="+event.type+"\n");
 
     var win = event.currentTarget;
     try

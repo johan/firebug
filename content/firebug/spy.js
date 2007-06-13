@@ -366,8 +366,8 @@ function onHTTPSpyLoad(spy)
         netProgress.post(netProgress.stopFile,
                 [spy.request.channel, now, spy.postText, spy.responseText]);
 
-	if (FBL.DBG_NET) 
-		FBL.sysout("onHTTPSpyLoad netProgress:"+netProgress+" responseTime="+responseTime+" spy.responseText "+spy.responseText.length +"bytes\n");
+	if (FBTrace.DBG_NET) 
+		FBTrace.sysout("onHTTPSpyLoad netProgress:"+netProgress+" responseTime="+responseTime+" spy.responseText "+spy.responseText.length +"bytes\n");
 		
     if (spy.logRow)
     {

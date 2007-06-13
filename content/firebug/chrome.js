@@ -51,18 +51,38 @@ top.FirebugChrome =
 
     panelBarReady: function(panelBar)
     {
-        // Wait until all panelBar bindings are ready before initializing
-        if (--waitingPanelBarCount == 0)
-            this.initialize();
+		try 
+		{
+        	// Wait until all panelBar bindings are ready before initializing
+        	if (--waitingPanelBarCount == 0)
+            	this.initialize();
+		}
+		catch (exc)
+		{
+			FBTrace.dumpProperties("chrome.panelBarReady FAILS", exc);
+		}
+		
     },
     
     initialize: function()
     {
-        if (!externalMode)
-        {
-            FBL.initialize();
-            Firebug.initialize();
-        }
+	    var detachArgs = window.arguments[0];
+		
+		if (!detachArgs) 
+			detachArgs = {};
+			
+		if (FBTrace.DBG_INITIALIZE) 
+			FBTrace.dumpProperties("chrome.initialize w/detachArgs=", detachArgs);
+
+		if (detachArgs.FBL)
+			top.FBL = detachArgs.FBL;
+		else 
+			FBL.initialize();           
+
+		if (detachArgs.Firebug)
+            Firebug = detachArgs.Firebug;
+		else
+			Firebug.initialize();
         
         panelBox = $("fbPanelBox");
         panelSplitter = $("fbPanelSplitter");
@@ -85,15 +105,13 @@ top.FirebugChrome =
      * Called when the UI is ready to be initialized, once the panel browsers are loaded.
      */
     initializeUI: function()
-    {
-        if (externalMode)
+    { 
+	try { 
+		var detachArgs = window.arguments[0];
+        if (detachArgs)
         {
-            var detachArgs = window.arguments[0];
-
-            top.FBL = detachArgs.FBL;            
-            Firebug = detachArgs.Firebug;
-            FirebugContext = detachArgs.context;
-            externalBrowser = detachArgs.browser;
+            FirebugContext = detachArgs.context ? detachArgs.context : FirebugContext;
+            externalBrowser = detachArgs.browser ? detachArgs.browser : Firebug.tabBrowser.selectedBrowser;
         }
 
         this.applyTextSize(Firebug.textSize);
@@ -134,7 +152,11 @@ top.FirebugChrome =
         if (externalMode)
             this.attachBrowser(externalBrowser, FirebugContext);
         else
-            Firebug.initializeUI();        
+            Firebug.initializeUI(detachArgs);       
+		} catch (exc) {
+			FBTrace.dumpProperties("chrome.initializeUI fails", exc);
+		}
+		 
     },
     
     shutdown: function()
@@ -175,8 +197,11 @@ top.FirebugChrome =
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
 
-    attachBrowser: function(browser, context)
+    attachBrowser: function(browser, context)  // XXXjjb context == (FirebugContext || null)  and externalMode == true
     {
+		if (FBTrace.DBG_INITIALIZE)
+			FBTrace.sysout("chrome.attachBrowser with externalMode="+externalMode+" context="+context+" context==FirebugContext: "+(context==FirebugContext)+"\n");
+
         if (externalMode)
         {
             browser.detached = true;
@@ -410,6 +435,9 @@ top.FirebugChrome =
     
     syncPanel: function()    
     {
+		if (FBTrace.DBG_WINDOWS)
+			FBTrace.sysout("chrome.syncPanel FirebugContext="+FirebugContext+"\n");
+			
         panelStatus.clear();
 
         if (FirebugContext)
@@ -433,6 +461,7 @@ top.FirebugChrome =
             {
                 var host = getURIHost(uri);
                 var cantDisplayPage = this.getCurrentBrowser().isSystemPage;
+				cantDisplayPage = false;  // XXXjjb this confuses users, let them see the system page
 
                 var caption;
                 if (!host || cantDisplayPage || Firebug.disabledAlways)

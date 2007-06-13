@@ -33,7 +33,7 @@ Firebug.Console = extend(Firebug.Module,
 
         if (noThrottle)
         {
-            var panel = context.getPanel("console");
+            var panel = this.getPanel(context);
             return panel.append(appender, objects, className, rep, sourceLink, noRow);
         }
         else
@@ -48,7 +48,7 @@ Firebug.Console = extend(Firebug.Module,
         if (!context)
             context = FirebugContext;
 
-        var panel = context.getPanel("console");
+        var panel = this.getPanel(context);
         panel.appendFormatted(args, row);
     },
     
@@ -59,10 +59,16 @@ Firebug.Console = extend(Firebug.Module,
 
         Firebug.Errors.clear(context);
 
-        var panel = context.getPanel("console", true);
+        var panel = this.getPanel(context, true);
         if (panel)
             panel.clear();
     },
+	
+	// Override to direct output to your panel 
+	getPanel: function(context, noCreate)
+	{
+		return context.getPanel("console", noCreate);
+	},
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
     // extends Module
@@ -74,9 +80,10 @@ Firebug.Console = extend(Firebug.Module,
 
     showPanel: function(browser, panel)
     {
-        var isConsole = panel && panel.name == "console";
-        var consoleButtons = browser.chrome.$("fbConsoleButtons");
-        collapse(consoleButtons, !isConsole);
+		// XXXjjb moved to panel show/hide
+        //var isConsole = panel && panel.name == "console";
+        //var consoleButtons = browser.chrome.$("fbConsoleButtons");
+        //collapse(consoleButtons, !isConsole);
 
         // XXXjoe Not really the place for this - but it's the easiest for now
         var isCSS = panel && panel.name == "stylesheet";
@@ -91,9 +98,9 @@ Firebug.Console = extend(Firebug.Module,
 
 // ************************************************************************************************
 
-function ConsolePanel() {}
+Firebug.ConsolePanel = function () {} // XXjjb attach Firebug so this panel can be extended.
 
-ConsolePanel.prototype = extend(Firebug.Panel,
+Firebug.ConsolePanel.prototype = extend(Firebug.Panel,
 {
     wasScrolledToBottom: true,
     messageCount: 0,
@@ -235,12 +242,20 @@ ConsolePanel.prototype = extend(Firebug.Panel,
     
     show: function(state)
     {
+		if (FBTrace.DBG_WINDOWS)
+			FBTrace.sysout("Console.panel show\n");
+		var consoleButtons = this.context.browser.chrome.$("fbConsoleButtons");
+        collapse(consoleButtons, false);
         if (this.wasScrolledToBottom)
             scrollToBottom(this.panelNode);
     },
     
     hide: function()
     {
+		if (FBTrace.DBG_WINDOWS)
+			FBTrace.sysout("Console.panel hide\n");
+		var consoleButtons = this.context.browser.chrome.$("fbConsoleButtons");
+        collapse(consoleButtons, true);
         this.wasScrolledToBottom = isScrolledToBottom(this.panelNode);
     },
 
@@ -395,15 +410,15 @@ function parseFormat(format)
 
 // ************************************************************************************************
 
-var appendObject = ConsolePanel.prototype.appendObject;
-var appendFormatted = ConsolePanel.prototype.appendFormatted;
-var appendOpenGroup = ConsolePanel.prototype.appendOpenGroup;
-var appendCloseGroup = ConsolePanel.prototype.appendCloseGroup;
+var appendObject = Firebug.ConsolePanel.prototype.appendObject;
+var appendFormatted = Firebug.ConsolePanel.prototype.appendFormatted;
+var appendOpenGroup = Firebug.ConsolePanel.prototype.appendOpenGroup;
+var appendCloseGroup = Firebug.ConsolePanel.prototype.appendCloseGroup;
 
 // ************************************************************************************************
 
 Firebug.registerModule(Firebug.Console);
-Firebug.registerPanel(ConsolePanel);
+Firebug.registerPanel(Firebug.ConsolePanel);
 
 // ************************************************************************************************
 

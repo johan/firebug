@@ -167,7 +167,7 @@ Firebug.NetMonitor = extend(Firebug.Module,
             monitorContext(context);
     },
     
-    reattachContext: function(context)
+    reattachContext: function(browser, context)
     {
         var chrome = context ? context.chrome : FirebugChrome;
         this.syncFilterButtons(chrome);
@@ -975,18 +975,18 @@ function NetProgress(context)
         else
             queue.push(handler, args);
 			
-		if (FBL.DBG_NET) 
-			FBL.dumpProperties( " net.post.args "+(panel?" applied":"queued @"+(queue.length-2)), args);
+		if (FBTrace.DBG_NET) 
+			FBTrace.dumpProperties( " net.post.args "+(panel?" applied":"queued @"+(queue.length-2)), args);
     };
     
     this.flush = function()
     {
         for (var i = 0; i < queue.length; i += 2)
         {
-			if (FBL.DBG_NET) 
+			if (FBTrace.DBG_NET) 
 			{
-				FBL.dumpProperties("net.flush handler("+i+")", queue[i]);
-				FBL.dumpProperties("net.flush args ", queue[i+1]);
+				FBTrace.dumpProperties("net.flush handler("+i+")", queue[i]);
+				FBTrace.dumpProperties("net.flush args ", queue[i+1]);
 			}
 			
             var file = queue[i].apply(this, queue[i+1]);
@@ -1056,13 +1056,13 @@ NetProgress.prototype =
             this.awaitFile(request, file);
             this.extendPhase(file);
 			
-            if (FBL.DBG_NET)
-				FBL.dumpProperties("net.requestedFile file", file);
+            if (FBTrace.DBG_NET)
+				FBTrace.dumpProperties("net.requestedFile file", file);
             
 			return file;
         } 
 		else
-			if (FBL.DBG_NET) FBL.dumpProperties("net.requestedFile no file for request=", request);
+			if (FBTrace.DBG_NET) FBTrace.dumpProperties("net.requestedFile no file for request=", request);
     },
     
     respondedFile: function(request, time)
@@ -1135,7 +1135,7 @@ NetProgress.prototype =
             return file;
         }
 		else
-			if (FBL.DBG_NET) FBL.dumpProperties("stopfile no file for request=", request);
+			if (FBTrace.DBG_NET) FBTrace.dumpProperties("stopfile no file for request=", request);
     },
 
     cacheEntryReady: function(request, file, size)
@@ -1257,8 +1257,8 @@ NetProgress.prototype =
 
     arriveFile: function(file, request)
     {
-		if (FBL.DBG_NET)
-			FBL.sysout("net.arriveFile for file.href="+file.href+" and request.name="+safeGetName(request)+"\n");
+		if (FBTrace.DBG_NET)
+			FBTrace.sysout("net.arriveFile for file.href="+file.href+" and request.name="+safeGetName(request)+"\n");
         delete this.requestMap[file.href];
 
         var index = this.pending.indexOf(file);
@@ -1408,9 +1408,9 @@ function NetFile(href, document)
     this.href = href;
     this.document = document
 	
-	if (FBL.DBG_NET) {
+	if (FBTrace.DBG_NET) {
 		this.uid = FBL.getUniqueId();
-		FBL.dumpProperties("NetFile", this);
+		FBTrace.dumpProperties("NetFile", this);
 	}
 }
 
@@ -1571,15 +1571,17 @@ function getRequestWebProgress(request, netProgress)
                     }
                 });
             }
-        }
-        if (!bypass)
-            return request.notificationCallbacks.getInterface(nsIWebProgress);
+			// XXXjjb Joe review: code above sets bypass, so this stmt should be in if (gives exceptions otherwise)
+	        if (!bypass)
+    	        return request.notificationCallbacks.getInterface(nsIWebProgress);
+		}
     }
     catch (exc) {}
 
     try
     {
-        return QI(request.loadGroup.groupObserver, nsIWebProgress);
+		if (request.loadGroup && request.loadGroup.groupObserver)
+        	return QI(request.loadGroup.groupObserver, nsIWebProgress);
     }
     catch (exc) {}
 }
@@ -1786,8 +1788,8 @@ Firebug.NetMonitor.NetInfoBody = domplate(Firebug.Rep,
     
     updateInfo: function(netInfoBox, file, context)
     { 
-		if (FBL.DBG_NET) 
-			FBL.dumpProperties("updateInfo file", file);
+		if (FBTrace.DBG_NET) 
+			FBTrace.dumpProperties("updateInfo file", file);
 			
         var tab = netInfoBox.selectedTab;
         if (hasClass(tab, "netInfoParamsTab"))

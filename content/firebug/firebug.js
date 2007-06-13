@@ -66,8 +66,6 @@ const prefNames =
     "breakOnErrors",
 	"useDebugAdapter",
 	"useFirstLineForEvalName",
-	"debugFirebug_CREATION",
-    "debugFirebug_BP",    
     
     // DOM
     "showUserProps", "showUserFuncs", "showDOMProps", "showDOMFuncs", "showDOMConstants",
@@ -116,7 +114,12 @@ top.Firebug =
 
         prefs.addObserver(prefDomain, this, false);
 
-        dispatch(modules, "initialize");
+		var basePrefNames = prefNames.length;
+		
+		dispatch(modules, "initialize", [prefDomain, prefNames]); 
+
+		for (var i = basePrefNames; i < prefNames.length; ++i)
+            this[prefNames[i]] = this.getPref(prefNames[i]);
 
         // If another window is opened, then the creation of our first context won't
         // result in calling of enable, so we have to enable our modules ourself
@@ -125,10 +128,14 @@ top.Firebug =
     },
 
     /** 
-     * Called when the UI is ready to be initialized, once the panel browsers are loaded.
+     * Called when the UI is ready to be initialized, once the panel browsers are loaded, 
+     * but before any contexts are created.
      */
-    initializeUI: function()
+    initializeUI: function(detachArgs)
     {
+		if (FBTrace.DBG_INITIALIZE)
+			FBTrace.sysout("firebug.initializeUI this.disabledAlways="+this.disabledAlways+"\n");
+			
         fbs.registerClient(this);
 
         TabWatcher.initialize(this);
@@ -137,6 +144,8 @@ top.Firebug =
             this.disableAlways();
         else
             this.enableAlways();
+			
+		dispatch(modules, "initializeUI", [detachArgs]);
     },
         
     shutdown: function()
@@ -196,6 +205,8 @@ top.Firebug =
         
         for (var i = 0; i < arguments.length; ++i)
             TabWatcher.addListener(arguments[i]);
+		if (FBTrace.DBG_INITIALIZE)
+			FBTrace.dumpStack("registerModule");
     },
 
     registerPanel: function()
@@ -204,6 +215,9 @@ top.Firebug =
 
         for (var i = 0; i < arguments.length; ++i)
             panelTypeMap[arguments[i].prototype.name] = arguments[i];
+		if (FBTrace.DBG_INITIALIZE)
+			for (var i = 0; i < arguments.length; ++i)
+				FBTrace.sysout("registerPanel "+arguments[i].prototype.name+"\n");
     },
 
     registerRep: function()
@@ -240,8 +254,16 @@ top.Firebug =
     disableSite: function(disable)
     {
         var ioService = CCSV("@mozilla.org/network/io-service;1", "nsIIOService");
-
-        var host = tabBrowser.currentURI.host;
+		
+		try 
+		{
+			var host = tabBrowser.currentURI.host;
+		}
+		catch (exc)
+		{
+			var host = null;  // XXXjjb eg about:neterror and friends.
+		}
+        
         if (!host)
             this.setPref("disabledFile", disable);
         else
@@ -303,6 +325,9 @@ top.Firebug =
             prefs.setIntPref(prefName, value);
         else if (type == nsIPrefBranch.PREF_BOOL)
             prefs.setBoolPref(prefName, value);
+			
+		if (FBTrace.DBG_OPTIONS)
+			FBTrace("firebug.setPref "+name+"="+value+"\n");
     },
 
     increaseTextSize: function(amt)
@@ -347,6 +372,9 @@ top.Firebug =
         }
 
         delete optionUpdateMap[name];
+		
+		if (FBTrace.DBG_OPTIONS)
+			FBTrace.sysout("firebug.updatePrefs EXIT: "+name+"="+value+"\n");
     },
     
     openPermissions: function()
@@ -800,6 +828,15 @@ Firebug.Module =
     {
     },
     
+	/**
+     * Called when the UI is ready for context creation. 
+     * Used by chromebug; normally FrameProgressListener events trigger UI synchronization, 
+     * this event allows sync without progress events.
+     */
+    initializeUI: function(detachArgs)
+    {
+    },
+    
     /**
      * Called when the window is closed.
      */
@@ -809,7 +846,7 @@ Firebug.Module =
     },
     
     /**
-     * Called when a new context is created.
+     * Called when a new context is created but before the page is loaded.
      */
     initContext: function(context)
     {
@@ -818,7 +855,7 @@ Firebug.Module =
     /**
      * Called after a context is detached to a separate window;
      */
-    reattachContext: function(context)
+    reattachContext: function(browser, context)
     {
     },
     
@@ -846,7 +883,10 @@ Firebug.Module =
     showContext: function(browser, context)
     {
     },
-
+	
+ 	/**
+     * Called after a context's page is loaded
+     */
     loadedContext: function(context)
     {
     },
@@ -916,12 +956,14 @@ Firebug.Panel =
             this.panelNode.scrollTop = this.lastScrollTop;
             delete this.lastScrollTop;
         }
-    },    
-
-    initializeNode: function()
+    }, 
+	   
+	// Called after module.initialize; addEventListener-s here 
+    initializeNode: function(myPanelNode)
     {
     },
     
+	// removeEventListener-s here.
     destroyNode: function()
     {
     },
@@ -1043,6 +1085,7 @@ Firebug.Panel =
         return null;
     },
     
+	// Called when "Options" clicked. Return array of {label: 'name', nol10n: true,  type: "checkbox", checked: <value>, command:function to set <value>}
     getOptionsMenuItems: function()
     {
         return null;

@@ -32,6 +32,7 @@ const jsdIScript = CI("jsdIScript");
 const jsdIStackFrame = CI("jsdIStackFrame");
 const jsdICallHook = CI("jsdICallHook");
 const jsdIExecutionHook = CI("jsdIExecutionHook");
+const jsdIErrorHook = CI("jsdIErrorHook");
 const nsIFireBug = CI("nsIFireBug");
 const nsIFireBugWithEval = CI("nsIFireBugWithEval");
 const nsIFireBugDebuggerWithEval = CI("nsIFireBugDebuggerWithEval");
@@ -137,9 +138,16 @@ function FirebugService()
     this.showStackTrace = prefs.getBoolPref("extensions.firebug.showStackTrace");
     this.breakOnErrors = prefs.getBoolPref("extensions.firebug.breakOnErrors");
 	
-    this.DBG_CREATION = prefs.getBoolPref("extensions.firebug.debugFirebug_CREATION");
-	this.DBG_BP = prefs.getBoolPref("extensions.firebug.debugFirebug_BP");
-    
+	try {
+	    this.DBG_CREATION = prefs.getBoolPref("extensions.firebug.debugFirebug_CREATION");
+		this.DBG_BP = prefs.getBoolPref("extensions.firebug.debugFirebug_BP");
+		this.DBG_ERRORS = prefs.getBoolPref("extensions.firebug.debugFirebug_ERRORS");
+    }
+	catch (exc)
+	{
+		// We'll see this later.
+	}
+	
     this.currentLeveledScriptTag = 0;          // top- or eval-level
     this.eventLevelScriptTag = {};    // event scripts like onclick
 	this.nestedScriptStack = {};  // scripts contained in leveledScript that have not been drained
@@ -606,8 +614,17 @@ FirebugService.prototype =
             waitingForTimer = false;
         }
 		
-    	fbs.DBG_CREATION = prefs.getBoolPref("extensions.firebug.debugFirebug_CREATION");
-		fbs.DBG_BP = prefs.getBoolPref("extensions.firebug.debugFirebug_BP");
+		try
+		{
+			fbs.DBG_CREATION = prefs.getBoolPref("extensions.firebug.debugFirebug_CREATION");
+			fbs.DBG_BP = prefs.getBoolPref("extensions.firebug.debugFirebug_BP");
+			fbs.DBG_ERRORS = prefs.getBoolPref("extensions.firebug.debugFirebug_ERRORS");
+		} 
+		catch(exc) 
+		{
+			ddd("fbs.enableDebugger: failed to set tracing preferences:"+exc);	
+		}
+
 		
         if (fbs.DBG_CREATION || fbs.DBG_BP) 
 			ddd("start fbs debug log"+Date()+"\n\n");
@@ -699,8 +716,13 @@ FirebugService.prototype =
     {   
     	try 
     	{ 
-			if (fbs.DBG_ERRORS) ddd("fbs.onDebug with reportNextError="+reportNextError+" breakOnNextError="+breakOnNextError+"\n");
-	        var debuggr = reportNextError || breakOnNextError ? this.findDebugger(frame) : null;
+			var debuggr = reportNextError || breakOnNextError ? this.findDebugger(frame) : null;
+	        if (fbs.DBG_ERRORS){
+				
+				ddd("fbs.onDebug "+(debuggr?"found debuggr with ":" NO debuggr with ")+ "reportNextError="+reportNextError+" breakOnNextError="+breakOnNextError+"\n");
+				if (!debuggr)
+					fbs.diagnoseFindDebugger(frame);
+			}
 	        
 	        if (reportNextError)
 	        {
@@ -789,11 +811,30 @@ FirebugService.prototype =
 
     onError: function(message, fileName, lineNo, pos, flags, errnum, exc)
     {   
+		if (fbs.DBG_ERRORS)
+		{
+			var messageKind;
+			if (flags & jsdIErrorHook.REPORT_ERROR)
+				messageKind = "Error";
+			if (flags & jsdIErrorHook.REPORT_WARNING)
+				messageKind = "Warning";
+			if (flags & jsdIErrorHook.REPORT_EXCEPTION)
+				messageKind = "Uncaught-Exception";
+			if (flags & jsdIErrorHook.REPORT_STRICT)
+				messageKind += "-Strict";
+			
+			ddd("fbs.onError with this.showStackTrace="+this.showStackTrace+" and this.breakOnErrors="+this.breakOnErrors+" kind="+messageKind+" msg="+message+"@"+fileName+":"+lineNo+"."+pos+"\n");
+		}
+			
         if (this.showStackTrace)
         {
             reportNextError = true;
-            this.needToBreakForError(fileName, lineNo);
-            return false;
+            var theNeed = this.needToBreakForError(fileName, lineNo);
+			
+			if (fbs.DBG_ERRORS)
+				ddd("fbs.onError needToBreakForError="+theNeed+"\n");
+				
+            return false;  // Drop into onDebug
         }
         else
         {
@@ -1172,7 +1213,7 @@ FirebugService.prototype =
         var win = getFrameWindow(frame);
         if (!win)
             return;
-        // ddd("win.\n");
+        ddd("diagnoseFindDebugger find win.\n");
         for (var i = 0; i < debuggers.length; ++i)
         {
             try
@@ -1183,7 +1224,7 @@ FirebugService.prototype =
             }
             catch (exc) {ddd("caught:"+exc+"\n");}
         }
-        // ddd("tried "+debuggers.length+"\n");
+        ddd("diagnoseFindDebugger tried "+debuggers.length+"\n");
     },
     
     reFindDebugger: function(frame, debuggr) 
@@ -1744,6 +1785,9 @@ var FirebugPrefsObserver =
             fbs.showStackTrace =  prefs.getBoolPref("extensions.firebug.showStackTrace");
         else if (data == "extensions.firebug.breakOnErrors")
             fbs.breakOnErrors =  prefs.getBoolPref("extensions.firebug.breakOnErrors");
+			
+		if (fbs.DBG_ERRORS)
+			ddd("fbs.observe, showStackTrace="+fbs.showStackTrace + " breakOnErrors="+fbs.breakOnErrors+"\n");
     }
 };
 
