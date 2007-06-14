@@ -267,6 +267,10 @@ Firebug.ConsolePanel.prototype = extend(Firebug.Panel,
             optionMenu("ShowCSSErrors", "showCSSErrors"),
             optionMenu("ShowXMLErrors", "showXMLErrors"),
             optionMenu("ShowXMLHttpRequests", "showXMLHttpRequests"),
+			optionMenu("ShowWebErrors", "showWebErrors"),
+			optionMenu("ShowChromeErrors", "showChromeErrors"),
+			optionMenu("ShowChromeMessages", "showChromeMessages"),
+			optionMenu("ShowExternalErrors", "showExternalErrors"),
             "-",
             optionMenu("LargeCommandLine", "largeCommandLine")
         ];
