@@ -73,9 +73,8 @@ top.SourceCache.prototype =
         }
         catch (exc)
         {
-			if (FBTrace.DBG_CACHE) FBTrace.sysout("sourceCache for window="+this.context.window.location.href+" error: \n"+FBL.getStackDump()+"\n");
-			if (FBTrace.DBG_CACHE) FBTrace.dumpProperties(this.cache);
-        	ERROR("sourceCache.load fails newChannel for url="+url+ " cause:"+exc+"\n");
+			FBTrace.dumpProperties("sourceCache.load fails newChannel for url="+url+ " cause:",exc);
+			// silent
             return;
         }
 
@@ -102,15 +101,10 @@ top.SourceCache.prototype =
         }
         catch (exc)
         {
-			
 			if (FBL.reChrome.test(url))  // chrome urls cannot be read with this code.
 				return;
-			var isCache = (channel instanceof nsICachingChannel)?"nsICachingChannel":"NOT caching channel";
-			var isUp = (channel instanceof nsIUploadChannel)?"nsIUploadChannel":"NOT nsIUploadChannel";
-			FBTrace.sysout(url+" vs "+this.context.browser.contentWindow.location.href+" and "+isCache+" "+isUp+"\n");
-        	FBTrace.dumpProperties("sourceCache.load fails channel.open for url="+url+ " cause:", exc);
-			FBTrace.dumpProperties("sourceCache.load fails channel=", channel);
-			return;
+			FBTrace.dumpProperties("sourceCache.load fails channel.open for url="+url+ " cause:", exc);
+			return;  // silent
         }
         
         try
@@ -145,7 +139,6 @@ top.SourceCache.prototype =
     
     store: function(url, text)
     {
-		if (FBTrace.DBG_CACHE) FBTrace.sysout("sourceCache for window="+this.context.window.location.href+" store url="+url+"\n");
         var lines = splitLines(text);
         return this.cache[url] = lines;
     },

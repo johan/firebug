@@ -59,7 +59,9 @@ top.FirebugChrome =
 		}
 		catch (exc)
 		{
+			// Helpful for extensions.
 			FBTrace.dumpProperties("chrome.panelBarReady FAILS", exc);
+			throw exc;
 		}
 		
     },
@@ -71,9 +73,6 @@ top.FirebugChrome =
 		if (!detachArgs) 
 			detachArgs = {};
 			
-		if (FBTrace.DBG_INITIALIZE) 
-			FBTrace.dumpProperties("chrome.initialize w/detachArgs=", detachArgs);
-
 		if (detachArgs.FBL)
 			top.FBL = detachArgs.FBL;
 		else 
@@ -106,7 +105,6 @@ top.FirebugChrome =
      */
     initializeUI: function()
     { 
-	try { 
 		var detachArgs = window.arguments[0];
         if (detachArgs)
         {
@@ -153,9 +151,7 @@ top.FirebugChrome =
             this.attachBrowser(externalBrowser, FirebugContext);
         else
             Firebug.initializeUI(detachArgs);       
-		} catch (exc) {
-			FBTrace.dumpProperties("chrome.initializeUI fails", exc);
-		}
+		
 		 
     },
     
@@ -199,9 +195,6 @@ top.FirebugChrome =
 
     attachBrowser: function(browser, context)  // XXXjjb context == (FirebugContext || null)  and externalMode == true
     {
-		if (FBTrace.DBG_INITIALIZE)
-			FBTrace.sysout("chrome.attachBrowser with externalMode="+externalMode+" context="+context+" context==FirebugContext: "+(context==FirebugContext)+"\n");
-
         if (externalMode)
         {
             browser.detached = true;
@@ -435,9 +428,6 @@ top.FirebugChrome =
     
     syncPanel: function()    
     {
-		if (FBTrace.DBG_WINDOWS)
-			FBTrace.sysout("chrome.syncPanel FirebugContext="+FirebugContext+"\n");
-			
         panelStatus.clear();
 
         if (FirebugContext)
@@ -1028,8 +1018,17 @@ function browser2Loaded()
 {
     var browser2 = panelBar2.browser;
     browser2.removeEventListener("load", browser2Loaded, true);
+	
+	try 
+	{
+	    FirebugChrome.initializeUI();
+	} 
+	catch (exc) 
+	{
+		FBTrace.dumpProperties("chrome.initializeUI fails", exc);
+		throw exc;
+	}
 
-    FirebugChrome.initializeUI();
 }
 
 function onBlur(event)

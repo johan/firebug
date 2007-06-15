@@ -17,15 +17,14 @@ this.initializeTrace = function(context)
 			var noThrottle = true;
 		 	Firebug.TraceModule.log(msg, context, "info", FirebugReps.Text, noThrottle);
 		}
-		dump("trace.initializeTrace Set to panel\n");
 	} 
 	else
 	{
 		FBTrace.sysout = function(msg) 
 		{
-			dump(msg);
+			ddd(msg);
 		}
-		dump("trace.initializeTrace Set to stdout for context="+context+"\n");
+		ddd("trace.initializeTrace Set to stdout for context="+context+"\n");
 	} 
 }
 this.dumpToPanel = false;
@@ -104,6 +103,9 @@ this.getComponentsStack = function(strip)
 
 
 // ************************************************************************************************
+function ddd(msg) {
+	// dump(msg);
+}
 this.initializeTrace();
 
 }).apply(FBTrace);

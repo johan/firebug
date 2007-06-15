@@ -133,9 +133,6 @@ top.Firebug =
      */
     initializeUI: function(detachArgs)
     {
-		if (FBTrace.DBG_INITIALIZE)
-			FBTrace.sysout("firebug.initializeUI this.disabledAlways="+this.disabledAlways+"\n");
-			
         fbs.registerClient(this);
 
         TabWatcher.initialize(this);
@@ -205,8 +202,6 @@ top.Firebug =
         
         for (var i = 0; i < arguments.length; ++i)
             TabWatcher.addListener(arguments[i]);
-		if (FBTrace.DBG_INITIALIZE)
-			FBTrace.dumpStack("registerModule");
     },
 
     registerPanel: function()
@@ -215,9 +210,6 @@ top.Firebug =
 
         for (var i = 0; i < arguments.length; ++i)
             panelTypeMap[arguments[i].prototype.name] = arguments[i];
-		if (FBTrace.DBG_INITIALIZE)
-			for (var i = 0; i < arguments.length; ++i)
-				FBTrace.sysout("registerPanel "+arguments[i].prototype.name+"\n");
     },
 
     registerRep: function()
@@ -326,8 +318,6 @@ top.Firebug =
         else if (type == nsIPrefBranch.PREF_BOOL)
             prefs.setBoolPref(prefName, value);
 			
-		if (FBTrace.DBG_OPTIONS)
-			FBTrace("firebug.setPref "+name+"="+value+"\n");
     },
 
     increaseTextSize: function(amt)
@@ -373,8 +363,6 @@ top.Firebug =
 
         delete optionUpdateMap[name];
 		
-		if (FBTrace.DBG_OPTIONS)
-			FBTrace.sysout("firebug.updatePrefs EXIT: "+name+"="+value+"\n");
     },
     
     openPermissions: function()

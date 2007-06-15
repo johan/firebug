@@ -974,21 +974,12 @@ function NetProgress(context)
         }
         else
             queue.push(handler, args);
-			
-		if (FBTrace.DBG_NET) 
-			FBTrace.dumpProperties( " net.post.args "+(panel?" applied":"queued @"+(queue.length-2)), args);
     };
     
     this.flush = function()
     {
         for (var i = 0; i < queue.length; i += 2)
         {
-			if (FBTrace.DBG_NET) 
-			{
-				FBTrace.dumpProperties("net.flush handler("+i+")", queue[i]);
-				FBTrace.dumpProperties("net.flush args ", queue[i+1]);
-			}
-			
             var file = queue[i].apply(this, queue[i+1]);
             if (file)
                 panel.updateFile(file);
@@ -1056,13 +1047,8 @@ NetProgress.prototype =
             this.awaitFile(request, file);
             this.extendPhase(file);
 			
-            if (FBTrace.DBG_NET)
-				FBTrace.dumpProperties("net.requestedFile file", file);
-            
 			return file;
         } 
-		else
-			if (FBTrace.DBG_NET) FBTrace.dumpProperties("net.requestedFile no file for request=", request);
     },
     
     respondedFile: function(request, time)
@@ -1134,8 +1120,6 @@ NetProgress.prototype =
             
             return file;
         }
-		else
-			if (FBTrace.DBG_NET) FBTrace.dumpProperties("stopfile no file for request=", request);
     },
 
     cacheEntryReady: function(request, file, size)
@@ -1257,8 +1241,6 @@ NetProgress.prototype =
 
     arriveFile: function(file, request)
     {
-		if (FBTrace.DBG_NET)
-			FBTrace.sysout("net.arriveFile for file.href="+file.href+" and request.name="+safeGetName(request)+"\n");
         delete this.requestMap[file.href];
 
         var index = this.pending.indexOf(file);
@@ -1407,11 +1389,6 @@ function NetFile(href, document)
 {
     this.href = href;
     this.document = document
-	
-	if (FBTrace.DBG_NET) {
-		this.uid = FBL.getUniqueId();
-		FBTrace.dumpProperties("NetFile", this);
-	}
 }
 
 NetFile.prototype = 
@@ -1788,9 +1765,6 @@ Firebug.NetMonitor.NetInfoBody = domplate(Firebug.Rep,
     
     updateInfo: function(netInfoBox, file, context)
     { 
-		if (FBTrace.DBG_NET) 
-			FBTrace.dumpProperties("updateInfo file", file);
-			
         var tab = netInfoBox.selectedTab;
         if (hasClass(tab, "netInfoParamsTab"))
         {
