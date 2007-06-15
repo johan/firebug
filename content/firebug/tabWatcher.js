@@ -440,12 +440,6 @@ var TabProgressListener = extend(BaseProgressListener,
  			if (FBTrace.DBG_WINDOWS)
 				FBTrace.sysout("TabProgressListener.onLocationChange to location="+(location?location.href:"null location")+"\n");
 				
-			// Usually pagehide will raise and clear context, but XSLT does not raise pagehide.
-			// So we assume that location change means the context is bad, clear it so a new one will be created.
-			var context = TabWatcher.getContextByWindow(progress.DOMWindow);
-			if (context)
-				TabWatcher.unwatchTopWindow(progress.DOMWindow); 
-			
 			TabWatcher.watchTopWindow(progress.DOMWindow, location);
 		}
     },
