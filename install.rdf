@@ -32,7 +32,7 @@
 	<em:contributor>Fireclipse version: John J. Barton</em:contributor>
     <em:iconURL>chrome://firebug/content/firebug.png</em:iconURL>
     <em:homepageURL>http://www.getfirebug.com/</em:homepageURL>
-	<em:updateURL>"KrisZyp To Fill In"/update.rdf</em:updateURL>
+	<em:updateURL>${update.path}/update.rdf</em:updateURL>
     <!--<em:updateURL>http://www.getfirebug.com/releases/update.rdf</em:updateURL>-->
   </Description>      
 </RDF>
