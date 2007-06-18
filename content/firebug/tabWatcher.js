@@ -237,6 +237,8 @@ top.TabWatcher =
     unwatchTopWindow: function(win)
     {
         var context = this.getContextByWindow(win);
+		if (FBTrace.DBG_WINDOWS)
+			FBTrace.sysout("tabWatcher.unwatchTopWindow context="+context+"\n");
         this.unwatchContext(win, context);
     },
     
