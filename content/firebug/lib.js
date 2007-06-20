@@ -796,12 +796,19 @@ this.getElementsBySelector = function(doc, css)
     return this.getElementsByXPath(doc, xpath);
 };
 
-this.getElementsByXPath = function(doc, xpath)
+this.getElementsByXPath = function(doc, xpath, contextNode)
 {
     var nodes = [];
-    
+
     try {
-        var result = doc.evaluate(xpath, doc, null, XPathResult.ANY_TYPE, null);
+        var result = doc.evaluate(xpath, contextNode||doc, null, XPathResult.ANY_TYPE, null);
+        switch (result.resultType)
+        {
+            case result.STRING_TYPE:  return result.stringValue;
+            case result.NUMBER_TYPE:  return result.numberValue;
+            case result.BOOLEAN_TYPE: return result.booleanValue;
+        }
+    
         for (var item = result.iterateNext(); item; item = result.iterateNext())
             nodes.push(item);
     }
@@ -812,7 +819,7 @@ this.getElementsByXPath = function(doc, xpath)
     }
     
     return nodes;
-};
+}
 
 this.getRuleMatchingElements = function(rule, doc)
 {
