@@ -5,7 +5,7 @@
 
   <Description about="urn:mozilla:install-manifest">
     <em:id>firebug@software.joehewitt.com</em:id>
-    <em:version>1.1eval.89.1.05</em:version>
+    <em:version>1.1explore.1.1.05</em:version>
     <em:type>2</em:type>
    
     <!-- Firefox -->
@@ -32,7 +32,7 @@
 	<em:contributor>Fireclipse version: John J. Barton</em:contributor>
     <em:iconURL>chrome://firebug/content/firebug.png</em:iconURL>
     <em:homepageURL>http://www.getfirebug.com/</em:homepageURL>
-	<em:updateURL>"KrisZyp To Fill In"/update.rdf</em:updateURL>
+	<em:updateURL>${update.path}/update.rdf</em:updateURL>
     <!--<em:updateURL>http://www.getfirebug.com/releases/update.rdf</em:updateURL>-->
   </Description>      
 </RDF>

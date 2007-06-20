@@ -249,14 +249,14 @@ top.FirebugChrome =
     
     getCurrentBrowser: function()
     {
-        return externalMode ? externalBrowser : Firebug.tabBrowser.selectedBrowser
+        return externalBrowser ? externalBrowser : Firebug.tabBrowser.selectedBrowser
     },
     
     getCurrentURI: function()
     {
         try
         {
-            if (externalMode)
+            if (externalBrowser)
                 return externalBrowser.currentURI;
             else
                 return Firebug.tabBrowser.currentURI;
@@ -407,14 +407,14 @@ top.FirebugChrome =
         {
             FirebugContext = context;
             
-            if (externalMode || browser.showFirebug)
+            if (externalBrowser || browser.showFirebug)
                 this.syncPanel();
         }
     },
     
     showLoadedContext: function(context)
     {
-        if (externalMode || context.browser.showFirebug)
+        if (externalBrowser || context.browser.showFirebug)
             this.syncPanel();
     },
 
@@ -493,7 +493,7 @@ top.FirebugChrome =
             panelBar1.selectPanel(null, true);
         }
         
-        if (externalMode)
+        if (externalBrowser)
             this.syncTitle();
     },
 

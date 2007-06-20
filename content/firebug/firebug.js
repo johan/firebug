@@ -280,6 +280,9 @@ top.Firebug =
             }
         }
 
+		if (!tabBrowser)
+			return;  // externalBrowser
+			
         if (disable)
         {
             TabWatcher.unwatchBrowser(tabBrowser.selectedBrowser);
@@ -395,7 +398,7 @@ top.Firebug =
     
     showBar: function(show)
     {
-        var browser = tabBrowser.selectedBrowser;
+        var browser = FirebugChrome.getCurrentBrowser(); // XXXjjb Joe check tabBrowser.selectedBrowser;
         browser.showFirebug = show;
         
         var shouldShow = show && !browser.detached;
@@ -410,7 +413,7 @@ top.Firebug =
         if (Firebug.openInWindow)
             return this.toggleDetachBar(true);
         
-        var browser = tabBrowser.selectedBrowser;    
+        var browser = FirebugChrome.getCurrentBrowser(); // XXXjjb Joe check tabBrowser.selectedBrowser;
         if (!browser.chrome)
             return;
 
@@ -437,7 +440,7 @@ top.Firebug =
 
     toggleDetachBar: function(forceOpen)
     {
-        var browser = tabBrowser.selectedBrowser;    
+        var browser = FirebugChrome.getCurrentBrowser(); // XXXjjb Joe check tabBrowser.selectedBrowser;  
         if (!forceOpen && browser.detached)
         {
             browser.chrome.close();
@@ -449,7 +452,7 @@ top.Firebug =
     
     detachBar: function()
     {
-        var browser = tabBrowser.selectedBrowser;    
+        var browser = FirebugChrome.getCurrentBrowser(); // XXXjjb Joe check tabBrowser.selectedBrowser;  
         if (!browser.chrome)
             return;
 
@@ -478,7 +481,8 @@ top.Firebug =
     
     syncBar: function()
     {
-        this.showBar(tabBrowser.selectedBrowser && tabBrowser.selectedBrowser.showFirebug);
+		var browser = FirebugChrome.getCurrentBrowser(); // XXXjjb Joe check tabBrowser.selectedBrowser;
+        this.showBar(browser && browser.showFirebug);
     },
 
     onClickStatusIcon: function(context, event)

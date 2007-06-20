@@ -390,7 +390,11 @@ Firebug.Debugger = extend(Firebug.Module,
 	        this.syncCommands(context);
 	        this.syncListeners(context);
 	        context.chrome.syncSidePanels();
-	        Firebug.showBar(true);
+			
+			if (context.detached)
+            	context.chrome.focus();
+        	else
+	        	Firebug.showBar(true);
 	        
 	   		if (FBTrace.DBG_UI_LOOP) FBTrace.sysout("showBar done\n");
 	   		
@@ -405,7 +409,7 @@ Firebug.Debugger = extend(Firebug.Module,
 	        context.chrome.focus();
         }
         catch(anyUIError) {
-	        if (FBTrace.DBG_UI_LOOP) FBTrace.sysout(anyUIError);
+	        if (FBTrace.DBG_UI_LOOP) FBTrace.dumpProperties("Debugger UI error during debugging loop:", anyUIError);
         	ERROR("Debugger UI error during debugging loop:"+anyUIError+"\n");
         }
         if (FBTrace.DBG_UI_LOOP) FBTrace.sysout("startDebugging exit\n");
@@ -1123,8 +1127,9 @@ ScriptPanel.prototype = extend(Firebug.Panel,
             {			
             	if (!frame.script.functionName && frame.callingFrame)  // eval-level
 				{
-            	   		this.executionFile = getSourceFileForEval(frame.script, this.context); 
-            	   		this.executionLineNo = frame.line - frame.script.baseLineNumber + 1;
+					if (FBTrace.DBG_STACK) FBTrace.sysout("showStackFrame eval-level\n");
+            	   	this.executionFile = getSourceFileForEval(frame.script, this.context); 
+            	   	this.executionLineNo = frame.line - frame.script.baseLineNumber + 1;
             	}
             	else 
             	{ 
@@ -1162,6 +1167,7 @@ ScriptPanel.prototype = extend(Firebug.Panel,
             }
             else
             {
+				if (FBTrace.DBG_STACK) FBTrace.sysout("showStackFrame no frame\n");
                 this.executionFile = null;
                 this.executionLineNo = -1;
                 
@@ -1243,6 +1249,8 @@ ScriptPanel.prototype = extend(Firebug.Panel,
         
         if (lineNode)
             lineNode.setAttribute("exeLine", "true");
+			
+		if (FBTrace.DBG_BP) FBTrace.sysout("debugger.setExecutionLine to lineNo: "+lineNo+" lineNode="+lineNode+"\n");
     },
     
     setExecutableLines: function(sourceBox) 
