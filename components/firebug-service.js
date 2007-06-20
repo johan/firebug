@@ -1814,10 +1814,12 @@ function ERROR(text)
 
 function ddd(text)
 {
-    if (fbs.DBG_BP || fbs.DBG_CREATION) 
+    /* no tracing
+     if (fbs.DBG_BP || fbs.DBG_CREATION) 
 		dumpToFile(text);
 	else 
     	ERROR(text);
+     */
 }
 
 function dFormat(script, url) 
