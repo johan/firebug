@@ -389,7 +389,11 @@ Firebug.Debugger = extend(Firebug.Module,
 	        this.syncCommands(context);
 	        this.syncListeners(context);
 	        context.chrome.syncSidePanels();
-	        Firebug.showBar(true);
+			
+			if (context.detached)
+            	context.chrome.focus();
+        	else
+	        	Firebug.showBar(true);
 	        
 	        var panel = context.chrome.selectPanel("script");
 	        panel.select(context.debugFrame);
@@ -397,8 +401,8 @@ Firebug.Debugger = extend(Firebug.Module,
 	        context.chrome.focus();
         }
         catch(anyUIError) {
-        	FBTrace.sysout("Debugger UI error during debugging loop:"+anyUIError+"\n");
-			throw anyUIError;
+	        if (FBTrace.DBG_UI_LOOP) FBTrace.dumpProperties("Debugger UI error during debugging loop:", anyUIError);
+        	ERROR("Debugger UI error during debugging loop:"+anyUIError+"\n");
         }
     },
     

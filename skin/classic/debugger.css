@@ -69,7 +69,7 @@
 
 .sourceRow[executable="true"] > .sourceLine {
     content: "-";
-    color: #4AA02C;
+    color: #4AA02C;  /* Spring Green */
     font-weight: bold;
 }
 

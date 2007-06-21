@@ -1829,14 +1829,15 @@ function dFormat(script, url)
 
 function getDumpStream()
 {
+	var path = "c:\\download\\tmp\\firebug.txt";  // I welcome your corrections.
     var f = CC("@mozilla.org/file/local;1").createInstance(CI("nsILocalFile"));
-    f.initWithPath("c:\\download\\tmp\\firebug.txt");
+    f.initWithPath(path);
     if( f.exists() == true ) f.remove( false );
     if ( f.exists() == false ) {
     	f.create(Components.interfaces.nsIFile.NORMAL_FILE_TYPE, 420 );
-    	ERROR("creating file");
+    	ERROR("creating file "+path);
     } else {
-    	ERROR("file exists");
+    	ERROR("file exists "+path);
     }
     var stream = CC("@mozilla.org/network/file-output-stream;1")
         .createInstance(CI("nsIFileOutputStream"));
