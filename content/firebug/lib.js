@@ -1898,7 +1898,7 @@ this.updateScriptFiles = function(context, reload)
             }
         }, this));
 
-		if (context.evalSourceFilesByURL)
+		if (context.evalSourceFilesByURL && Firebug.showEvalSources)
 			this.addSourceFilesByURL(sourceFiles, sourceFileMap, context.evalSourceFilesByURL);
 		if (context.eventSourceFilesByURL) 
 			this.addSourceFilesByURL(sourceFiles, sourceFileMap, context.eventSourceFilesByURL);
@@ -2673,7 +2673,12 @@ this.PCMAP_PRETTYPRINT = this.CI("jsdIScript").PCMAP_PRETTYPRINT;
 
 this.SourceFile.prototype = 
 {
-    toString: function()
+	toString: function()
+	{
+		return this.href;
+	},
+	
+    dumpLineMap: function()
     {
         var str = "SourceFile " + this.href+"; lineMap: ";
 		for (line in this.lineMap) str += "["+line+"]="+this.lineMap[line];		

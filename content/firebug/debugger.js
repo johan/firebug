@@ -851,6 +851,8 @@ Firebug.Debugger = extend(Firebug.Module,
 
 		if (Firebug.useDebugAdapter)
 			var sourceFile = this.getSourceFileFromDebugAdapter(context, frame, eval_body);
+		else if (Firebug.useLastLineForEvalName)
+			var sourceFile = this.getSourceFileFromLastLine(context, frame, eval_body)
 		else if (Firebug.useFirstLineForEvalName)
 			var sourceFile = this.getSourceFileFromFirstSourceLine(context, frame, eval_body)
 		
@@ -870,11 +872,36 @@ Firebug.Debugger = extend(Firebug.Module,
 		return sourceFile;
 	},
 
+	getSourceFileFromLastLine: function(context, frame, eval_body)
+	{
+		var lastLineLength = 0;
+		var endLastLine = eval_body.length - 1;
+		while(lastLineLength < 3) // skip newlines at end of buffer
+		{
+			var lastNewline = eval_body.lastIndexOf('\n', endLastLine);
+			if (lastNewline < 0) 
+			{
+				var lastNewLine = eval_body.lastIndexOf('\r', endLastLine);
+				if (lastNewLine < 0) 
+					return;
+			}
+			lastLineLength = eval_body.length - lastNewline;
+			endLastLine = lastNewline - 1;
+			FBTrace.sysout("debugger.getSourceFileFromLastLine lastNewline="+lastNewline+" lastLineLength="+lastLineLength+" endLastLine="+endLastLine+"\n");
+		}
+		var lastLines = eval_body.slice(lastNewline + 1);
+		return this.getSourceFileFromSourceLine(lastLines, eval_body);
+	},
 	
 	getSourceFileFromFirstSourceLine: function(context, frame, eval_body)
 	{
 		var firstLine = eval_body.substr(0, 256);  // guard against giants
-		var m = reURIinComment.exec(firstLine);
+		return this.getSourceFileFromSourceLine(firstLine, eval_body);
+	},
+	
+	getSourceFileFromSourceLine: function(line, eval_body)
+	{
+		var m = reURIinComment.exec(line);
 		if (m) 
 		{
 			var sourceFile = new FBL.SourceFile(m[1]);
@@ -1727,6 +1754,9 @@ ScriptPanel.prototype = extend(Firebug.Panel,
         
         return [
             optionMenu("BreakOnAllErrors", "breakOnErrors"),
+			optionMenu("ShowEvalSources", "showEvalSources"),
+			optionMenu("UseLastLineForEvalName", "useLastLineForEvalName"),
+			optionMenu("UseFirstLineForEvalName", "useFirstLineForEvalName"),
 			optionMenu("UseDebugAdapter", "useDebugAdapter")
         ];
     },

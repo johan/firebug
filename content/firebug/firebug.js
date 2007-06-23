@@ -65,6 +65,8 @@ const prefNames =
     // Script
     "breakOnErrors",
 	"useDebugAdapter",
+	"showEvalSources",
+	"useLastLineForEvalName",
 	"useFirstLineForEvalName",
     
     // DOM
@@ -330,7 +332,7 @@ top.Firebug =
             prefs.setBoolPref(prefName, value);
 			
 		if (FBTrace.DBG_OPTIONS)
-			FBTrace("firebug.setPref "+name+"="+value+"\n");
+			FBTrace.sysout("firebug.setPref "+name+"="+value+"\n");
     },
 
     increaseTextSize: function(amt)
