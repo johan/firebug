@@ -724,6 +724,8 @@ top.Firebug =
     
     isURIDenied: function(uri)
     {
+		if (!uri)  // null or undefined is denied
+			return true;
         return uri &&
             (pm.testPermission(uri, "firebug") == DENY_ACTION
                 || (uri.scheme == "file" && this.disabledFile));

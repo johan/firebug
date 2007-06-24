@@ -111,7 +111,7 @@ top.FirebugChrome =
         if (detachArgs)
         {
             FirebugContext = detachArgs.context ? detachArgs.context : FirebugContext;
-            externalBrowser = detachArgs.browser ? detachArgs.browser : Firebug.tabBrowser.selectedBrowser;
+            externalBrowser = detachArgs.browser;// else undefined
         }
 
         this.applyTextSize(Firebug.textSize);

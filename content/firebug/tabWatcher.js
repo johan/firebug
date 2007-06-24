@@ -115,20 +115,17 @@ top.TabWatcher =
             return;
         }
 
-        if (uri)
+        if (Firebug.disabledAlways)
         {
-            if (Firebug.disabledAlways)
-            {
-                // Check if the whitelist makes an exception
-                if (!this.owner.isURIAllowed(uri))
-                    return this.watchContext(win, null);
-            }
-            else
-            {
-                // Check if the blacklist says no
-                if (this.owner.isURIDenied(uri))
-                    return this.watchContext(win, null);
-            }
+            // Check if the whitelist makes an exception
+            if (!this.owner.isURIAllowed(uri))
+                return this.watchContext(win, null);
+        }
+        else
+        {
+            // Check if the blacklist says no
+            if (this.owner.isURIDenied(uri))
+                return this.watchContext(win, null);
         }
         
         var context = this.getContextByWindow(win);
@@ -352,13 +349,6 @@ top.TabWatcher =
                 return browser;
             }
         }
-		
-		// XXXjjb Allows eg chromebug
-		if (this.owner.otherBrowsers){
-			if (FBTrace.DBG_WINDOWS)
-				FBTrace.dumpProperties("getBrowserByWindow returning otherBrowsers= ", this.owner.otherBrowsers[win]);
-			return this.owner.otherBrowsers[win];
-		}
 		
         return null;
     },
