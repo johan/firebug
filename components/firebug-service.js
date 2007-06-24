@@ -114,6 +114,7 @@ var profileStart;
 
 var enabledDebugger = false;
 var reportNextError = false;
+var nextErrorMessage =""; 
 var breakOnNextError = false;
 
 var timer = Timer.createInstance(nsITimer);
@@ -727,8 +728,15 @@ FirebugService.prototype =
 	        if (reportNextError)
 	        {
 	            reportNextError = false;
-	            if (debuggr)
-	                debuggr.onError(frame);
+	            if (debuggr) {
+					if (nsIFireBugDebuggerWithEval && debuggr.QueryInterface(nsIFireBugDebuggerWithEval) ) 
+	        		{
+						debuggr.onErrorWithMessage(frame, nextErrorMessage);
+					}
+					else
+						debuggr.onError(frame);
+				}
+	               
 	        }
 	
 	        if (breakOnNextError)
@@ -829,6 +837,7 @@ FirebugService.prototype =
         if (this.showStackTrace)
         {
             reportNextError = true;
+			nextErrorMessage = message; // file and line on frame
             var theNeed = this.needToBreakForError(fileName, lineNo);
 			
 			if (fbs.DBG_ERRORS)

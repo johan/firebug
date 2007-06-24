@@ -52,6 +52,12 @@ var Errors = Firebug.Errors = extend(Firebug.Module,
             this.showCount(context.errorCount);
     },
     
+	showErrorMessage: function(errorLabel)
+	{
+		statusBar.setAttribute("errors", "true");
+		statusText.setAttribute("value", errorLabel);
+	},
+	
     showCount: function(errorCount)
     {
         if (!statusBar)

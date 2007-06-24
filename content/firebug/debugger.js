@@ -591,15 +591,28 @@ Firebug.Debugger = extend(Firebug.Module,
     	try 
     	{
         	Firebug.errorStackTrace = getStackTrace(frame, context);
+			if (FBTrace.DBG_ERRORS)FBTrace.sysout("debugger.onError:\n"+traceToString(Firebug.errorStackTrace)+"\n");
         } catch (exc) {
         	ERROR("debugger.onError getStackTrace FAILED: "+exc+"\n");
 			if (FBTrace.DBG_ERRORS)
 				FBTrace.dumpProperties("debugger.onError getStackTrace FAILED:", exc);
-			
         }
-        
-        if (FBTrace.DBG_ERRORS)FBTrace.sysout("debugger.onError:\n"+traceToString(Firebug.errorStackTrace)+"\n");
-        //  need to extend idl onError(frame, message) before: statusText.setAttribute("value", object.errorMessage);
+    },
+	
+	onErrorWithMessage: function(frame, message)
+    {
+        var context = this.breakContext;
+        delete this.breakContext;
+    	try 
+    	{
+        	Firebug.errorStackTrace = getStackTrace(frame, context);
+			if (FBTrace.DBG_ERRORS)FBTrace.sysout("debugger.onErrorWithMessage:\n"+traceToString(Firebug.errorStackTrace)+"\n");
+			Firebug.Errors.showErrorMessage(message);
+        } catch (exc) {
+        	ERROR("debugger.onErrorWithMessage getStackTrace FAILED: "+exc+"\n");
+			if (FBTrace.DBG_ERRORS)
+				FBTrace.dumpProperties("debugger.onError getStackTrace FAILED:", exc);
+        }
     },
 
     onToggleBreakpoint: function(url, lineNo, isSet)
@@ -887,7 +900,6 @@ Firebug.Debugger = extend(Firebug.Module,
 			}
 			lastLineLength = eval_body.length - lastNewline;
 			endLastLine = lastNewline - 1;
-			FBTrace.sysout("debugger.getSourceFileFromLastLine lastNewline="+lastNewline+" lastLineLength="+lastLineLength+" endLastLine="+endLastLine+"\n");
 		}
 		var lastLines = eval_body.slice(lastNewline + 1);
 		return this.getSourceFileFromSourceLine(lastLines, eval_body);

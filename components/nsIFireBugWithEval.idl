@@ -40,8 +40,15 @@ interface nsIFireBugDebuggerWithEval : nsIFirebugDebugger
   /*
    * Called when a browser-generated event script is created
    * in frame from breakpoint hook in PC=0 of eventLevel script
-   * out file name to bind to all scripts from this eventLevel   */
+   * out file name to bind to all scripts from this eventLevel   
+   */
   unsigned long onEventScript(in jsdIStackFrame frame, out jsdIValue val);
+  /*
+   * Called when jsd signals onError and the showStackTrace option is set.
+   * Replaces onError(frame).
+   */
+  void onErrorWithMessage(in jsdIStackFrame frame, in string message);
+
 };
 
 [scriptable, uuid(1E4FDF9C-C5F9-423c-B313-AA4A4542760E)]
