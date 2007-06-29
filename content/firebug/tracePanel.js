@@ -18,7 +18,7 @@ Firebug.TraceModule = extend(Firebug.Console,
 	DBG_TOPLEVEL: false, 		// firebug-service
 	DBG_STACK: false,  		// call stack, mostly debugger.js
 	DBG_UI_LOOP: false, 		// debugger.js
-	DBG_ERRORS: false,  		// error.js
+	DBG_ERRORS: true,  		// error.js
 	DBG_EVENTS: false,  		// debugger.js for event handlers, need more
 	DBG_FUNCTION_NAMES: false,  // heuristics for anon functions
 	DBG_EVAL: false,    		// debugger.js and firebug-service.js
@@ -27,11 +27,21 @@ Firebug.TraceModule = extend(Firebug.Console,
 	DBG_WINDOWS: true,    	// tabWatcher, dispatch events; very useful for understand modules/panels 
 	DBG_NET: false,        	// net.js
 	DBG_SHOW_SYSTEM: false,    // isSystemURL return false always.
-	DBG_INITIALIZE: false,		// registry (modules panels); initialize FB
+	DBG_INITIALIZE: true,		// registry (modules panels); initialize FB
 	DBG_OPTIONS: false,
 	DBG_TRACE: true,
 	
 	debug: this.DBG_TRACE,
+	
+	injectOptions: function() 
+	{
+		for (p in this)
+		{
+			var m = reDBG.exec(p);
+			if (m) 
+				FBTrace[p] = this[p];
+		}	
+	},
 	
 	initialize: function(prefDomain, prefNames)
 	{
@@ -42,7 +52,7 @@ Firebug.TraceModule = extend(Firebug.Console,
 			if (m) 
 			{
 				var name = m[1];
-				prefNames.push(name);	
+				prefNames.push(name);	FBTrace.sysout("push name="+name+"\n");
 			}
 		}
 	},
@@ -196,6 +206,7 @@ Firebug.TracePanel.prototype = extend(Firebug.ConsolePanel.prototype,
 	
 });
 
+Firebug.TraceModule.injectOptions();
 Firebug.registerModule(Firebug.TraceModule);
 Firebug.registerPanel(Firebug.TracePanel); 
 

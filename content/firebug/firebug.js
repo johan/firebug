@@ -123,6 +123,12 @@ top.Firebug =
 		for (var i = basePrefNames; i < prefNames.length; ++i)
             this[prefNames[i]] = this.getPref(prefNames[i]);
 
+		if (FBTrace.DBG_OPTIONS)
+		{
+			 for (var i = 0; i < prefNames.length; ++i) 
+			 	FBTrace.sysout("firebug.initialize option "+prefNames[i]+"="+this[prefNames[i]]+"\n");
+		}
+
         // If another window is opened, then the creation of our first context won't
         // result in calling of enable, so we have to enable our modules ourself
         if (fbs.enabled)

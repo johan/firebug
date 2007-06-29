@@ -770,7 +770,7 @@ FirebugService.prototype =
     	}
         if (disabledCount || monitorCount || conditionCount || runningUntil)
         {
-            var url = getSourceURL(frame.script);
+            var url = fbs.getSourceURL(frame.script);
 			var scriptInfo = fbs.scriptInfoByTag[frame.script.tag];
 			if (scriptInfo) 
 				var lineNo = scriptInfo.unshiftFromSourceBufferToScriptNumbering(frame.line);
@@ -950,14 +950,25 @@ FirebugService.prototype =
 	getURLFromDebugger: function(callback, frame) 
 	{
 		var result_url = {};
-   		
-   		var rc = callback(frame, result_url);
+   		try 
+		{
+			var rc = callback(frame, result_url);
          
-        if (!rc) 
-        {
-        	ERROR("firebug-service: debuggr callback for url failed \n");
-        	return;
-        }  
+	        if (!rc) 
+	        {
+	        	ERROR("firebug-service: debuggr callback for url failed \n");
+	        	return;
+	        }  
+		} 
+		catch(exc)
+		{
+			if (fbs.DBG_ERRORS)
+				dumpProperties("firebug-service: debuggr callback for url FAILED with exception=",exc);
+				
+			ERROR("firebug-service: debuggr callback for url FAILED with exception="+exc+"\n");
+			return;
+		}
+   		
         		
         return result_url.value.getWrappedValue();
 	},
@@ -1827,6 +1838,14 @@ function ddd(text)
 		dumpToFile(text);
 	else 
     	ERROR(text);
+}
+
+function dumpProperties(title, obj) {
+	var msg = title ="\n";
+	for (p in obj)
+	{
+		msg += "["+p+"]="+obj[p]+"\n";	
+	}
 }
 
 function dFormat(script, url) 

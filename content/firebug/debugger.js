@@ -396,7 +396,7 @@ Firebug.Debugger = extend(Firebug.Module,
         	else
 	        	Firebug.showBar(true);
 	        
-	   		if (FBTrace.DBG_UI_LOOP) FBTrace.sysout("showBar done\n");
+	   		if (FBTrace.DBG_UI_LOOP) FBTrace.sysout("showBar done FirebugContext="+FirebugContext+"\n");
 	   		
 	        var panel = context.chrome.selectPanel("script");
 	        
@@ -606,8 +606,8 @@ Firebug.Debugger = extend(Firebug.Module,
     	try 
     	{
         	Firebug.errorStackTrace = getStackTrace(frame, context);
-			if (FBTrace.DBG_ERRORS)FBTrace.sysout("debugger.onErrorWithMessage:\n"+traceToString(Firebug.errorStackTrace)+"\n");
 			Firebug.Errors.showErrorMessage(message);
+			if (FBTrace.DBG_ERRORS)FBTrace.sysout("debugger.onErrorWithMessage: "+message+"\n"+traceToString(Firebug.errorStackTrace)+"\n");
         } catch (exc) {
         	ERROR("debugger.onErrorWithMessage getStackTrace FAILED: "+exc+"\n");
 			if (FBTrace.DBG_ERRORS)
@@ -802,26 +802,32 @@ Firebug.Debugger = extend(Firebug.Module,
 
     onEval: function(frame, val) 
     { 
-        var context = this.breakContext;
-        delete this.breakContext;
-
     	try 
-    	{
-	 		var sourceFile = this.createSourceFileForEval(frame, context);
-	    	FBL.setSourceFileForEvalIntoContext(context, frame.script.tag, sourceFile);	   
-	    	if (FBTrace.DBG_EVAL) FBTrace.sysout("debugger.onEval url="+sourceFile.href+"\n"); 			
-	    	sourceFile.addToLineTable(frame.script, 1, false); 
-			if (FBTrace.DBG_EVAL) FBTrace.sysout(	traceToString(FBL.getStackTrace(frame, context))+"\n" );
+    	{ 	
+			var context = this.breakContext; FBTrace.sysout(	"debugger.onEval ENTER\n" );
+        	delete this.breakContext;
+
+			var sourceFile = this.createSourceFileForEval(frame, context);FBTrace.sysout(	"debugger.onEval FromCreate\n" );
+	    	FBL.setSourceFileForEvalIntoContext(context, frame.script.tag, sourceFile);	FBTrace.sysout(	"debugger.onEval Frome Setsour\n" );   
+	    	
+			sourceFile.addToLineTable(frame.script, 1, false); 
+			
+			if (FBTrace.DBG_EVAL)
+			{ 
+				FBTrace.sysout(	traceToString(FBL.getStackTrace(frame, context))+"\n" );
+				FBTrace.sysout("debugger.onEval url="+sourceFile.href+"\n"); 			
+			}	
+				
+			val.value = jsd.wrapValue(sourceFile.href);
+			return RETURN_VALUE;
  		}
 		catch( error) 
 		{
 			ERROR("debugger.onEval failed: "+error);
-			if (FBTrace.DBG_EVAL) FBTrace.sysout("error="+error+"\n");
+			if (FBTrace.DBG_EVAL) FBTrace.dumpProperties("debugger.onEval failed: ",error);
 			return RETURN_CONTINUE;
 		}
-		
-		val.value = jsd.wrapValue(sourceFile.href);
-		return RETURN_VALUE;
+
     },
         
         

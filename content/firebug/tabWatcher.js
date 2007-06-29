@@ -463,14 +463,14 @@ var FrameProgressListener = extend(BaseProgressListener,
         	// that the start of these "dummy" requests is the only state that works.
 				
 			var safeURI = safeGetName(request);
-            if (safeURI && (safeURI == dummyURI || safeURI == "about:document-onload-blocker") )
+            if (safeURI && (safeURI == dummyURI) )// || safeURI == "about:document-onload-blocker") )
             {
 				var win = progress.DOMWindow;
                 // Another weird edge case here - when opening a new tab with about:blank,
                 // "unload" is dispatched to the document, but onLocationChange is not called
                 // again, so we have to call watchTopWindow here
                
-                if (win.parent == win && (win.location.href == "about:blank"  || safeURI == "about:document-onload-blocker"))
+                if (win.parent == win && (win.location.href == "about:blank" ))//  || safeURI == "about:document-onload-blocker"))
                     TabWatcher.watchTopWindow(win, null);
 				
                 TabWatcher.watchWindow(win);
@@ -480,10 +480,8 @@ var FrameProgressListener = extend(BaseProgressListener,
 
         // Later I discovered that XHTML documents don't dispatch the dummy requests, so this
         // is our best shot here at hooking them.  
-        //if (flag & STATE_IS_DOCUMENT && flag & STATE_TRANSFERRING)
-        //    TabWatcher.watchWindow(progress.DOMWindow);
-		// And later than that jjb found that xml at least uses about:document-onload-blocker
-		// BUT I need to check script activity.....
+        if (flag & STATE_IS_DOCUMENT && flag & STATE_TRANSFERRING)
+            TabWatcher.watchWindow(progress.DOMWindow);
 		
 		// XSLT does not raise DOMContentLoaded so we never know to set the context.loaded.
 		// As a fall back we set it here.
