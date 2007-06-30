@@ -42,18 +42,18 @@ this.ns = function(fn)
 
 this.initialize = function()
 {
-	if (FBTrace.DBG_INITIALIZE)
-		FBTrace.sysout("FBL.initialize BEGIN "+namespaces.length+" namespaces\n");
-		
+	if (FBTrace.DBG_INITIALIZE)     /*@explore*/
+		FBTrace.sysout("FBL.initialize BEGIN "+namespaces.length+" namespaces\n");     /*@explore*/
+		                            /*@explore*/
     for (var i = 0; i < namespaces.length; i += 2)
     {
         var fn = namespaces[i];
         var ns = namespaces[i+1];
         fn.apply(ns);
     }
-	
-	if (FBTrace.DBG_INITIALIZE)
-		FBTrace.sysout("FBL.initialize END "+namespaces.length+" namespaces\n");
+	                                /*@explore*/
+	if (FBTrace.DBG_INITIALIZE)     /*@explore*/
+		FBTrace.sysout("FBL.initialize END "+namespaces.length+" namespaces\n");     /*@explore*/
 };
 
 // ************************************************************************************************
@@ -1401,9 +1401,9 @@ this.getStackTrace = function(frame, context)
             if (stackFrame)
                 trace.frames.push(stackFrame);
         }
-		else
-			if (FBTrace.DBG_STACK)
-				FBTrace.sysout("lib.getStackTrace isSystemURL frame.script.fileName "+frame.script.fileName+"\n"); 
+		else                           /*@explore*/
+			if (FBTrace.DBG_STACK)     /*@explore*/
+				FBTrace.sysout("lib.getStackTrace isSystemURL frame.script.fileName "+frame.script.fileName+"\n");      /*@explore*/
     }
 
     return trace;
@@ -1414,7 +1414,7 @@ this.getStackFrame = function(frame, context)
 	if (frame.isNative || frame.isDebugger)   // XXXjjb
 	{
 		var excuse = (frame.isNative) ?  "(native)" : "(debugger)"; 
-		if (FBTrace.DBG_STACK) FBTrace.sysout("lib.getStackFrame "+excuse+" frame\n");
+		if (FBTrace.DBG_STACK) FBTrace.sysout("lib.getStackFrame "+excuse+" frame\n");     /*@explore*/
 		return new this.StackFrame(context, excuse, null, excuse, 0, []);
 	}
     try
@@ -1425,19 +1425,19 @@ this.getStackFrame = function(frame, context)
     	    var args = this.getFunctionArgValues(fn, frame); 
     	    if (context.evalSourceURLByTag && frame.script.tag in context.evalSourceURLByTag) 
     	    {
-				if (FBTrace.DBG_STACK) FBTrace.sysout("lib.getStackFrame evaled function frame\n");
+				if (FBTrace.DBG_STACK) FBTrace.sysout("lib.getStackFrame evaled function frame\n");     /*@explore*/
     	    	var url = context.evalSourceURLByTag[frame.script.tag];
     	    	var lineNo = FBL.getLineAtPCForEvaled(frame, context);
     	    	return new this.StackFrame(context, fn, frame.script, url, lineNo, args);
     	    } 
     	    else if (context.eventSourceURLByTag && frame.script.tag in context.eventSourceURLByTag) 
     	    {
-    	    	if (FBTrace.DBG_STACK) FBTrace.sysout("lib.getStackFrame event frame\n");
+    	    	if (FBTrace.DBG_STACK) FBTrace.sysout("lib.getStackFrame event frame\n");     /*@explore*/
     	    	var url = context.eventSourceURLByTag[frame.script.tag];
     	    	var lineNo = FBL.getLineAtPCForEvent(frame, context);
     	    	return new this.StackFrame(context, fn, frame.script, url, lineNo, args);
     	    }
-			if (FBTrace.DBG_STACK) FBTrace.sysout("lib.getStackFrame toplevel function frame\n"); 
+			if (FBTrace.DBG_STACK) FBTrace.sysout("lib.getStackFrame toplevel function frame\n");      /*@explore*/
         	return new this.StackFrame(context, fn, frame.script, frame.script.fileName, frame.line, args);
         } 
         else 
@@ -1445,22 +1445,22 @@ this.getStackFrame = function(frame, context)
         	if (frame.callingFrame) // eval-level
         	{ 			
         		var sourceFile = this.getSourceFileForEval(frame.script, context);
-				if (FBTrace.DBG_STACK) FBTrace.dumpProperties("lib.getStackFrame eval-level sourceFile", sourceFile);
+				if (FBTrace.DBG_STACK) FBTrace.dumpProperties("lib.getStackFrame eval-level sourceFile", sourceFile);     /*@explore*/
         		var lineNo = FBL.getLineAtPCForEvaled(frame, context);
         		var eval_frame = new this.StackFrame(context, sourceFile.evalExpression, frame.script, sourceFile.href, lineNo, [sourceFile.evalExpression]);
          		return eval_frame;
         	} 
         	else // __top_level__
         	{		
-				if (FBTrace.DBG_STACK) FBTrace.sysout("lib.getStackFrame top-level\n");
+				if (FBTrace.DBG_STACK) FBTrace.sysout("lib.getStackFrame top-level\n");     /*@explore*/
         		return new this.StackFrame(context, "__top_level__", frame.script, frame.script.fileName, frame.line, []);
         	}
         }
     }
     catch (exc)
     {
-		if (FBTrace.DBG_STACK)
-			FBTrace.dumpProperties("getStackTrace fails:", exc);
+		if (FBTrace.DBG_STACK)     /*@explore*/
+			FBTrace.dumpProperties("getStackTrace fails:", exc);     /*@explore*/
         return null;
     }
 };
@@ -1482,7 +1482,7 @@ this.getSourceLinkAtPCForEvaled = function(frame, context)
 this.getLineAtPCForEvent = function(frame, context) 
 {
 	var lineNo = frame.script.pcToLine(frame.pc, FBL.PCMAP_PRETTYPRINT);
-	if (FBTrace.DBG_BP) FBTrace.sysout("getLineAtPCforEvent pc="+frame.pc+" line="+lineNo+"\n");
+	if (FBTrace.DBG_BP) FBTrace.sysout("getLineAtPCforEvent pc="+frame.pc+" line="+lineNo+"\n");     /*@explore*/
     return lineNo;
 }
 
@@ -1709,7 +1709,7 @@ this.getFunctionName = function(script, context, frame)  // XXXjjb need frame to
  		   	if (url) 
     			return this.guessFunctionName(url, context.evalBaseLineNumberByTag[script.tag], context);
     	}
-    	if (FBTrace.DBG_STACK) FBTrace.sysout("getFunctionName for anonymous non-eval function, script.baselineNumber="+script.baseLineNumber+" line for PC=0:"+script.pcToLine(0, FBL.PCMAP_SOURCETEXT)+"\n");
+    	if (FBTrace.DBG_STACK) FBTrace.sysout("getFunctionName for anonymous non-eval function, script.baselineNumber="+script.baseLineNumber+" line for PC=0:"+script.pcToLine(0, FBL.PCMAP_SOURCETEXT)+"\n");     /*@explore*/
         return this.guessFunctionName(script.fileName, script.baseLineNumber, context);
     }
     
@@ -1731,7 +1731,7 @@ this.guessFunctionNameFromLines = function(url, lineNo, source) {
 		// Walk backwards from the first line in the function until we find the line which
         // matches the pattern above, which is the function definition
         var line = "";
-   		if (FBTrace.DBG_STACK) FBTrace.sysout("getFunctionNameFromLines for line@URL="+lineNo+"@"+url+"\n");
+   		if (FBTrace.DBG_STACK) FBTrace.sysout("getFunctionNameFromLines for line@URL="+lineNo+"@"+url+"\n");     /*@explore*/
         for (var i = 0; i < 4; ++i)
         {
             line = source.getLine(url, lineNo-i) + line;
@@ -1741,7 +1741,7 @@ this.guessFunctionNameFromLines = function(url, lineNo, source) {
                 if (m)
                     return m[1];
                 else 
-                	if (FBTrace.DBG_FUNCTION_NAMES) FBL.ERROR("lib.guessFunctionName re failed for lineNo-i="+lineNo+"-"+i+" line="+line+"\n");
+                	if (FBTrace.DBG_FUNCTION_NAMES) FBL.ERROR("lib.guessFunctionName re failed for lineNo-i="+lineNo+"-"+i+" line="+line+"\n");     /*@explore*/
                 m = reFunctionArgNames.exec(line);
                 if (m && m[1])
                     return m[1];
@@ -1894,7 +1894,7 @@ this.updateScriptFiles = function(context, reload)
                 var scriptSrc = scripts[i].getAttribute('src'); // for XUL use attribute 
                 var url = this.normalizeURL(scriptSrc ? scriptSrc : win.location.href);
                 addFile(url);
-				if (FBTrace.DBG_SOURCEFILES) FBTrace.sysout("updateScriptFiles script tag#"+i+" adding "+url+" to context="+context.uid+"\n");
+				if (FBTrace.DBG_SOURCEFILES) FBTrace.sysout("updateScriptFiles script tag#"+i+" adding "+url+" to context="+context.uid+"\n");     /*@explore*/
             }
         }, this));
 
@@ -2076,9 +2076,9 @@ this.isShift = function(event)
 
 this.dispatch = function(listeners, name, args)
 {
-	if (FBTrace.DBG_WINDOWS)
-		FBTrace.sysout("dispatch "+name+" to "+listeners.length+" listeners\n");
-		
+	if (FBTrace.DBG_WINDOWS)     /*@explore*/
+		FBTrace.sysout("dispatch "+name+" to "+listeners.length+" listeners\n");     /*@explore*/
+		                         /*@explore*/
 	try {
 	    for (var i = 0; i < listeners.length; ++i)
 	    {
@@ -2292,8 +2292,8 @@ this.getFileExtension = function(url)
 
 this.isSystemURL = function(url)
 {
-	if (FBTrace.DBG_SHOW_SYSTEM) 
-		return false;
+	if (FBTrace.DBG_SHOW_SYSTEM)      /*@explore*/
+		return false;                 /*@explore*/
     if (url.substr(0, 9) == "resource:")
         return true;
     else if (url.substr(0, 17) == "chrome://firebug/")
@@ -2690,7 +2690,7 @@ this.SourceFile.prototype =
     	var pcmap_type = (sourceLines) ? FBL.PCMAP_PRETTYPRINT : FBL.PCMAP_SOURCETEXT;
     	var lineCount = (sourceLines) ? sourceLines.length : script.lineExtent;
     	
-    	if (FBTrace.DBG_BP) FBTrace.sysout("lib.addToLineTable lineCount="+lineCount+" trueBaseLineNumber="+trueBaseLineNumber+"\n");
+    	if (FBTrace.DBG_BP) FBTrace.sysout("lib.addToLineTable lineCount="+lineCount+" trueBaseLineNumber="+trueBaseLineNumber+"\n");     /*@explore*/
 		this.contributingScripts.push[script.tag];
     	
     	for (var i = 0; i <= lineCount; i++) 
@@ -2700,19 +2700,19 @@ this.SourceFile.prototype =
 
     		if (script.isLineExecutable(scriptLineNo, pcmap_type))     			
     			this.lineMap[mapLineNo] = script.tag;
-    			
-			if (FBTrace.DBG_BP) 
-			{  
-				var pcFromLine = script.lineToPc(scriptLineNo, pcmap_type);  
-				var lineFromPC = script.pcToLine(pcFromLine, pcmap_type);
-			
-				if (this.isLineExecutable(mapLineNo)) 
-	   				FBTrace.sysout("SourceFile.addToLineTable ["+mapLineNo+"]="+this.lineMap[mapLineNo]+" for scriptLineNo="+scriptLineNo+" vs "+lineFromPC+"=lineFromPC; lineToPc="+pcFromLine+" with map="+pcmap_type+"\n");  
-	   			else
-		    		FBTrace.sysout("SourceFile.addToLineTable not executable scriptLineNo="+scriptLineNo+" vs "+lineFromPC+"=lineFromPC; lineToPc="+pcFromLine+"\n");    		
-		    }
+    			                                                                  /*@explore*/
+			if (FBTrace.DBG_BP)                                                   /*@explore*/
+			{                                                                     /*@explore*/
+				var pcFromLine = script.lineToPc(scriptLineNo, pcmap_type);       /*@explore*/
+				var lineFromPC = script.pcToLine(pcFromLine, pcmap_type);         /*@explore*/
+			                                                                      /*@explore*/
+				if (this.isLineExecutable(mapLineNo))                             /*@explore*/
+	   				FBTrace.sysout("SourceFile.addToLineTable ["+mapLineNo+"]="+this.lineMap[mapLineNo]+" for scriptLineNo="+scriptLineNo+" vs "+lineFromPC+"=lineFromPC; lineToPc="+pcFromLine+" with map="+pcmap_type+"\n");     /*@explore*/  
+	   			else                                                              /*@explore*/
+		    		FBTrace.sysout("SourceFile.addToLineTable not executable scriptLineNo="+scriptLineNo+" vs "+lineFromPC+"=lineFromPC; lineToPc="+pcFromLine+"\n");     /*@explore*/    		
+		    }                                                                     /*@explore*/
 	    }
-		if (FBTrace.DBG_BP) FBTrace.sysout("SourceFile.addToLineTable: "+this.toString()+"\n");
+		if (FBTrace.DBG_BP) FBTrace.sysout("SourceFile.addToLineTable: "+this.toString()+"\n");     /*@explore*/
     },
     
     isLineExecutable: function(lineNo) 

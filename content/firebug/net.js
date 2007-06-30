@@ -975,19 +975,19 @@ function NetProgress(context)
         else
             queue.push(handler, args);
 			
-		if (FBTrace.DBG_NET) 
-			FBTrace.dumpProperties( " net.post.args "+(panel?" applied":"queued @"+(queue.length-2)), args);
+		if (FBTrace.DBG_NET)      /*@explore*/
+			FBTrace.dumpProperties( " net.post.args "+(panel?" applied":"queued @"+(queue.length-2)), args);     /*@explore*/
     };
     
     this.flush = function()
     {
         for (var i = 0; i < queue.length; i += 2)
         {
-			if (FBTrace.DBG_NET) 
-			{
-				FBTrace.dumpProperties("net.flush handler("+i+")", queue[i]);
-				FBTrace.dumpProperties("net.flush args ", queue[i+1]);
-			}
+			if (FBTrace.DBG_NET)                                                  /*@explore*/
+			{                                                                     /*@explore*/
+				FBTrace.dumpProperties("net.flush handler("+i+")", queue[i]);     /*@explore*/
+				FBTrace.dumpProperties("net.flush args ", queue[i+1]);            /*@explore*/
+			}                                                                     /*@explore*/
 			
             var file = queue[i].apply(this, queue[i+1]);
             if (file)
@@ -1056,13 +1056,13 @@ NetProgress.prototype =
             this.awaitFile(request, file);
             this.extendPhase(file);
 			
-            if (FBTrace.DBG_NET)
-				FBTrace.dumpProperties("net.requestedFile file", file);
-            
+            if (FBTrace.DBG_NET)     /*@explore*/
+				FBTrace.dumpProperties("net.requestedFile file", file);     /*@explore*/
+                                     /*@explore*/
 			return file;
         } 
-		else
-			if (FBTrace.DBG_NET) FBTrace.dumpProperties("net.requestedFile no file for request=", request);
+		else     /*@explore*/
+			if (FBTrace.DBG_NET) FBTrace.dumpProperties("net.requestedFile no file for request=", request);     /*@explore*/
     },
     
     respondedFile: function(request, time)
@@ -1134,8 +1134,8 @@ NetProgress.prototype =
             
             return file;
         }
-		else
-			if (FBTrace.DBG_NET) FBTrace.dumpProperties("stopfile no file for request=", request);
+		else     /*@explore*/
+			if (FBTrace.DBG_NET) FBTrace.dumpProperties("stopfile no file for request=", request);     /*@explore*/
     },
 
     cacheEntryReady: function(request, file, size)
@@ -1257,8 +1257,8 @@ NetProgress.prototype =
 
     arriveFile: function(file, request)
     {
-		if (FBTrace.DBG_NET)
-			FBTrace.sysout("net.arriveFile for file.href="+file.href+" and request.name="+safeGetName(request)+"\n");
+		if (FBTrace.DBG_NET)     /*@explore*/
+			FBTrace.sysout("net.arriveFile for file.href="+file.href+" and request.name="+safeGetName(request)+"\n");     /*@explore*/
         delete this.requestMap[file.href];
 
         var index = this.pending.indexOf(file);
@@ -1408,10 +1408,10 @@ function NetFile(href, document)
     this.href = href;
     this.document = document
 	
-	if (FBTrace.DBG_NET) {
-		this.uid = FBL.getUniqueId();
-		FBTrace.dumpProperties("NetFile", this);
-	}
+	if (FBTrace.DBG_NET) {                           /*@explore*/
+		this.uid = FBL.getUniqueId();                /*@explore*/
+		FBTrace.dumpProperties("NetFile", this);     /*@explore*/
+	}                                                /*@explore*/
 }
 
 NetFile.prototype = 
@@ -1788,9 +1788,9 @@ Firebug.NetMonitor.NetInfoBody = domplate(Firebug.Rep,
     
     updateInfo: function(netInfoBox, file, context)
     { 
-		if (FBTrace.DBG_NET) 
-			FBTrace.dumpProperties("updateInfo file", file);
-			
+		if (FBTrace.DBG_NET)                                     /*@explore*/
+			FBTrace.dumpProperties("updateInfo file", file);     /*@explore*/
+			                                                     /*@explore*/
         var tab = netInfoBox.selectedTab;
         if (hasClass(tab, "netInfoParamsTab"))
         {

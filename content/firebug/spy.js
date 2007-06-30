@@ -288,8 +288,8 @@ function httpOpenWrapper(request, context, win, method, url, async, username, pa
     request.__open = win.XMLHttpRequest.wrapped.open;
     if (win.__firebug__)
         win.__firebug__.open(request, method, url, async, username, password);
-	else
-		FBTrace.dumpProperties("spy.httpOpenWrapper no win.__firebug__", win);
+	else     /*@explore*/
+		FBTrace.dumpProperties("spy.httpOpenWrapper no win.__firebug__", win);     /*@explore*/
 }
 
 function httpSendWrapper(spy, text)
@@ -313,8 +313,8 @@ function httpSendWrapper(spy, text)
     spy.request.send = spy.win.XMLHttpRequest.wrapped.send;
     if (spy.win.__firebug__)
         spy.win.__firebug__.send(spy.request, text);
-	else
-		FBTrace.dumpProperties("spy.httpSendWrapper no win.__firebug__", spy.win);
+	else     /*@explore*/
+		FBTrace.dumpProperties("spy.httpSendWrapper no win.__firebug__", spy.win);     /*@explore*/
 
     var netProgress = spy.context.netProgress;
     if (netProgress)
@@ -370,9 +370,9 @@ function onHTTPSpyLoad(spy)
         netProgress.post(netProgress.stopFile,
                 [spy.request.channel, now, spy.postText, spy.responseText]);
 
-	if (FBTrace.DBG_NET) 
-		FBTrace.sysout("onHTTPSpyLoad netProgress:"+netProgress+" responseTime="+responseTime+" spy.responseText "+spy.responseText.length +"bytes\n");
-		
+	if (FBTrace.DBG_NET)      /*@explore*/
+		FBTrace.sysout("onHTTPSpyLoad netProgress:"+netProgress+" responseTime="+responseTime+" spy.responseText "+spy.responseText.length +"bytes\n");     /*@explore*/
+		                      /*@explore*/
     if (spy.logRow)
     {
         updateLogRow(spy, responseTime);
@@ -517,9 +517,7 @@ function evalSafeScript(win, context, text)
 {    
     win.__firebugTemp__ = text;
     win.location = "javascript: eval(__firebugTemp__);";
-	win.uid = FBL.getUniqueId();
-	FBTrace.sysout("evalSafeSCript uid="+win.uid+"\n");
-    //delete win.__firebugTemp__;
+	delete win.__firebugTemp__;
 }
 
 // ************************************************************************************************

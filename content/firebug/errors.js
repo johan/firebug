@@ -90,9 +90,9 @@ var Errors = Firebug.Errors = extend(Firebug.Module,
     {
         try
         {
-			if (FBTrace.DBG_ERRORS)
-					FBTrace.dumpProperties("errors.observe error object:", object);	
-					
+			if (FBTrace.DBG_ERRORS)     /*@explore*/
+					FBTrace.dumpProperties("errors.observe error object:", object);	     /*@explore*/
+					                    /*@explore*/
             if (object instanceof nsIScriptError)
             {
                 var context = FirebugContext;
@@ -110,8 +110,8 @@ var Errors = Firebug.Errors = extend(Firebug.Module,
                         if (errorWin)
                         {
                             context = TabWatcher.getContextByWindow(errorWin);
-							if (FBTrace.DBG_ERRORS)
-								FBTrace.sysout("errors.observe context:"+context+" errorWin"+errorWin+"\n");	
+							if (FBTrace.DBG_ERRORS)     /*@explore*/
+								FBTrace.sysout("errors.observe context:"+context+" errorWin"+errorWin+"\n");	     /*@explore*/
                             if (!context)
                                 return;
                         }
@@ -168,8 +168,8 @@ var Errors = Firebug.Errors = extend(Firebug.Module,
         {
         	// Errors prior to console init will come out here, eg error message from Firefox startup jjb.
             // ERROR("Error while reporting error: " + exc);
-			if (FBTrace.DBG_ERRORS)
-				FBTrace.dumpProperties("errors.observe FAILS", exc);
+			if (FBTrace.DBG_ERRORS)     /*@explore*/
+				FBTrace.dumpProperties("errors.observe FAILS", exc);     /*@explore*/
         }
     },
 

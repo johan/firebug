@@ -123,12 +123,12 @@ top.Firebug =
 		for (var i = basePrefNames; i < prefNames.length; ++i)
             this[prefNames[i]] = this.getPref(prefNames[i]);
 
-		if (FBTrace.DBG_OPTIONS)
-		{
-			 for (var i = 0; i < prefNames.length; ++i) 
-			 	FBTrace.sysout("firebug.initialize option "+prefNames[i]+"="+this[prefNames[i]]+"\n");
-		}
-
+		if (FBTrace.DBG_OPTIONS)     /*@explore*/
+		{                            /*@explore*/
+			 for (var i = 0; i < prefNames.length; ++i)      /*@explore*/
+			 	FBTrace.sysout("firebug.initialize option "+prefNames[i]+"="+this[prefNames[i]]+"\n");     /*@explore*/
+		}                            /*@explore*/
+                                     /*@explore*/
         // If another window is opened, then the creation of our first context won't
         // result in calling of enable, so we have to enable our modules ourself
         if (fbs.enabled)
@@ -141,9 +141,9 @@ top.Firebug =
      */
     initializeUI: function(detachArgs)
     {
-		if (FBTrace.DBG_INITIALIZE)
-			FBTrace.sysout("firebug.initializeUI this.disabledAlways="+this.disabledAlways+"\n");
-			
+		if (FBTrace.DBG_INITIALIZE)     /*@explore*/
+			FBTrace.sysout("firebug.initializeUI this.disabledAlways="+this.disabledAlways+"\n");     /*@explore*/
+			                            /*@explore*/
         fbs.registerClient(this);
 
         TabWatcher.initialize(this);
@@ -213,8 +213,8 @@ top.Firebug =
         
         for (var i = 0; i < arguments.length; ++i)
             TabWatcher.addListener(arguments[i]);
-		if (FBTrace.DBG_INITIALIZE)
-			FBTrace.dumpStack("registerModule");
+		if (FBTrace.DBG_INITIALIZE)     /*@explore*/
+			FBTrace.dumpStack("registerModule");     /*@explore*/
     },
 
     registerPanel: function()
@@ -223,9 +223,9 @@ top.Firebug =
 
         for (var i = 0; i < arguments.length; ++i)
             panelTypeMap[arguments[i].prototype.name] = arguments[i];
-		if (FBTrace.DBG_INITIALIZE)
-			for (var i = 0; i < arguments.length; ++i)
-				FBTrace.sysout("registerPanel "+arguments[i].prototype.name+"\n");
+		if (FBTrace.DBG_INITIALIZE)     /*@explore*/
+			for (var i = 0; i < arguments.length; ++i)     /*@explore*/
+				FBTrace.sysout("registerPanel "+arguments[i].prototype.name+"\n");     /*@explore*/
     },
 
     registerRep: function()
@@ -337,8 +337,8 @@ top.Firebug =
         else if (type == nsIPrefBranch.PREF_BOOL)
             prefs.setBoolPref(prefName, value);
 			
-		if (FBTrace.DBG_OPTIONS)
-			FBTrace.sysout("firebug.setPref "+name+"="+value+"\n");
+		if (FBTrace.DBG_OPTIONS)                                        /*@explore*/
+			FBTrace.sysout("firebug.setPref "+name+"="+value+"\n");     /*@explore*/
     },
 
     increaseTextSize: function(amt)
@@ -383,9 +383,9 @@ top.Firebug =
         }
 
         delete optionUpdateMap[name];
-		
-		if (FBTrace.DBG_OPTIONS)
-			FBTrace.sysout("firebug.updatePrefs EXIT: "+name+"="+value+"\n");
+		                             /*@explore*/
+		if (FBTrace.DBG_OPTIONS)     /*@explore*/
+			FBTrace.sysout("firebug.updatePrefs EXIT: "+name+"="+value+"\n");     /*@explore*/
     },
     
     openPermissions: function()

@@ -86,8 +86,8 @@ Firebug.CommandLine = extend(Firebug.Module,
             catch (exc)
             {
                 iterateWindows(win, function(win) { delete win.__scope__; });
-				if (FBTrace.DBG_ERRORS)
-					FBTrace.dumpProperties("commandLine.evaluate threw=",exc);
+				if (FBTrace.DBG_ERRORS)                                            /*@explore*/
+					FBTrace.dumpProperties("commandLine.evaluate threw=",exc);     /*@explore*/
                 throw exc;
             }
         }

@@ -71,9 +71,9 @@ top.FirebugChrome =
 		if (!detachArgs) 
 			detachArgs = {};
 			
-		if (FBTrace.DBG_INITIALIZE) 
-			FBTrace.dumpProperties("chrome.initialize w/detachArgs=", detachArgs);
-
+		if (FBTrace.DBG_INITIALIZE)      /*@explore*/
+			FBTrace.dumpProperties("chrome.initialize w/detachArgs=", detachArgs);     /*@explore*/
+                                         /*@explore*/
 		if (detachArgs.FBL)
 			top.FBL = detachArgs.FBL;
 		else 
@@ -199,9 +199,9 @@ top.FirebugChrome =
 
     attachBrowser: function(browser, context)  // XXXjjb context == (FirebugContext || null)  and externalMode == true
     {
-		if (FBTrace.DBG_INITIALIZE)
-			FBTrace.sysout("chrome.attachBrowser with externalMode="+externalMode+" context="+context+" context==FirebugContext: "+(context==FirebugContext)+"\n");
-
+		if (FBTrace.DBG_INITIALIZE)     /*@explore*/
+			FBTrace.sysout("chrome.attachBrowser with externalMode="+externalMode+" context="+context+" context==FirebugContext: "+(context==FirebugContext)+"\n");     /*@explore*/
+                                        /*@explore*/
         if (externalMode)
         {
             browser.detached = true;
@@ -435,9 +435,9 @@ top.FirebugChrome =
     
     syncPanel: function()    
     {
-		if (FBTrace.DBG_WINDOWS)
-			FBTrace.sysout("chrome.syncPanel FirebugContext="+FirebugContext+"\n");
-			
+		if (FBTrace.DBG_WINDOWS)     /*@explore*/
+			FBTrace.sysout("chrome.syncPanel FirebugContext="+FirebugContext+"\n");     /*@explore*/
+			                         /*@explore*/
         panelStatus.clear();
 
         if (FirebugContext)

@@ -73,8 +73,8 @@ top.SourceCache.prototype =
         }
         catch (exc)
         {
-			if (FBTrace.DBG_CACHE) FBTrace.sysout("sourceCache for window="+this.context.window.location.href+" error: \n"+FBL.getStackDump()+"\n");
-			if (FBTrace.DBG_CACHE) FBTrace.dumpProperties(this.cache);
+			if (FBTrace.DBG_CACHE) FBTrace.sysout("sourceCache for window="+this.context.window.location.href+" error: \n"+FBL.getStackDump()+"\n");     /*@explore*/
+			if (FBTrace.DBG_CACHE) FBTrace.dumpProperties(this.cache);     /*@explore*/
         	ERROR("sourceCache.load fails newChannel for url="+url+ " cause:"+exc+"\n");
             return;
         }
@@ -105,11 +105,11 @@ top.SourceCache.prototype =
 			
 			if (FBL.reChrome.test(url))  // chrome urls cannot be read with this code.
 				return;
-			var isCache = (channel instanceof nsICachingChannel)?"nsICachingChannel":"NOT caching channel";
-			var isUp = (channel instanceof nsIUploadChannel)?"nsIUploadChannel":"NOT nsIUploadChannel";
-			FBTrace.sysout(url+" vs "+this.context.browser.contentWindow.location.href+" and "+isCache+" "+isUp+"\n");
-        	FBTrace.dumpProperties("sourceCache.load fails channel.open for url="+url+ " cause:", exc);
-			FBTrace.dumpProperties("sourceCache.load fails channel=", channel);
+			var isCache = (channel instanceof nsICachingChannel)?"nsICachingChannel":"NOT caching channel";     /*@explore*/
+			var isUp = (channel instanceof nsIUploadChannel)?"nsIUploadChannel":"NOT nsIUploadChannel";     /*@explore*/
+			FBTrace.sysout(url+" vs "+this.context.browser.contentWindow.location.href+" and "+isCache+" "+isUp+"\n");     /*@explore*/
+        	FBTrace.dumpProperties("sourceCache.load fails channel.open for url="+url+ " cause:", exc);     /*@explore*/
+			FBTrace.dumpProperties("sourceCache.load fails channel=", channel);     /*@explore*/
 			return;
         }
         
@@ -145,7 +145,7 @@ top.SourceCache.prototype =
     
     store: function(url, text)
     {
-		if (FBTrace.DBG_CACHE) FBTrace.sysout("sourceCache for window="+this.context.window.location.href+" store url="+url+"\n");
+		if (FBTrace.DBG_CACHE) FBTrace.sysout("sourceCache for window="+this.context.window.location.href+" store url="+url+"\n");     /*@explore*/
         var lines = splitLines(text);
         return this.cache[url] = lines;
     },
