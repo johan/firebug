@@ -59,9 +59,7 @@ top.FirebugChrome =
 		}
 		catch (exc)
 		{
-			// Helpful for extensions.
 			FBTrace.dumpProperties("chrome.panelBarReady FAILS", exc);
-			throw exc;
 		}
 		
     },
@@ -105,11 +103,12 @@ top.FirebugChrome =
      */
     initializeUI: function()
     { 
+	try { 
 		var detachArgs = window.arguments[0];
         if (detachArgs)
         {
             FirebugContext = detachArgs.context ? detachArgs.context : FirebugContext;
-            externalBrowser = detachArgs.browser ? detachArgs.browser : Firebug.tabBrowser.selectedBrowser;
+            externalBrowser = detachArgs.browser;// else undefined
         }
 
         this.applyTextSize(Firebug.textSize);
@@ -151,7 +150,9 @@ top.FirebugChrome =
             this.attachBrowser(externalBrowser, FirebugContext);
         else
             Firebug.initializeUI(detachArgs);       
-		
+		} catch (exc) {
+			FBTrace.dumpProperties("chrome.initializeUI fails", exc);
+		}
 		 
     },
     
@@ -1018,17 +1019,8 @@ function browser2Loaded()
 {
     var browser2 = panelBar2.browser;
     browser2.removeEventListener("load", browser2Loaded, true);
-	
-	try 
-	{
-	    FirebugChrome.initializeUI();
-	} 
-	catch (exc) 
-	{
-		FBTrace.dumpProperties("chrome.initializeUI fails", exc);
-		throw exc;
-	}
 
+    FirebugChrome.initializeUI();
 }
 
 function onBlur(event)

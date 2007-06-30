@@ -52,6 +52,12 @@ var Errors = Firebug.Errors = extend(Firebug.Module,
             this.showCount(context.errorCount);
     },
     
+	showErrorMessage: function(errorLabel)
+	{
+		statusBar.setAttribute("errors", "true");
+		statusText.setAttribute("value", errorLabel);
+	},
+	
     showCount: function(errorCount)
     {
         if (!statusBar)
@@ -157,7 +163,6 @@ var Errors = Firebug.Errors = extend(Firebug.Module,
         {
         	// Errors prior to console init will come out here, eg error message from Firefox startup jjb.
             // ERROR("Error while reporting error: " + exc);
-			FBTrace.dumpProperties("errors.observe FAILS", exc);
         }
     },
 

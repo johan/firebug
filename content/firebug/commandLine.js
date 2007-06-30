@@ -11,6 +11,8 @@ const commandPrefix = ">>>";
 const reOpenBracket = /[\[\(\{]/;
 const reCloseBracket = /[\]\)\}]/;
 
+// XXXjjb FF3 seems to need window. in front of __scope__ but I'm sure yet.
+
 const evalScript = "with (__scope__.vars) { with (__scope__.api) { with (__scope__.userVars) { with (window) {" +
     "try {" +
         "__scope__.callback(eval(__scope__.expr));" +

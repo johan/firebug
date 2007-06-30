@@ -1444,7 +1444,6 @@ this.getStackFrame = function(frame, context)
     }
     catch (exc)
     {
-		FBTrace.dumpProperties("lib.getStackTrace fails:", exc);
         return null;
     }
 };
@@ -1721,6 +1720,7 @@ this.guessFunctionNameFromLines = function(url, lineNo, source) {
                 var m = reGuessFunction.exec(line);
                 if (m)
                     return m[1];
+                else 
                 m = reFunctionArgNames.exec(line);
                 if (m && m[1])
                     return m[1];
@@ -1876,7 +1876,7 @@ this.updateScriptFiles = function(context, reload)
             }
         }, this));
 
-		if (context.evalSourceFilesByURL)
+		if (context.evalSourceFilesByURL && Firebug.showEvalSources)
 			this.addSourceFilesByURL(sourceFiles, sourceFileMap, context.evalSourceFilesByURL);
 		if (context.eventSourceFilesByURL) 
 			this.addSourceFilesByURL(sourceFiles, sourceFileMap, context.eventSourceFilesByURL);
@@ -2065,7 +2065,6 @@ this.dispatch = function(listeners, name, args)
 	catch (exc)
     {
             FBTrace.dumpProperties(" Exception in lib.dispatch "+ name, exc); // XXXjjb
-            // silent
     }	
 
 };
@@ -2647,7 +2646,12 @@ this.PCMAP_PRETTYPRINT = this.CI("jsdIScript").PCMAP_PRETTYPRINT;
 
 this.SourceFile.prototype = 
 {
-    toString: function()
+	toString: function()
+	{
+		return this.href;
+	},
+	
+    dumpLineMap: function()
     {
         var str = "SourceFile " + this.href+"; lineMap: ";
 		for (line in this.lineMap) str += "["+line+"]="+this.lineMap[line];		

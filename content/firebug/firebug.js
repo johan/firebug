@@ -65,6 +65,8 @@ const prefNames =
     // Script
     "breakOnErrors",
 	"useDebugAdapter",
+	"showEvalSources",
+	"useLastLineForEvalName",
 	"useFirstLineForEvalName",
     
     // DOM
@@ -365,7 +367,6 @@ top.Firebug =
         }
 
         delete optionUpdateMap[name];
-		
     },
     
     openPermissions: function()
@@ -710,6 +711,8 @@ top.Firebug =
     
     isURIDenied: function(uri)
     {
+		if (!uri)  // null or undefined is denied
+			return true;
         return uri &&
             (pm.testPermission(uri, "firebug") == DENY_ACTION
                 || (uri.scheme == "file" && this.disabledFile));

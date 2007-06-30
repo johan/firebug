@@ -38,6 +38,8 @@ pref("extensions.firebug.showComputedStyle", false);
 // Script
 pref("extensions.firebug.breakOnErrors", false);
 pref("extensions.firebug.useDebugAdapter", false);
+pref("extensions.firebug.showEvalSources", true);
+pref("extensions.firebug.useLastLineForEvalName", false);
 pref("extensions.firebug.useFirstLineForEvalName", false);
 
 

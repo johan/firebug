@@ -974,12 +974,14 @@ function NetProgress(context)
         }
         else
             queue.push(handler, args);
+			
     };
     
     this.flush = function()
     {
         for (var i = 0; i < queue.length; i += 2)
         {
+			
             var file = queue[i].apply(this, queue[i+1]);
             if (file)
                 panel.updateFile(file);
@@ -1389,6 +1391,7 @@ function NetFile(href, document)
 {
     this.href = href;
     this.document = document
+	
 }
 
 NetFile.prototype = 

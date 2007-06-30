@@ -395,13 +395,16 @@ Firebug.Debugger = extend(Firebug.Module,
         	else
 	        	Firebug.showBar(true);
 	        
+	   		
 	        var panel = context.chrome.selectPanel("script");
+	        
+	        
 	        panel.select(context.debugFrame);
-			
+	        
+	   		
 	        context.chrome.focus();
         }
         catch(anyUIError) {
-	        if (FBTrace.DBG_UI_LOOP) FBTrace.dumpProperties("Debugger UI error during debugging loop:", anyUIError);
         	ERROR("Debugger UI error during debugging loop:"+anyUIError+"\n");
         }
     },
@@ -583,11 +586,21 @@ Firebug.Debugger = extend(Firebug.Module,
     	{
         	Firebug.errorStackTrace = getStackTrace(frame, context);
         } catch (exc) {
-			FBTrace.dumpProperties("debugger.onError getStackTrace FAILED:", exc);
-			throw exc;
+        	ERROR("debugger.onError getStackTrace FAILED: "+exc+"\n");
         }
-        
-        //  need to extend idl onError(frame, message) before: statusText.setAttribute("value", object.errorMessage);
+    },
+	
+	onErrorWithMessage: function(frame, message)
+    {
+        var context = this.breakContext;
+        delete this.breakContext;
+    	try 
+    	{
+        	Firebug.errorStackTrace = getStackTrace(frame, context);
+			Firebug.Errors.showErrorMessage(message);
+        } catch (exc) {
+        	ERROR("debugger.onErrorWithMessage getStackTrace FAILED: "+exc+"\n");
+        }
     },
 
     onToggleBreakpoint: function(url, lineNo, isSet)
@@ -752,6 +765,7 @@ Firebug.Debugger = extend(Firebug.Module,
     		
 	   	   	sourceFile.tag = script.tag;
 			
+        	
     		sourceFile.addToLineTable(script, script.baseLineNumber, false);
     	}
     	catch(error) 
@@ -766,23 +780,25 @@ Firebug.Debugger = extend(Firebug.Module,
 
     onEval: function(frame, val) 
     { 
-        var context = this.breakContext;
-        delete this.breakContext;
-
     	try 
-    	{
-	 		var sourceFile = this.createSourceFileForEval(frame, context);
-	    	FBL.setSourceFileForEvalIntoContext(context, frame.script.tag, sourceFile);	   
-	    	sourceFile.addToLineTable(frame.script, 1, false); 
+    	{ 	
+			var context = this.breakContext;
+        	delete this.breakContext;
+
+			var sourceFile = this.createSourceFileForEval(frame, context);
+	    	FBL.setSourceFileForEvalIntoContext(context, frame.script.tag, sourceFile);	
+	    	
+			sourceFile.addToLineTable(frame.script, 1, false); 
+			
+			val.value = jsd.wrapValue(sourceFile.href);
+			return RETURN_VALUE;
  		}
 		catch( error) 
 		{
-			FBTrace.sysout("debugger.oneval exception error="+error+"\n");
+			ERROR("debugger.onEval failed: "+error);
 			return RETURN_CONTINUE;
 		}
-		
-		val.value = jsd.wrapValue(sourceFile.href);
-		return RETURN_VALUE;
+
     },
         
         
@@ -823,6 +839,8 @@ Firebug.Debugger = extend(Firebug.Module,
 
 		if (Firebug.useDebugAdapter)
 			var sourceFile = this.getSourceFileFromDebugAdapter(context, frame, eval_body);
+		else if (Firebug.useLastLineForEvalName)
+			var sourceFile = this.getSourceFileFromLastLine(context, frame, eval_body)
 		else if (Firebug.useFirstLineForEvalName)
 			var sourceFile = this.getSourceFileFromFirstSourceLine(context, frame, eval_body)
 		
@@ -842,11 +860,35 @@ Firebug.Debugger = extend(Firebug.Module,
 		return sourceFile;
 	},
 
+	getSourceFileFromLastLine: function(context, frame, eval_body)
+	{
+		var lastLineLength = 0;
+		var endLastLine = eval_body.length - 1;
+		while(lastLineLength < 3) // skip newlines at end of buffer
+		{
+			var lastNewline = eval_body.lastIndexOf('\n', endLastLine);
+			if (lastNewline < 0) 
+			{
+				var lastNewLine = eval_body.lastIndexOf('\r', endLastLine);
+				if (lastNewLine < 0) 
+					return;
+			}
+			lastLineLength = eval_body.length - lastNewline;
+			endLastLine = lastNewline - 1;
+		}
+		var lastLines = eval_body.slice(lastNewline + 1);
+		return this.getSourceFileFromSourceLine(lastLines, eval_body);
+	},
 	
 	getSourceFileFromFirstSourceLine: function(context, frame, eval_body)
 	{
 		var firstLine = eval_body.substr(0, 256);  // guard against giants
-		var m = reURIinComment.exec(firstLine);
+		return this.getSourceFileFromSourceLine(firstLine, eval_body);
+	},
+	
+	getSourceFileFromSourceLine: function(line, eval_body)
+	{
+		var m = reURIinComment.exec(line);
 		if (m) 
 		{
 			var sourceFile = new FBL.SourceFile(m[1]);
@@ -1094,8 +1136,8 @@ ScriptPanel.prototype = extend(Firebug.Panel,
             {			
             	if (!frame.script.functionName && frame.callingFrame)  // eval-level
 				{
-            	   		this.executionFile = getSourceFileForEval(frame.script, this.context); 
-            	   		this.executionLineNo = frame.line - frame.script.baseLineNumber + 1;
+            	   	this.executionFile = getSourceFileForEval(frame.script, this.context); 
+            	   	this.executionLineNo = frame.line - frame.script.baseLineNumber + 1;
             	}
             	else 
             	{ 
@@ -1683,6 +1725,9 @@ ScriptPanel.prototype = extend(Firebug.Panel,
         
         return [
             optionMenu("BreakOnAllErrors", "breakOnErrors"),
+			optionMenu("ShowEvalSources", "showEvalSources"),
+			optionMenu("UseLastLineForEvalName", "useLastLineForEvalName"),
+			optionMenu("UseFirstLineForEvalName", "useFirstLineForEvalName"),
 			optionMenu("UseDebugAdapter", "useDebugAdapter")
         ];
     },

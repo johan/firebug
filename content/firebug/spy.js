@@ -510,7 +510,7 @@ function evalSafeScript(win, context, text)
 {    
     win.__firebugTemp__ = text;
     win.location = "javascript: eval(__firebugTemp__);";
-    delete win.__firebugTemp__;
+	delete win.__firebugTemp__;
 }
 
 // ************************************************************************************************

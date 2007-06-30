@@ -73,8 +73,7 @@ top.SourceCache.prototype =
         }
         catch (exc)
         {
-			FBTrace.dumpProperties("sourceCache.load fails newChannel for url="+url+ " cause:",exc);
-			// silent
+        	ERROR("sourceCache.load fails newChannel for url="+url+ " cause:"+exc+"\n");
             return;
         }
 
@@ -101,10 +100,10 @@ top.SourceCache.prototype =
         }
         catch (exc)
         {
+			
 			if (FBL.reChrome.test(url))  // chrome urls cannot be read with this code.
 				return;
-			FBTrace.dumpProperties("sourceCache.load fails channel.open for url="+url+ " cause:", exc);
-			return;  // silent
+			return;
         }
         
         try

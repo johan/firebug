@@ -115,20 +115,17 @@ top.TabWatcher =
             return;
         }
 
-        if (uri)
+        if (Firebug.disabledAlways)
         {
-            if (Firebug.disabledAlways)
-            {
-                // Check if the whitelist makes an exception
-                if (!this.owner.isURIAllowed(uri))
-                    return this.watchContext(win, null);
-            }
-            else
-            {
-                // Check if the blacklist says no
-                if (this.owner.isURIDenied(uri))
-                    return this.watchContext(win, null);
-            }
+            // Check if the whitelist makes an exception
+            if (!this.owner.isURIAllowed(uri))
+                return this.watchContext(win, null);
+        }
+        else
+        {
+            // Check if the blacklist says no
+            if (this.owner.isURIDenied(uri))
+                return this.watchContext(win, null);
         }
         
         var context = this.getContextByWindow(win);
@@ -359,9 +356,6 @@ top.TabWatcher =
                 }
                 catch (exc)
                 {
-                    FBTrace.dumpProperties(" Exception in TabWatcher.dispatch "+ name, exc); // XXXjjb
-                    FBTrace.dumpProperties(" Exception in TabWatcher.dispatch for listener[name]:", listener[name]);
-					// silent 
                 }
             }
         }
@@ -401,7 +395,9 @@ var TabProgressListener = extend(BaseProgressListener,
     {
         // Only watch windows that are their own parent - e.g. not frames
         if (progress.DOMWindow.parent == progress.DOMWindow)
+		{
 			TabWatcher.watchTopWindow(progress.DOMWindow, location);
+		}
     },
 
     onStateChange: function(progress, request, flag, status)
@@ -421,6 +417,7 @@ var FrameProgressListener = extend(BaseProgressListener,
 {
     onStateChange: function(progress, request, flag, status)
     {
+								
         if (flag & STATE_IS_REQUEST && flag & STATE_START)
         {
         	// We need to get the hook in as soon as the new DOMWindow is created, but before
@@ -428,14 +425,14 @@ var FrameProgressListener = extend(BaseProgressListener,
         	// that the start of these "dummy" requests is the only state that works.
 				
 			var safeURI = safeGetName(request);
-            if (safeURI && (safeURI == dummyURI || safeURI == "about:document-onload-blocker") )
+            if (safeURI && (safeURI == dummyURI) )// || safeURI == "about:document-onload-blocker") )
             {
 				var win = progress.DOMWindow;
                 // Another weird edge case here - when opening a new tab with about:blank,
                 // "unload" is dispatched to the document, but onLocationChange is not called
                 // again, so we have to call watchTopWindow here
                
-                if (win.parent == win && (win.location.href == "about:blank"  || safeURI == "about:document-onload-blocker"))
+                if (win.parent == win && (win.location.href == "about:blank" ))//  || safeURI == "about:document-onload-blocker"))
                     TabWatcher.watchTopWindow(win, null);
 				
                 TabWatcher.watchWindow(win);
@@ -445,10 +442,8 @@ var FrameProgressListener = extend(BaseProgressListener,
 
         // Later I discovered that XHTML documents don't dispatch the dummy requests, so this
         // is our best shot here at hooking them.  
-        //if (flag & STATE_IS_DOCUMENT && flag & STATE_TRANSFERRING)
-        //    TabWatcher.watchWindow(progress.DOMWindow);
-		// And later than that jjb found that xml at least uses about:document-onload-blocker
-		// BUT I need to check script activity.....
+        if (flag & STATE_IS_DOCUMENT && flag & STATE_TRANSFERRING)
+            TabWatcher.watchWindow(progress.DOMWindow);
 		
 		// XSLT does not raise DOMContentLoaded so we never know to set the context.loaded.
 		// As a fall back we set it here.
@@ -459,6 +454,7 @@ var FrameProgressListener = extend(BaseProgressListener,
 			if (context && !context.onLoadWindowContent && win.parent == win) 
 			{
 				var safeURI = safeGetName(request);
+				
 				if (win.location && win.location.href == safeURI){
 					var fakeEvent = {type:"fake", currentTarget: win};  // TODO refactor onLoadWindowContent
 					onLoadWindowContent(fakeEvent);

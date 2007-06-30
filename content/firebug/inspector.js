@@ -250,9 +250,12 @@ Firebug.Inspector = extend(Firebug.Module,
         if (!chrome)
             chrome = FirebugChrome;
 
-        for (var i = 0; i < this.keyListeners.length; ++i)
-            chrome.keyIgnore(this.keyListeners[i]);
-        delete this.keyListeners;
+		if (this.keyListeners)  // XXXjjb for some reason this is null some times...
+		{
+			for (var i = 0; i < this.keyListeners.length; ++i)
+            	chrome.keyIgnore(this.keyListeners[i]);
+        	delete this.keyListeners;	
+		}
         
         iterateWindows(win, bind(function(subWin)
         {
