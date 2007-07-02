@@ -157,7 +157,7 @@ top.FirebugChrome =
     },
     
     shutdown: function()
-    {        
+    {   
         var doc1 = panelBar1.browser.contentDocument;
         doc1.removeEventListener("mouseover", onPanelMouseOver, false);
         doc1.removeEventListener("mouseout", onPanelMouseOut, false);

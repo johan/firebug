@@ -513,7 +513,7 @@ function onLoadWindowContent(event)
     try
     {
         win.removeEventListener("DOMContentLoaded", onLoadWindowContent, true);
-    }
+   }
     catch (exc) {}
     
 	// Signal that we got the onLoadWindowContent event. This prevents the FrameProgressListener from sending it.

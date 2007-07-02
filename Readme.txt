@@ -14,10 +14,9 @@ This is an experimental branch of Firebug implementing
 Did I mention this was experimental?
  
 Known problems:
- Firefox crashes more often: I don't completely understand the rules for firebug-service
- and JSD interface.
+ 
  Very large evals() will take much more time. UseFirstLine may fix this.
- There are a ton of if(DEBUG) statements that need to be culled out for production version. 
+ There are a ton of if(DEBUG) statements that are culled out in the eval branch
 
 Please report additional problems to Fireclipse project on sourceforge
  
@@ -33,6 +32,12 @@ Building:
  3) cd fbugEval; ant 
  
  4) copy dist/* to URL-base-to-distribution-directory
+ 
+To Create branches/eval
+1. copy all files from branches/explore
+2. overwrite some by 
+cd branches/explore
+./unexplore.sh
  
  --
  This file from
