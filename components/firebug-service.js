@@ -161,6 +161,7 @@ FirebugService.prototype =
 {
     shutdown: function()
     {
+		prefs.removeObserver("extensions.firebug", FirebugPrefsObserver);
         timer = null;
         fbs = null;
         jsd = null;

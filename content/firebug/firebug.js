@@ -172,6 +172,9 @@ top.Firebug =
         dispatch(modules, "shutdown");
 
         this.closeDeadWindows();
+			                                                  /*@explore*/
+		if (FBTrace.DBG_INITIALIZE)                           /*@explore*/
+			FBTrace.sysout("firebug.shutdown exited\n");      /*@explore*/
     },
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 

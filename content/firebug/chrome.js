@@ -160,7 +160,10 @@ top.FirebugChrome =
     },
     
     shutdown: function()
-    {        
+    {   
+		if (FBTrace.DBG_INITIALIZE)                           /*@explore*/
+			FBTrace.sysout("chrome.shutdown entered\n");      /*@explore*/
+			                                                  /*@explore*/
         var doc1 = panelBar1.browser.contentDocument;
         doc1.removeEventListener("mouseover", onPanelMouseOver, false);
         doc1.removeEventListener("mouseout", onPanelMouseOut, false);

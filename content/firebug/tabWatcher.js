@@ -155,6 +155,7 @@ top.TabWatcher =
 			win.addEventListener("pagehide", onUnloadTopWindow, true);
            	win.addEventListener("pageshow", onLoadWindowContent, true);
            	win.addEventListener("DOMContentLoaded", onLoadWindowContent, true);
+			if (FBTrace.DBG_INITIALIZE) FBTrace.sysout("tabWatcher.watchTopWindow pagehide, pageshow, DomContentLoaded addEventListener\n"); /*@explore*/			
         }
 		// XXXjjb at this point we either have context or we just pushed null into contexts and sent it to init...
         
@@ -218,11 +219,12 @@ top.TabWatcher =
         {
             context.windows.push(win);
 			
-			if (FBTrace.DBG_WINDOWS)     /*@explore*/
+			if (FBTrace.DBG_WINDOWS)                                                /*@explore*/
 				FBTrace.sysout("watchWindow sets context for href="+href+"\n");     /*@explore*/
-				                         /*@explore*/
+				                                                                    /*@explore*/
             var eventType = (win.parent == win) ? "pagehide" : "unload";
             win.addEventListener(eventType, onUnloadWindow, false);
+			if (FBTrace.DBG_INITIALIZE) FBTrace.sysout("tabWatcher.watchWindow "+eventType+" addEventListener\n"); /*@explore*/			
             this.dispatch("watchWindow", [context, win]);
         }
     },
@@ -300,6 +302,7 @@ top.TabWatcher =
         try
         {
             context.window.removeEventListener("pagehide", onUnloadTopWindow, true);
+			if (FBTrace.DBG_INITIALIZE) FBTrace.sysout("tabWatcher.unwatchContext  pagehide removeEventListener\n"); /*@explore*/
         }
         catch (exc)
         {
@@ -550,13 +553,15 @@ function onLoadWindowContent(event)
     try
     {
         win.removeEventListener("pageshow", onLoadWindowContent, true);
+		if (FBTrace.DBG_INITIALIZE) FBTrace.sysout("tabWatcher.onLoadWindowContent  pageshow removeEventListener\n"); /*@explore*/
     }
     catch (exc) {}
     
     try
     {
         win.removeEventListener("DOMContentLoaded", onLoadWindowContent, true);
-    }
+ 		if (FBTrace.DBG_INITIALIZE) FBTrace.sysout("tabWatcher.onLoadWindowContent  DOMContentLoaded removeEventListener\n"); /*@explore*/
+   }
     catch (exc) {}
     
 	// Signal that we got the onLoadWindowContent event. This prevents the FrameProgressListener from sending it.
@@ -577,6 +582,7 @@ function onUnloadWindow(event)
     var win = event.currentTarget;
     var eventType = (win.parent == win) ? "pagehide" : "unload";
     win.removeEventListener(eventType, onUnloadWindow, false);
+	if (FBTrace.DBG_INITIALIZE) FBTrace.sysout("tabWatcher.onLoadWindowContent  pageshow removeEventListener\n"); /*@explore*/
     TabWatcher.unwatchWindow(win);
 }
 

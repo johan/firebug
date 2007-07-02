@@ -252,6 +252,7 @@ XMLHttpRequestSpy.prototype =
         this.request.onreadystatechange = this.onReadyStateChange;    
         this.request.addEventListener("load", this.onLoad, true);
         this.request.addEventListener("error", this.onError, true);
+		if (FBTrace.DBG_INITIALIZE) FBTrace.sysout("tabWatcher.detach load error addEventListener\n"); /*@explore*/					
     },
 
     detach: function()
@@ -259,6 +260,7 @@ XMLHttpRequestSpy.prototype =
         this.request.onreadystatechange = this.onreadystatechange;
         try { this.request.removeEventListener("load", this.onLoad, true); } catch (e) {}
         try { this.request.removeEventListener("error", this.onError, true); } catch (e) {}
+		if (FBTrace.DBG_INITIALIZE) FBTrace.sysout("tabWatcher.detach load error removeEventListener\n"); /*@explore*/			
 
         this.onreadystatechange = null;
         this.onLoad = null;

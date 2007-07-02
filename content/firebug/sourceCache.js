@@ -73,8 +73,7 @@ top.SourceCache.prototype =
         }
         catch (exc)
         {
-			if (FBTrace.DBG_CACHE) FBTrace.sysout("sourceCache for window="+this.context.window.location.href+" error: \n"+FBL.getStackDump()+"\n");     /*@explore*/
-			if (FBTrace.DBG_CACHE) FBTrace.dumpProperties(this.cache);     /*@explore*/
+			if (FBTrace.DBG_CACHE) FBTrace.dumpProperties("sourceCache for window="+this.context.window.location.href+" FAILS:", this.cache);     /*@explore*/
         	ERROR("sourceCache.load fails newChannel for url="+url+ " cause:"+exc+"\n");
             return;
         }

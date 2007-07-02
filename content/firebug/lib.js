@@ -1892,7 +1892,8 @@ this.updateScriptFiles = function(context, reload)
             for (var i = 0; i < scripts.length; ++i)
             {
                 var scriptSrc = scripts[i].getAttribute('src'); // for XUL use attribute 
-                var url = this.normalizeURL(scriptSrc ? scriptSrc : win.location.href);
+				var url = scriptSrc ? this.absoluteURL(scriptSrc, win.location.href) : win.location.href;
+                url = this.normalizeURL(url ? url : win.location.href);
                 addFile(url);
 				if (FBTrace.DBG_SOURCEFILES) FBTrace.sysout("updateScriptFiles script tag#"+i+" adding "+url+" to context="+context.uid+"\n");     /*@explore*/
             }
