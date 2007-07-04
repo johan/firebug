@@ -1230,6 +1230,16 @@ function isContainerElement(element)
         case "iframe":
         case "frame":
             return true;
+        case "object":
+            var type = element.getAttribute("type");
+            switch (type)
+            {
+              case "text/html":
+              case "text/xhtml":
+              case "application/xhtml":
+                  return true;
+            }
+            return false;
         case "link":
             return element.getAttribute("rel") == "stylesheet";
     }
