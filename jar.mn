@@ -1,12 +1,7 @@
-#filter substitution
-
 firebug.jar:
-% locale firebug @AB_CD@ %@AB_CD@/
-  @AB_CD@/firebug.dtd        (@AB_CD/firebug.dtd)
-  @AB_CD@/firebug.properties (@AB_CD/firebug.properties)
-firebug.jar:
-% content firebug %content/
+% content firebug %content/ xpcnativewrappers=no
 % skin firebug classic/1.0 %skin/classic/
+% skin firebug-os classic/1.0 %skin/classic/win/
 % overlay chrome://browser/content/browser.xul chrome://firebug/content/browserOverlay.xul
 % overlay chrome://global/content/customizeToolbar.xul chrome://firebug/content/customizeToolbarOverlay.xul
 # CONTENT
