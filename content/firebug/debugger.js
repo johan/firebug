@@ -398,11 +398,13 @@ Firebug.Debugger = extend(Firebug.Module,
 	        
 	   		if (FBTrace.DBG_UI_LOOP) FBTrace.sysout("showBar done FirebugContext="+FirebugContext+"\n");     /*@explore*/
 	   		
-	        var panel = context.chrome.selectPanel("script");
-	        
+	        var panel = context.chrome.selectPanel("script", "callstack");
+			
 	        if (FBTrace.DBG_UI_LOOP) FBTrace.sysout("selectPanel done "+panel+"\n");     /*@explore*/
 	        
 	        panel.select(context.debugFrame);
+			var stackPanel = context.getPanel("callstack", true);
+			stackPanel.refresh(context); 
 	        
 	   		if (FBTrace.DBG_UI_LOOP) FBTrace.sysout("select done\n");     /*@explore*/
 	   		
@@ -2091,6 +2093,77 @@ BreakpointsPanel.prototype = extend(Firebug.Panel,
         return items;
     }   
 });
+// ************************************************************************************************
+
+function CallstackPanel() {
+	FBTrace.sysout("CallstackPanel Constructed\n");	
+}
+
+CallstackPanel.prototype = extend(Firebug.Panel,
+{       
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *    
+    // extends Panel
+    
+    name: "callstack",
+    parentPanel: "script",
+    
+    initialize: function(context, doc)
+    {
+		this.uid = FBL.getUniqueId();
+		FBTrace.sysout("CallstackPanel.initialize:"+this.uid+"\n");
+        Firebug.Panel.initialize.apply(this, arguments);
+    },
+    
+    destroy: function(state)
+    {
+        Firebug.Panel.destroy.apply(this, arguments);
+    },
+
+    show: function(state)
+    {
+          this.refresh();
+    },
+	
+	supportsObject: function(object)
+    {
+        return object instanceof jsdIStackFrame;
+    },
+    updateSelection: function(object)
+    {
+        if (object instanceof jsdIStackFrame)
+            this.showStackFrame(object);
+	},
+    refresh: function()
+    {
+        if (FBTrace.DBG_STACK) /*@explore*/
+			FBTrace.sysout("debugger.callstackPanel.refresh uid="+this.uid+"\n");     /*@explore*/
+							   /*@explore*/
+	},
+	
+	showStackFrame: function(frame) 
+	{
+		clearNode(this.panelNode);
+		var panel = this.context.getPanel("script", true);
+		
+        if (panel && frame)
+        {
+			if (FBTrace.DBG_STACK) /*@explore*/
+				FBTrace.dumpProperties("debugger.callstackPanel.showStackFrame  uid="+this.uid+" frame:", frame);     /*@explore*/
+								   /*@explore*/
+            FBTrace.sysout("debugger.callstackPanel.showStackFrame uid="+this.uid+"this.panelNode= "+this.panelNode.innerHTML+"\n");
+			FBL.setClass(this.panelNode, "errorTrace objectBox-stackTrace");
+			trace = FBL.getStackTrace(frame, this.context);
+			FirebugReps.StackTrace.tag.append({object: trace}, this.panelNode);
+			FBTrace.sysout("debugger.callstackPanel.showStackFrame AFTER this.panelNode="+this.panelNode.innerHTML+"\n");
+        }
+    },
+	
+    getOptionsMenuItems: function()
+    {
+        var items = [];
+        return items;
+    }   
+});
 
 // ************************************************************************************************
 // Local Helpers
@@ -2299,6 +2372,7 @@ function countBreakpoints(context)
 
 Firebug.registerModule(Firebug.Debugger);
 Firebug.registerPanel(BreakpointsPanel);
+Firebug.registerPanel(CallstackPanel);
 Firebug.registerPanel(ScriptPanel);
 
 // ************************************************************************************************
