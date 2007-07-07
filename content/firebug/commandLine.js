@@ -11,17 +11,17 @@ const commandPrefix = ">>>";
 const reOpenBracket = /[\[\(\{]/;
 const reCloseBracket = /[\]\)\}]/;
 
-// XXXjjb FF3 seems to need window. in front of __scope__ but I'm sure yet.
+// XXXjjb FF3  needs win.__scope__ because we eval in sandbox
 
-const evalScript = "with (__scope__.vars) { with (__scope__.api) { with (__scope__.userVars) { with (window) {" +
+const evalScript = "with (win.__scope__.vars) { with (win.__scope__.api) { with (win.__scope__.userVars) { with (window) {" +
     "try {" +
-        "__scope__.callback(eval(__scope__.expr));" +
+        "win.__scope__.callback(eval(win.__scope__.expr));" +
     "} catch (exc) {" +
-        "__scope__.callback(exc, true);" +
+        "win.__scope__.callback(exc, true);" +
     "}" +
 "}}}}";
 
-const evalScriptWithThis =  "(function() { " + evalScript + " }).apply(__scope__.thisValue);";
+const evalScriptWithThis =  "(function() { " + evalScript + " }).apply(win.__scope__.thisValue);";
 
 // ************************************************************************************************
 // GLobals
@@ -77,7 +77,7 @@ Firebug.CommandLine = extend(Firebug.Module,
 
             try
             {
-                injectScript(scriptToEval, win);
+                FBL.evalInTo(win, scriptToEval);
                 iterateWindows(win, function(win) { delete win.__scope__; });
                 
                 if (threw)

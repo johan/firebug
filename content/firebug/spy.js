@@ -507,20 +507,15 @@ function insertSafeWrapper(win, context)
     // For security purposes we can't call open() directly, we have to insert the 
     // calling code into the page so that the page's own security credentials are
     // assigned
-    evalSafeScript(win, context,
-        "var __firebug__ = { " + 
+    FBL.evalInTo(win,
+        "win.__firebug__ = { " + 
         "open: function(req, m, u, s, us, p) { req.__open(m, u, s, us, p); delete req.__open; }, " + 
         "send: function(req, text) { req.send(text); }" + 
         "};"
     );
 }
 
-function evalSafeScript(win, context, text)
-{    
-    win.__firebugTemp__ = text;
-    win.location = "javascript: eval(__firebugTemp__);";
-	delete win.__firebugTemp__;
-}
+
 
 // ************************************************************************************************
 

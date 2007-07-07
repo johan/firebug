@@ -140,8 +140,8 @@ Firebug.TabContext.prototype =
         var panelType = Firebug.getPanelType(panelName);
         if (!panelType && this.panelTypeMap)
             panelType = this.panelTypeMap[panelName];
-		if (FBTrace.DBG_WINDOWS)           /*@expore*/
-			FBTrace.dumpStack("tabContext.getPanel name="+panelName+" noCreate="+noCreate+"\n");     /*@expore*/
+		//if (FBTrace.DBG_WINDOWS)           /*@expore*/
+		//	FBTrace.dumpStack("tabContext.getPanel name="+panelName+" noCreate="+noCreate+"\n");     /*@expore*/
         if (panelType)
             return this.getPanelByType(panelType, noCreate);
     },

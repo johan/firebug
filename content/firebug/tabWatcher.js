@@ -320,22 +320,21 @@ top.TabWatcher =
     
     getContextByWindow: function(win)
     {
-		if (win) // eg search bar
-		{
-	        while (win && win.parent != win)
-	            win = win.parent;
-	        
-			if (FBTrace.DBG_WINDOWS)  // XXXjjb This shows a lot of calls to getContextByWindow, can some be avoided?     /*@explore*/
-				FBTrace.sysout("tabWatcher.getContextByWindow win.location "+(win.location?win.location.href:"(undefined)")+"\n");     /*@explore*/
-	                                                        /*@explore*/
-			for (var i = 0; i < contexts.length; ++i)
-	        {
-	            var context = contexts[i];
-	            if (context.window == win)
-	                return context;
-	        }
-		}
-        return null;    
+        while (win && win.parent != win)
+            win = win.parent;
+        
+		if (!win) // eg search bar, and sometimes win.parent is null??
+			return;
+		
+		if (FBTrace.DBG_WINDOWS)  // XXXjjb This shows a lot of calls to getContextByWindow, can some be avoided?     /*@explore*/
+			FBTrace.sysout("tabWatcher.getContextByWindow win.location "+(win.location?win.location.href:"(undefined)")+"\n");     /*@explore*/
+                                                        /*@explore*/
+		for (var i = 0; i < contexts.length; ++i)
+        {
+            var context = contexts[i];
+            if (context.window == win)
+                return context;
+        }
     },
 
     getBrowserByWindow: function(win)
