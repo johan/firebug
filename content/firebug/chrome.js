@@ -975,7 +975,7 @@ function getBestPanelName(object, context, panelName)
         if (!panelType.prototype.parentPanel)
         {
             var level = panelSupportsObject(panelType, object);
-            if (!bestLevel || (level && level < bestLevel))
+            if (!bestLevel || (level && (level < bestLevel) ))  // XXXjjb I do not understand why this works
             {
                 bestLevel = level;
                 bestPanel = panelType;

@@ -387,10 +387,17 @@ Firebug.HTMLPanel.prototype = extend(Firebug.Panel,
             return null;
 
         var parentNode = node ? node.parentNode : null;
-        if (parentNode && parentNode.nodeType == 9)
-            return parentNode.defaultView.frameElement;
-        else
-            return parentNode;
+        if (parentNode)
+		{
+			if (parentNode.nodeType == 9)
+            	return parentNode.defaultView.frameElement;
+			else
+            	return parentNode;
+		}
+		else
+			if (node.nodeType == 9)
+				return node.defaultView.frameElement;	 
+        
     },
 
     getChildObject: function(node, index, previousSibling)
@@ -620,6 +627,8 @@ Firebug.HTMLPanel.prototype = extend(Firebug.Panel,
     {
         if (object instanceof Element || object instanceof Text || object instanceof CDATASection)
             return 1;
+		else if (object instanceof SourceLink && object.type == "css" && !reCSS.test(object.href))
+            return 2;
         else
             return 0;
     },
@@ -641,7 +650,38 @@ Firebug.HTMLPanel.prototype = extend(Firebug.Panel,
     
     updateSelection: function(object)
     {
-        if (Firebug.Inspector.inspecting)
+		if (this.ioBox.sourceRow)
+        	this.ioBox.sourceRow.removeAttribute("exeLine");
+
+		if (object instanceof SourceLink) // && object.type == "css"
+         {
+             var sourceLink = object;
+             var stylesheet = getStyleSheetByHref(sourceLink.href, this.context);
+             if (stylesheet)
+             {
+             	var ownerNode = stylesheet.ownerNode;
+                if (ownerNode)
+                {
+                	var objectbox = this.ioBox.select(ownerNode, true, true, this.noScrollIntoView);
+					
+					// XXXjjb seems like this could be bad for errors at the end of long files
+					//
+					var sourceRow = FBL.getElementByClass(objectbox, "sourceRow");
+					for (var lineNo = 1; lineNo < sourceLink.line; lineNo++)
+					{
+						if (!sourceRow) break;
+						sourceRow = FBL.getNextByClass(sourceRow,  "sourceRow");
+					}
+					if (sourceRow) 
+					{
+						FBTrace.sysout("html panel updateSelection sourceLink.line="+sourceLink.line+" sourceRow="+sourceRow.innerHTML+"\n");
+        				this.ioBox.sourceRow = sourceRow;
+            			this.ioBox.sourceRow.setAttribute("exeLine", "true");
+					}
+ 				}
+ 			}
+ 		}
+        else if (Firebug.Inspector.inspecting)
             this.ioBox.highlight(object);
         else
             this.ioBox.select(object, true, false, this.noScrollIntoView);

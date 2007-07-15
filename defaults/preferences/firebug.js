@@ -58,3 +58,4 @@ pref("extensions.firebug.showRulers", true);
 pref("extensions.firebug.netFilterCategory", "all");
 pref("extensions.firebug.disableNetMonitor", false);
 pref("extensions.firebug.collectHttpHeaders", true);
+

@@ -32,7 +32,6 @@ const STEP_OUT = nsIFireBug.STEP_OUT;
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
 
-const scriptBlockSize = 20;
 const tooltipTimeout = 300;
 
 const reLineNumber = /^[^\\]?#(\d*)$/;
@@ -396,10 +395,16 @@ Firebug.Debugger = extend(Firebug.Module,
 	        	Firebug.showBar(true);
 	        
 	   		
-	        var panel = context.chrome.selectPanel("script");
-	        
+			if (Firebug.errorStackTrace)
+	        	var panel = context.chrome.selectPanel("script", "callstack");
+			else
+				var panel = context.chrome.selectPanel("script");  // else use prev sidePanel
+			
 	        
 	        panel.select(context.debugFrame);
+			var stackPanel = context.getPanel("callstack", true);
+			if (stackPanel)
+				stackPanel.refresh(context); 
 	        
 	   		
 	        context.chrome.focus();
@@ -613,7 +618,7 @@ Firebug.Debugger = extend(Firebug.Module,
                 panel.context.invalidatePanels("breakpoints");
 
                 url = normalizeURL(url);
-                var sourceBox = panel.sourceBoxes[url];
+                var sourceBox = panel.getSourceBoxByURL(url);
                 if (sourceBox)
                 { 
                     var row = sourceBox.childNodes[lineNo-1];
@@ -634,7 +639,7 @@ Firebug.Debugger = extend(Firebug.Module,
                 panel.context.invalidatePanels("breakpoints");
 
                 url = normalizeURL(url);
-                var sourceBox = panel.sourceBoxes[url];
+                var sourceBox = panel.getSourceBoxByURL(url);
                 if (sourceBox)
                     sourceBox.childNodes[lineNo-1].setAttribute("condition", isSet);
             }
@@ -651,7 +656,7 @@ Firebug.Debugger = extend(Firebug.Module,
                 panel.context.invalidatePanels("breakpoints");
 
                 url = normalizeURL(url);
-                var sourceBox = panel.sourceBoxes[url];
+                var sourceBox = panel.getSourceBoxByURL(url);
                 if (sourceBox)
                     sourceBox.childNodes[lineNo-1].setAttribute("disabledBreakpoint", disabled);
             }
@@ -1102,10 +1107,19 @@ Firebug.Debugger = extend(Firebug.Module,
 
 // ************************************************************************************************
 
+
 function ScriptPanel() {}
 
-ScriptPanel.prototype = extend(Firebug.Panel,
+ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
 {    
+	updateSourceBox: function(sourceBox)
+	{
+		this.panelNode.appendChild(sourceBox);
+        if (this.executionFile && this.location.href == this.executionFile.href)
+            this.setExecutionLine(this.executionLineNo);
+		this.setExecutableLines(sourceBox);
+	},
+	
     showFunction: function(fn)
     {
         var sourceLink = findSourceForFunction(fn, this.context);
@@ -1179,32 +1193,6 @@ ScriptPanel.prototype = extend(Firebug.Panel,
         }
     },
 
-    showSourceFile: function(sourceFile)
-    {
-        var sourceBox = this.getSourceBoxBySourceFile(sourceFile);
-        if (!sourceBox)
-            sourceBox = this.createSourceBox(sourceFile);
-
-        this.showSourceBox(sourceBox);
-    },
-    
-    showSourceBox: function(sourceBox)
-    {
-        if (this.selectedSourceBox)
-            collapse(this.selectedSourceBox, true);
-        
-        this.selectedSourceBox = sourceBox;
-        delete this.currentSearch;
-        
-        if (sourceBox)
-        {
-            if (this.executionFile && this.location.href == this.executionFile.href)
-                this.setExecutionLine(this.executionLineNo);
-			this.setExecutableLines(sourceBox);
-            collapse(sourceBox, false);
-        }
-    },
-    
     scrollToLine: function(lineNo)
     {
         this.context.setTimeout(bindFixed(function()
@@ -1296,63 +1284,7 @@ ScriptPanel.prototype = extend(Firebug.Panel,
     
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
 
-    createSourceBox: function(sourceFile)
-    {
-        var lines = loadScriptLines(sourceFile, this.context);
-        if (!lines)
-            return null;
-
-        var maxLineNoChars = (lines.length + "").length;
-
-        var sourceBox = this.document.createElement("div");
-        sourceBox.repObject = sourceFile;
-        setClass(sourceBox, "sourceBox");
-        collapse(sourceBox, true);
-        this.panelNode.appendChild(sourceBox);
-
-        // For performance reason, append script lines in large chunks using the throttler,
-        // otherwise displaying a large script will freeze up the UI
-        var min = 0;
-        do
-        {
-            var max = min + scriptBlockSize;
-            if (max > lines.length)
-                max = lines.length;
-
-            var args = [lines, min, max-1, maxLineNoChars, sourceBox];
-            this.context.throttle(appendScriptLines, top, args);
-
-            min += scriptBlockSize;
-        } while (max < lines.length);
-
-        this.context.throttle(setLineBreakpoints, top, [sourceFile, sourceBox]);
-
-        if (sourceFile.text)
-            this.anonSourceBoxes.push(sourceBox);
-        else
-            this.sourceBoxes[sourceFile.href] = sourceBox;
-
-        return sourceBox;
-    },
     
-    getSourceBoxBySourceFile: function(sourceFile)
-    {
-        if (!sourceFile.text)
-            return this.getSourceBoxByURL(sourceFile.href);
-        
-        for (var i = 0; i < this.anonSourceBoxes.length; ++i)
-        {
-            var sourceBox = this.anonSourceBoxes[i];
-            if (sourceBox.repObject == sourceFile)
-                return sourceBox;
-        }
-    },
-
-    getSourceBoxByURL: function(url)
-    {
-        return this.sourceBoxes[url];
-    },
-
     getLineNode: function(lineNo)
     {  
         return this.selectedSourceBox ? this.selectedSourceBox.childNodes[lineNo-1] : null;
@@ -1522,9 +1454,8 @@ ScriptPanel.prototype = extend(Firebug.Panel,
         obscure(this.tooltip, true);
         this.panelNode.appendChild(this.tooltip);
         
-        this.sourceBoxes = {};
-        this.anonSourceBoxes = [];
-
+		this.initializeSourceBoxes();
+		
         this.panelNode.addEventListener("mousedown", this.onMouseDown, true);
         this.panelNode.addEventListener("contextmenu", this.onContextMenu, false);
         this.panelNode.addEventListener("mouseover", this.onMouseOver, false);
@@ -1627,7 +1558,7 @@ ScriptPanel.prototype = extend(Firebug.Panel,
     
     updateLocation: function(sourceFile)
     {
-        this.showSourceFile(sourceFile);
+        this.showSourceFile(sourceFile, setLineBreakpoints);
     },
     
     updateSelection: function(object)
@@ -2039,6 +1970,65 @@ BreakpointsPanel.prototype = extend(Firebug.Panel,
         return items;
     }   
 });
+// ************************************************************************************************
+
+function CallstackPanel() {	}
+
+CallstackPanel.prototype = extend(Firebug.Panel,
+{       
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *    
+    // extends Panel
+    
+    name: "callstack",
+    parentPanel: "script",
+    
+    initialize: function(context, doc)
+    {
+        Firebug.Panel.initialize.apply(this, arguments);
+    },
+    
+    destroy: function(state)
+    {
+        Firebug.Panel.destroy.apply(this, arguments);
+    },
+
+    show: function(state)
+    {
+          this.refresh();
+    },
+	
+	supportsObject: function(object)
+    {
+        return object instanceof jsdIStackFrame;
+    },
+    updateSelection: function(object)
+    {
+        if (object instanceof jsdIStackFrame)
+            this.showStackFrame(object);
+	},
+    refresh: function()
+    {
+	},
+	
+	showStackFrame: function(frame) 
+	{
+		clearNode(this.panelNode);
+		var panel = this.context.getPanel("script", true);
+		
+        if (panel && frame)
+        {
+			FBL.setClass(this.panelNode, "errorTrace objectBox-stackTrace");
+			trace = FBL.getStackTrace(frame, this.context);
+			FirebugReps.StackTrace.tag.append({object: trace}, this.panelNode);
+        }
+    },
+	
+    getOptionsMenuItems: function()
+    {
+        var items = [];
+        return items;
+    }   
+});
 
 // ************************************************************************************************
 // Local Helpers
@@ -2134,20 +2124,6 @@ ConditionEditor.prototype = domplate(Firebug.InlineEditor.prototype,
 });
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
-
-function loadScriptLines(sourceFile, context)
-{    
-    if (sourceFile.text)
-        return splitLines(sourceFile.text);
-    else
-        return context.sourceCache.load(sourceFile.href);
-}
-
-function appendScriptLines(lines, min, max, maxLineNoChars, panelNode)
-{
-    var html = getSourceLineRange(lines, min, max, maxLineNoChars);
-    appendInnerHTML(panelNode, html);
-}
 
 function setLineBreakpoints(sourceFile, scriptBox)
 {
@@ -2247,6 +2223,7 @@ function countBreakpoints(context)
 
 Firebug.registerModule(Firebug.Debugger);
 Firebug.registerPanel(BreakpointsPanel);
+Firebug.registerPanel(CallstackPanel);
 Firebug.registerPanel(ScriptPanel);
 
 // ************************************************************************************************

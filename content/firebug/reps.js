@@ -986,6 +986,13 @@ this.SourceLink = domplate(Firebug.Rep,
             var stylesheet = getStyleSheetByHref(sourceLink.href, context);
             if (stylesheet)
             {
+                var ownerNode = stylesheet.ownerNode;
+                if (ownerNode)
+                {
+                 	context.chrome.select(sourceLink, "html");
+                 	return;
+				}
+	
                 var panel = context.getPanel("stylesheet");
                 if (panel && panel.getRuleByLine(stylesheet, sourceLink.line))
                     return context.chrome.select(sourceLink);

@@ -296,14 +296,15 @@ top.TabWatcher =
         while (win && win.parent != win)
             win = win.parent;
         
+		if (!win) // eg search bar, and sometimes win.parent is null??
+			return;
+		
 		for (var i = 0; i < contexts.length; ++i)
         {
             var context = contexts[i];
             if (context.window == win)
                 return context;
         }
-
-        return null;    
     },
 
     getBrowserByWindow: function(win)

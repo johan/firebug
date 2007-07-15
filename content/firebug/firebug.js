@@ -1138,7 +1138,123 @@ Firebug.Panel =
 };
 
 // ************************************************************************************************
+const scriptBlockSize = 20;
+Firebug.SourceBoxPanel = function() {} // XXjjb attach Firebug so this panel can be extended.
+
+Firebug.SourceBoxPanel = extend(Firebug.Panel,
+{    
+	initializeSourceBoxes: function()
+	{
+		this.sourceBoxes = {};
+        this.anonSourceBoxes = [];
+	},
+	
+    showSourceBox: function(sourceBox)
+    {
+        if (this.selectedSourceBox)
+            collapse(this.selectedSourceBox, true);
+        
+        this.selectedSourceBox = sourceBox;
+        delete this.currentSearch;
+        
+        if (sourceBox)
+        {
+			this.updateSourceBox(sourceBox); 
+			collapse(sourceBox, false);
+        }
+    },
+	
+	updateSourceBox: function(sourceBox) 
+	{
+		// called just before box is shown
+		this.panelNode.appendChild(sourceBox); 	
+	},
+	
+	createSourceBox: function(sourceFile, sourceBoxDecorator)  // decorator(sourceFile, sourceBox)
+    {
+        var lines = loadScriptLines(sourceFile, this.context);
+        if (!lines)
+            return null;
+
+        var maxLineNoChars = (lines.length + "").length;
+
+        var sourceBox = this.document.createElement("div");
+        sourceBox.repObject = sourceFile;
+        setClass(sourceBox, "sourceBox");
+        collapse(sourceBox, true);
+        //
+
+        // For performance reason, append script lines in large chunks using the throttler,
+        // otherwise displaying a large script will freeze up the UI
+        var min = 0;
+        do
+        {
+            var max = min + scriptBlockSize;
+            if (max > lines.length)
+                max = lines.length;
+
+            var args = [lines, min, max-1, maxLineNoChars, sourceBox];
+            this.context.throttle(appendScriptLines, top, args);
+
+            min += scriptBlockSize;
+        } while (max < lines.length);
+
+        this.context.throttle(sourceBoxDecorator, top, [sourceFile, sourceBox]);
+
+        if (sourceFile.text)
+            this.anonSourceBoxes.push(sourceBox);
+        else
+            this.sourceBoxes[sourceFile.href] = sourceBox;
+
+        return sourceBox;
+    },
     
+    getSourceBoxBySourceFile: function(sourceFile)
+    {
+        if (!sourceFile.text)
+            return this.getSourceBoxByURL(sourceFile.href);
+        
+        for (var i = 0; i < this.anonSourceBoxes.length; ++i)
+        {
+            var sourceBox = this.anonSourceBoxes[i];
+            if (sourceBox.repObject == sourceFile)
+                return sourceBox;
+        }
+    },
+
+    getSourceBoxByURL: function(url)
+    {
+		// if this.sourceBoxes is undefined, you need to call initializeSourceBoxes in your panel.initialize()
+        return url ? this.sourceBoxes[url] : null;
+    },
+	
+	showSourceFile: function(sourceFile, sourceBoxDecorator)
+    {
+        var sourceBox = this.getSourceBoxBySourceFile(sourceFile);
+        if (!sourceBox)
+            sourceBox = this.createSourceBox(sourceFile, sourceBoxDecorator);
+
+        this.showSourceBox(sourceBox);
+    },
+    
+});
+
+function loadScriptLines(sourceFile, context)
+{    
+    if (sourceFile.text)
+        return splitLines(sourceFile.text);
+    else
+        return context.sourceCache.load(sourceFile.href);
+}
+
+function appendScriptLines(lines, min, max, maxLineNoChars, panelNode)
+{
+    var html = getSourceLineRange(lines, min, max, maxLineNoChars);
+    appendInnerHTML(panelNode, html);
+}
+
+// ************************************************************************************************
+
 Firebug.Rep = domplate(
 {        
     className: "",

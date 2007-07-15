@@ -19,6 +19,7 @@ var reSplitFile = /:\/{1,3}(.*?)\/([^\/]*?)\/?($|\?.*)/;
 this.reDataURL = /data:text\/javascript;fileName=([^;]*);baseLineNumber=(\d*?),((?:.*?%0A)|(?:.*))/g;
 this.reJavascript = /\s*javascript:\s*(.*)/;
 this.reChrome = /chrome:\/\/([^\/]*)\//;
+this.reCSS = /\.css$/;
 var reSplitLines = /\r\n|\r|\n/;
 var reFunctionArgNames = /function ([^(]*)\(([^)]*)\)/;
 var reGuessFunction = /['"]?([0-9A-Za-z_]+)['"]?\s*[:=]\s*(function|eval|new Function)/;
@@ -2629,7 +2630,7 @@ this.SourceLink.prototype =
 {
     toString: function()
     {
-        return "SourceLink " + this.href;
+        return this.href;
     }
 };
 
@@ -4592,6 +4593,31 @@ const invisibleTags = this.invisibleTags =
     "br": 1,   
 };
 
+// ************************************************************************************************
+// Script injection
+
+this.evalInTo = function(win, text)
+{
+	var sandbox = new Components.utils.Sandbox(win.location.href);
+	try 
+	{
+		sandbox.win = win;
+		Components.utils.evalInSandbox(text, sandbox);
+	}
+	catch(exc)
+	{
+		FBTrace.dumpProperties("evalInSandBox FAILS for text=\n"+text+"\n", exc);
+		try 
+		{
+			var evaledText = eval(text);
+			FBTrace.dumpProperties("\n\n eval(text)=", evaledText);
+		}
+		catch (evalExc)
+		{
+			FBTrace.dumpProperties("eval(text) also FAILS", exc);
+		}
+	}
+}
 // ************************************************************************************************
 // Debug Logging
 

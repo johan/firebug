@@ -653,13 +653,14 @@ FirebugService.prototype =
     // jsd Hooks
     
     // When (debugger keyword and not halt)||(bp and BP_UNTIL) || (onBreakPoint && no conditions)
-    // || interuptHook
+    // || interuptHook.  rv is ignored 
     onBreak: function(frame, type, rv)
     {   
-    	try { 
+    	try 
+		{ 
 	        var debuggr = this.findDebugger(frame);
-        if (debuggr)
-            return this.breakIntoDebugger(debuggr, frame);
+        	if (debuggr)
+            	return this.breakIntoDebugger(debuggr, frame);
         } 
         catch(exc) 
         {
@@ -1142,7 +1143,7 @@ FirebugService.prototype =
                 if (debuggr.supportsWindow(win))
                     return debuggr;
             }
-            catch (exc) { ERROR("firebug-service findDebugger: "+exc)}
+            catch (exc) { /* ERROR("firebug-service findDebugger: "+exc)*/}
         }
     },
     
@@ -1454,7 +1455,14 @@ FirebugService.prototype =
                 case TYPE_FUNCTION_CALL:
                 {
                     ++hookFrameCount;
-                    
+					
+                    if (!frame.callingFrame)
+					{
+						jsd.interruptHook = null;	
+						jsd.functionHook = null;
+						ddd(" TYPE_FUNCTION_CALL without caller\n");
+					}
+					
                     if (stepMode == STEP_OVER)
                         jsd.interruptHook = null;
 
@@ -1466,15 +1474,15 @@ FirebugService.prototype =
 
                     if (hookFrameCount == 0)
                         fbs.stopStepping();
-                    else if (stepMode == STEP_OVER)
+                    else if (stepMode == STEP_OVER || stepMode == STEP_INTO)
                     {
-                        if (hookFrameCount <= stepFrameCount)
-                            fbs.hookInterrupts();
+                        if (hookFrameCount <= stepFrameCount) 
+							 return fbs.onBreak(frame, type);
                     }
                     else if (stepMode == STEP_OUT)
                     {
                         if (hookFrameCount < stepFrameCount)
-                            fbs.hookInterrupts();
+                            return fbs.onBreak(frame, type);
                     }
                     
                     break;
@@ -1745,11 +1753,12 @@ function ddd(text)
 }
 
 function dumpProperties(title, obj) {
-	var msg = title ="\n";
+	var msg = title + "\n";
 	for (p in obj)
 	{
 		msg += "["+p+"]="+obj[p]+"\n";	
 	}
+	ddd(msg);
 }
 
 function dFormat(script, url) 
