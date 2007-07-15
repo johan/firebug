@@ -37,6 +37,7 @@ Firebug.TraceModule = extend(Firebug.Console,
 	DBG_FBS_CREATION: false, // firebug-service script creation
 	DBG_FBS_BP: false, // firebug-service breakpoints
 	DBG_FBS_ERRORS: false, // firebug-service error handling
+	DBG_HTML: false, // HTML panel
 	
 	debug: this.DBG_TRACE,
 	

@@ -452,9 +452,18 @@ FrameHighlighter.prototype =
         if (needsAppend)
         {
             attachStyles(context, body);
-
             for (var edge in nodes)
-                body.appendChild(nodes[edge]);
+			{
+				try 
+				{
+					body.appendChild(nodes[edge]);
+				}
+                catch(exc)
+				{
+					if (FBTrace.DBG_HTML)
+						FBTrace.dumpProperties("inspector.FrameHighlighter.highlight FAILS", exc);
+				}
+			}
         }
     },
     

@@ -281,6 +281,10 @@ Firebug.HTMLPanel.prototype = extend(Firebug.Panel,
         var parentNodeBox = Firebug.scrollToMutations || Firebug.expandMutations
             ? this.ioBox.createObjectBox(parent)
             : this.ioBox.findObjectBox(parent);
+			
+		if (FBTrace.DBG_HTML)													 /*@explore*/
+			FBTrace.sysout("html.mutateNode parent:"+parent+" parentNodeBox:"+parentNodeBox+"\n"); /*@explore*/
+																				 /*@explore*/
         if (!parentNodeBox)
             return;
 
@@ -387,10 +391,17 @@ Firebug.HTMLPanel.prototype = extend(Firebug.Panel,
             return null;
 
         var parentNode = node ? node.parentNode : null;
-        if (parentNode && parentNode.nodeType == 9)
-            return parentNode.defaultView.frameElement;
-        else
-            return parentNode;
+        if (parentNode)
+		{
+			if (parentNode.nodeType == 9)
+            	return parentNode.defaultView.frameElement;
+			else
+            	return parentNode;
+		}
+		else
+			if (node.nodeType == 9)
+				return node.defaultView.frameElement;	 
+        
     },
 
     getChildObject: function(node, index, previousSibling)

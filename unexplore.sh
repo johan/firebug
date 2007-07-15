@@ -3,7 +3,7 @@
 # requires cygwin or unix
           
 echo "copy"
-for i in `find ../fbugBranchesEval | sed '/\.svn/d;s/.*fbugBranchesEval//'`
+for i in `find ../fbugBranchesEval | sed '/\.svn/d;/branch.properties/d;/install.rdf/d;s/.*fbugBranchesEval//'`
 do
   cp ./$i ../fbugBranchesEval/$i
   ls -l ../fbugBranchesEval/$i
