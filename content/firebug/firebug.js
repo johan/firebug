@@ -1184,7 +1184,6 @@ Firebug.SourceBoxPanel = extend(Firebug.Panel,
 			this.updateSourceBox(sourceBox); 
 			collapse(sourceBox, false);
         }
-		FBTrace.sysout("firebug.showSourceBox this.panelNode:"+this.panelNode.innerHTML+"\n");
     },
 	
 	updateSourceBox: function(sourceBox) 

@@ -2027,9 +2027,7 @@ BreakpointsPanel.prototype = extend(Firebug.Panel,
 });
 // ************************************************************************************************
 
-function CallstackPanel() {
-	FBTrace.sysout("CallstackPanel Constructed\n");	
-}
+function CallstackPanel() {	}
 
 CallstackPanel.prototype = extend(Firebug.Panel,
 {       
@@ -2041,8 +2039,10 @@ CallstackPanel.prototype = extend(Firebug.Panel,
     
     initialize: function(context, doc)
     {
-		this.uid = FBL.getUniqueId();
-		FBTrace.sysout("CallstackPanel.initialize:"+this.uid+"\n");
+		if (FBTrace.DBG_STACK) {  										/*@explore*/
+			this.uid = FBL.getUniqueId();								/*@explore*/
+			FBTrace.sysout("CallstackPanel.initialize:"+this.uid+"\n"); /*@explore*/
+		}                  												/*@explore*/
         Firebug.Panel.initialize.apply(this, arguments);
     },
     
@@ -2082,11 +2082,9 @@ CallstackPanel.prototype = extend(Firebug.Panel,
 			if (FBTrace.DBG_STACK) /*@explore*/
 				FBTrace.dumpProperties("debugger.callstackPanel.showStackFrame  uid="+this.uid+" frame:", frame);     /*@explore*/
 								   /*@explore*/
-            FBTrace.sysout("debugger.callstackPanel.showStackFrame uid="+this.uid+"this.panelNode= "+this.panelNode.innerHTML+"\n");
 			FBL.setClass(this.panelNode, "errorTrace objectBox-stackTrace");
 			trace = FBL.getStackTrace(frame, this.context);
 			FirebugReps.StackTrace.tag.append({object: trace}, this.panelNode);
-			FBTrace.sysout("debugger.callstackPanel.showStackFrame AFTER this.panelNode="+this.panelNode.innerHTML+"\n");
         }
     },
 	

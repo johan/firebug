@@ -28,12 +28,12 @@ Firebug.TraceModule = extend(Firebug.Console,
 	DBG_EVAL: false,    		// debugger.js and firebug-service.js
 	DBG_CACHE: false,   		// sourceCache
 	DBG_SOURCEFILES: false, 	// debugger and sourceCache
-	DBG_WINDOWS: true,    	// tabWatcher, dispatch events; very useful for understand modules/panels 
+	DBG_WINDOWS: false,    	// tabWatcher, dispatch events; very useful for understand modules/panels 
 	DBG_NET: false,        	// net.js
 	DBG_SHOW_SYSTEM: false,    // isSystemURL return false always.
-	DBG_INITIALIZE: true,		// registry (modules panels); initialize FB
+	DBG_INITIALIZE: false,		// registry (modules panels); initialize FB
 	DBG_OPTIONS: false,
-	DBG_TRACE: true,
+	DBG_TRACE: false,
 	DBG_FBS_CREATION: false, // firebug-service script creation
 	DBG_FBS_BP: false, // firebug-service breakpoints
 	DBG_FBS_ERRORS: false, // firebug-service error handling
