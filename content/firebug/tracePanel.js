@@ -7,6 +7,10 @@ FBL.ns(function() { with (FBL) {
 //***********************************************************************************
 // Module
 const DBG_TRACE = false;
+const PrefService = CC("@mozilla.org/preferences-service;1");
+const nsIPrefBranch2 = CI("nsIPrefBranch2");
+const prefs = PrefService.getService(nsIPrefBranch2);
+const prefDomain = "extensions.firebug";
 
 this.namespaceName = "TracePanel";
 
@@ -30,6 +34,9 @@ Firebug.TraceModule = extend(Firebug.Console,
 	DBG_INITIALIZE: true,		// registry (modules panels); initialize FB
 	DBG_OPTIONS: false,
 	DBG_TRACE: true,
+	DBG_FBS_CREATION: false, // firebug-service script creation
+	DBG_FBS_BP: false, // firebug-service breakpoints
+	DBG_FBS_ERRORS: false, // firebug-service error handling
 	
 	debug: this.DBG_TRACE,
 	
@@ -178,9 +185,9 @@ Firebug.TracePanel.prototype = extend(Firebug.ConsolePanel.prototype,
 				});	
 			}
 		}
-		items.push(optionMenu("DebugFirebug_CREATION", "debugFirebug_CREATION"));
-		items.push(optionMenu("DebugFirebug_BP", "debugFirebug_BP"));
-		items.push(optionMenu("DebugFirebug_ERRORS", "debugFirebug_ERRORS"));
+		//items.push(optionMenu("DBG_FBS_CREATION", "debugFirebug_CREATION"));
+		//items.push(optionMenu("DBG_FBS_BP", "debugFirebug_BP"));
+		//items.push(optionMenu("DBG_FBS_ERRORS", "debugFirebug_ERRORS"));
 		return items;
     },
 
@@ -190,6 +197,7 @@ Firebug.TracePanel.prototype = extend(Firebug.ConsolePanel.prototype,
 		var label = menuitem.getAttribute("label");
 		var category = 'DBG_'+label;
 		FBTrace[category] = !FBTrace[category];
+		prefs.setBoolPref(prefDomain +"." + category, FBTrace[category]);
 		if (FBTrace.DBG_OPTIONS)
 			FBTrace.sysout("tracePanel.setOption: "+category + " = " + FBTrace[category] + "\n");
 	},

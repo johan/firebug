@@ -13,7 +13,7 @@ const reCloseBracket = /[\]\)\}]/;
 
 // XXXjjb FF3  needs win.__scope__ because we eval in sandbox
 
-const evalScript = "with (win.__scope__.vars) { with (win.__scope__.api) { with (win.__scope__.userVars) { with (window) {" +
+const evalScript = "with (win.__scope__.vars) { with (win.__scope__.api) { with (win.__scope__.userVars) { with (win) {" +
     "try {" +
         "win.__scope__.callback(eval(win.__scope__.expr));" +
     "} catch (exc) {" +

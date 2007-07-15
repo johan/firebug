@@ -550,6 +550,9 @@ Firebug.Debugger = extend(Firebug.Module,
 	        var context = this.breakContext;
 	        delete this.breakContext;
 	        
+			if (FBTrace.DBG_BP)    /*@explore*/
+				FBTrace.sysout("debugger.onBreak context="+context+"\n"); /*@explore*/
+									/*@explore*/
 	        if (!context)
 	            context = getFrameContext(frame);
 	        if (!context)

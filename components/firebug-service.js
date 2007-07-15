@@ -140,13 +140,13 @@ function FirebugService()
     this.breakOnErrors = prefs.getBoolPref("extensions.firebug.breakOnErrors");
 	
 	try {                            /*@explore*/
-	    this.DBG_CREATION = prefs.getBoolPref("extensions.firebug.debugFirebug_CREATION");     /*@explore*/
-		this.DBG_BP = prefs.getBoolPref("extensions.firebug.debugFirebug_BP");                 /*@explore*/
-		this.DBG_ERRORS = prefs.getBoolPref("extensions.firebug.debugFirebug_ERRORS");         /*@explore*/
+	    this.DBG_CREATION = prefs.getBoolPref("extensions.firebug.FBS_CREATION");     /*@explore*/
+		this.DBG_BP = prefs.getBoolPref("extensions.firebug.FBS_BP");                 /*@explore*/
+		this.DBG_ERRORS = prefs.getBoolPref("extensions.firebug.FBS_ERRORS");         /*@explore*/
     }                                /*@explore*/
 	catch (exc)                      /*@explore*/
 	{                                /*@explore*/
-		// We'll see this later.     /*@explore*/
+		dumpProperties("firebug-service: constructor getBoolPrefs FAILED with exception=",exc);     /*@explore*/
 	}                                /*@explore*/
 	                                 /*@explore*/
     this.currentLeveledScriptTag = 0;          // top- or eval-level
@@ -618,13 +618,13 @@ FirebugService.prototype =
 		
 		try             /*@explore*/
 		{               /*@explore*/
-			fbs.DBG_CREATION = prefs.getBoolPref("extensions.firebug.debugFirebug_CREATION");     /*@explore*/
-			fbs.DBG_BP = prefs.getBoolPref("extensions.firebug.debugFirebug_BP");                 /*@explore*/
-			fbs.DBG_ERRORS = prefs.getBoolPref("extensions.firebug.debugFirebug_ERRORS");         /*@explore*/
+			fbs.DBG_CREATION = prefs.getBoolPref("extensions.firebug.FBS_CREATION");     /*@explore*/
+			fbs.DBG_BP = prefs.getBoolPref("extensions.firebug.FBS_BP");                 /*@explore*/
+			fbs.DBG_ERRORS = prefs.getBoolPref("extensions.firebug.FBS_ERRORS");         /*@explore*/
 		}               /*@explore*/
 		catch(exc)      /*@explore*/
 		{               /*@explore*/
-			ddd("fbs.enableDebugger: failed to set tracing preferences:"+exc);	                  /*@explore*/
+			dumpProperties("fbs.enableDebugger: failed to set tracing preferences:"+exc);	                  /*@explore*/
 		}               /*@explore*/
                         /*@explore*/
 		                /*@explore*/
@@ -678,13 +678,14 @@ FirebugService.prototype =
     // jsd Hooks
     
     // When (debugger keyword and not halt)||(bp and BP_UNTIL) || (onBreakPoint && no conditions)
-    // || interuptHook
+    // || interuptHook.  rv is ignored 
     onBreak: function(frame, type, rv)
     {   
-    	try { 
+    	try 
+		{ 
 	        var debuggr = this.findDebugger(frame);
-        if (debuggr)
-            return this.breakIntoDebugger(debuggr, frame);
+        	if (debuggr)
+            	return this.breakIntoDebugger(debuggr, frame);
         } 
         catch(exc) 
         {
@@ -1223,7 +1224,7 @@ FirebugService.prototype =
                 if (debuggr.supportsWindow(win))
                     return debuggr;
             }
-            catch (exc) { ERROR("firebug-service findDebugger: "+exc)}
+            catch (exc) { /* ERROR("firebug-service findDebugger: "+exc)*/}
         }
     },
     
@@ -1545,7 +1546,14 @@ FirebugService.prototype =
                 case TYPE_FUNCTION_CALL:
                 {
                     ++hookFrameCount;
-                    
+					
+                    if (!frame.callingFrame)
+					{
+						jsd.interruptHook = null;	
+						jsd.functionHook = null;
+						ddd(" TYPE_FUNCTION_CALL without caller\n");
+					}
+					
                     if (stepMode == STEP_OVER)
                         jsd.interruptHook = null;
 
@@ -1557,15 +1565,15 @@ FirebugService.prototype =
 
                     if (hookFrameCount == 0)
                         fbs.stopStepping();
-                    else if (stepMode == STEP_OVER)
+                    else if (stepMode == STEP_OVER || stepMode == STEP_INTO)
                     {
-                        if (hookFrameCount <= stepFrameCount)
-                            fbs.hookInterrupts();
+                        if (hookFrameCount <= stepFrameCount) 
+							 return fbs.onBreak(frame, type);
                     }
                     else if (stepMode == STEP_OUT)
                     {
                         if (hookFrameCount < stepFrameCount)
-                            fbs.hookInterrupts();
+                            return fbs.onBreak(frame, type);
                     }
                     
                     break;
@@ -1834,18 +1842,19 @@ function ERROR(text)
 
 function ddd(text)
 {
-    if (fbs.DBG_BP || fbs.DBG_CREATION)      /*@explore*/
+    if (fbs.DBG_BP || fbs.DBG_CREATION || true)      /*@explore*/
 		dumpToFile(text);     /*@explore*/
 	else      /*@explore*/
     	ERROR(text);
 }
 
 function dumpProperties(title, obj) {
-	var msg = title ="\n";
+	var msg = title + "\n";
 	for (p in obj)
 	{
 		msg += "["+p+"]="+obj[p]+"\n";	
 	}
+	ddd(msg);
 }
 
 function dFormat(script, url) 
