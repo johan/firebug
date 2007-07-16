@@ -275,12 +275,16 @@ Firebug.HTMLPanel.prototype = extend(Firebug.Panel,
     },
     
     mutateNode: function(target, parent, nextSibling, removal)
-    {
+    { 
+		if (parent.nodeType == 9)
+			parent = parent.documentElement;
+			
         this.markChange();
 
         var parentNodeBox = Firebug.scrollToMutations || Firebug.expandMutations
             ? this.ioBox.createObjectBox(parent)
             : this.ioBox.findObjectBox(parent);
+			
         if (!parentNodeBox)
             return;
 
@@ -387,17 +391,10 @@ Firebug.HTMLPanel.prototype = extend(Firebug.Panel,
             return null;
 
         var parentNode = node ? node.parentNode : null;
-        if (parentNode)
-		{
-			if (parentNode.nodeType == 9)
-            	return parentNode.defaultView.frameElement;
-			else
-            	return parentNode;
-		}
-		else
-			if (node.nodeType == 9)
-				return node.defaultView.frameElement;	 
-        
+		if (parentNode && parentNode.nodeType == 9)
+            return parentNode.defaultView.frameElement;
+        else
+            return parentNode;        
     },
 
     getChildObject: function(node, index, previousSibling)
@@ -475,7 +472,14 @@ Firebug.HTMLPanel.prototype = extend(Firebug.Panel,
         
         this.context.delay(function()
         {
-            this.mutateNode(target, parent, nextSibling, removal);
+			try 
+			{
+				 this.mutateNode(target, parent, nextSibling, removal);
+			}
+			catch (exc)
+			{
+				FBTrace.dumpProperties("html.onMutateNode FAILS:", exc);
+			}
         }, this);
     },
 

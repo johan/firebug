@@ -222,12 +222,12 @@ InsideOutBox.prototype =
                 this.rootObjectBox = this.view.createObjectBox(object, true);
                 this.box.appendChild(this.rootObjectBox);
             }
-
             return this.rootObjectBox;
         }
         else
         {
             var parentNode = this.view.getParentObject(object);
+
             var parentObjectBox = this.createObjectBoxes(parentNode, rootObject);
             if (!parentObjectBox)
                 return null;
