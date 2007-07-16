@@ -206,6 +206,8 @@ InsideOutBox.prototype =
      */
     createObjectBoxes: function(object, rootObject)
     {
+		if (FBTrace.DBG_HTML) /*@explore*/
+			FBTrace.sysout("\n----\ninsideOutBox.createObjectBoxes for object="+object+"\n"); /*@explore*/
         if (!object)
             return null;
     
@@ -222,21 +224,31 @@ InsideOutBox.prototype =
                 this.rootObjectBox = this.view.createObjectBox(object, true);
                 this.box.appendChild(this.rootObjectBox);
             }
-
+			if (FBTrace.DBG_HTML) /*@explore*/
+				FBTrace.sysout("insideOutBox.createObjectBoxes("+object+","+rootObject+") rootObjectBox: "+this.rootObjectBox+"\n\n"); /*@explore*/
             return this.rootObjectBox;
         }
         else
         {
             var parentNode = this.view.getParentObject(object);
+			if (FBTrace.DBG_HTML) /*@explore*/
+				FBTrace.sysout("insideOutBox.createObjectBoxes("+object+","+rootObject+"):parentNode: "+parentNode+"\n"); /*@explore*/
+
             var parentObjectBox = this.createObjectBoxes(parentNode, rootObject);
+			if (FBTrace.DBG_HTML) /*@explore*/
+				FBTrace.sysout("insideOutBox.createObjectBoxes("+object+","+rootObject+"):parentNode: "+parentNode+" parentObjectBox: "+parentObjectBox+"\n"); /*@explore*/
             if (!parentObjectBox)
                 return null;
         
             var parentChildBox = this.getChildObjectBox(parentObjectBox);
+			if (FBTrace.DBG_HTML) /*@explore*/
+				FBTrace.sysout("insideOutBox.createObjectBoxes("+object+","+rootObject+"):parentNode: "+parentNode+" parentChildBox: "+parentChildBox+"\n"); /*@explore*/
             if (!parentChildBox)
                 return null;
         
             var childObjectBox = this.findChildObjectBox(parentChildBox, object);
+			if (FBTrace.DBG_HTML) /*@explore*/
+				FBTrace.sysout("insideOutBox.createObjectBoxes("+object+","+rootObject+"):parentNode: "+parentNode+" childObjectBox: "+childObjectBox+"\n"+(childObjectBox?"\n":"")); /*@explore*/		
             return childObjectBox
                 ? childObjectBox
                 : this.populateChildBox(object, parentChildBox);
@@ -311,6 +323,8 @@ InsideOutBox.prototype =
             return null;
 
         var parentObjectBox = nodeChildBox.parentNode;
+		if (FBTrace.DBG_HTML) /*@explore*/
+				FBTrace.sysout("insideOutBox.populateChildBox("+repObject+") parentObjectBox.populated "+parentObjectBox.populated+"\n"); /*@explore*/
         if (parentObjectBox.populated)
             return this.findChildObjectBox(nodeChildBox, repObject);
         
@@ -355,6 +369,8 @@ InsideOutBox.prototype =
     
         if (targetBox)
             parentObjectBox.populated = true;
+		if (FBTrace.DBG_HTML) /*@explore*/
+				FBTrace.sysout("insideOutBox.populateChildBox("+repObject+") targetBox "+targetBox+"\n"); /*@explore*/
 
         return targetBox;
     },
@@ -374,6 +390,8 @@ InsideOutBox.prototype =
     {
         for (var childBox = parentNodeBox.firstChild; childBox; childBox = childBox.nextSibling)
         {
+			if (FBTrace.DBG_HTML) /*@explore*/
+				FBTrace.sysout("insideOutBox.findChildObjectBox childBox.repObject: "+childBox.repObject +" repObject: "+repObject+"\n"); /*@explore*/
             if (childBox.repObject == repObject)
                 return childBox;
         }    

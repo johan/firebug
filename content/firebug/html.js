@@ -275,7 +275,10 @@ Firebug.HTMLPanel.prototype = extend(Firebug.Panel,
     },
     
     mutateNode: function(target, parent, nextSibling, removal)
-    {
+    { 
+		if (parent.nodeType == 9)
+			parent = parent.documentElement;
+			
         this.markChange();
 
         var parentNodeBox = Firebug.scrollToMutations || Firebug.expandMutations
@@ -377,6 +380,8 @@ Firebug.HTMLPanel.prototype = extend(Firebug.Panel,
     
     createObjectBox: function(object, isRoot)
     {
+		if (FBTrace.DBG_HTML) /*@explore*/
+			FBTrace.sysout("html.createObjectBox("+object+","+isRoot+")\n"); /*@explore*/
         var tag = getNodeTag(object);
         if (tag)
             return tag.replace({object: object}, this.document);
@@ -391,17 +396,10 @@ Firebug.HTMLPanel.prototype = extend(Firebug.Panel,
             return null;
 
         var parentNode = node ? node.parentNode : null;
-        if (parentNode)
-		{
-			if (parentNode.nodeType == 9)
-            	return parentNode.defaultView.frameElement;
-			else
-            	return parentNode;
-		}
-		else
-			if (node.nodeType == 9)
-				return node.defaultView.frameElement;	 
-        
+		if (parentNode && parentNode.nodeType == 9)
+            return parentNode.defaultView.frameElement;
+        else
+            return parentNode;        
     },
 
     getChildObject: function(node, index, previousSibling)
@@ -479,7 +477,14 @@ Firebug.HTMLPanel.prototype = extend(Firebug.Panel,
         
         this.context.delay(function()
         {
-            this.mutateNode(target, parent, nextSibling, removal);
+			try 
+			{
+				 this.mutateNode(target, parent, nextSibling, removal);
+			}
+			catch (exc)
+			{
+				FBTrace.dumpProperties("html.onMutateNode FAILS:", exc);
+			}
         }, this);
     },
 
