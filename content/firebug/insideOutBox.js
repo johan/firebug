@@ -189,9 +189,18 @@ InsideOutBox.prototype =
         var rootObject = this.rootObject;
         if (!rootObject)
             this.rootObject = this.getRootNode(object);
+		else /*@explore*/
+			if (FBTrace.DBG_HTML)                    /*@explore*/
+			{                                        /*@explore*/
+				FBTrace.sysout("Root already set:"); /*@explore*/
+				this.getRootNode(object);            /*@explore*/
+			}
 
         // Get or create all of the boxes for the target and its ancestors
         var objectBox = this.createObjectBoxes(object, this.rootObject);
+		
+		if (FBTrace.DBG_HTML) /*@explore*/
+			FBTrace.sysout("\n----\ninsideOutBox.createObjectBox for object="+object+" got objectBox="+objectBox+"\n"); /*@explore*/
 
         if (!objectBox)
             return null;
@@ -399,9 +408,15 @@ InsideOutBox.prototype =
 
     getRootNode: function(node)
     {
+		if (FBTrace.DBG_HTML) /*@explore*/
+			FBTrace.sysout("insideOutBox.getRootNode for "); /*@explore*/
         while (1)
         {
+			if (FBTrace.DBG_HTML) /*@explore*/
+				FBTrace.sysout(node); /*@explore*/
             var parentNode = this.view.getParentObject(node);
+			if (FBTrace.DBG_HTML && !parentNode) /*@explore*/
+				FBTrace.sysout("\n"); /*@explore*/
             if (!parentNode)
                 return node;
             else

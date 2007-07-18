@@ -248,8 +248,13 @@ top.TabWatcher =
         var context = this.getContextByWindow(win);
 
         var index = context ? context.windows.indexOf(win) : -1;
-        if (index != -1)
+		if (FBTrace.DBG_WINDOWS)                                                     /*@explore*/
+			FBTrace.sysout("tabWatcher.unwatchWindow context="+context+" index of win="+index+"\n");     /*@explore*/
+
+        if (index != -1) {
             context.windows.splice(index, 1);
+			this.dispatch("unwatchWindow", [context, win]);  // XXXjjb Joe check
+		}
     },
     
     /**
@@ -583,7 +588,7 @@ function onUnloadWindow(event)
     var win = event.currentTarget;
     var eventType = (win.parent == win) ? "pagehide" : "unload";
     win.removeEventListener(eventType, onUnloadWindow, false);
-	if (FBTrace.DBG_INITIALIZE) FBTrace.sysout("tabWatcher.onLoadWindowContent  pageshow removeEventListener\n"); /*@explore*/
+	if (FBTrace.DBG_INITIALIZE) FBTrace.sysout("tabWatcher.onUnloadWindow "+win.location.href +" removeEventListener: "+ eventType+"\n"); /*@explore*/
     TabWatcher.unwatchWindow(win);
 }
 

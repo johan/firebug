@@ -183,7 +183,9 @@ Firebug.HTMLPanel.prototype = extend(Firebug.Panel,
         // is only bad for performance
         if (attrName == "curpos")
             return;
-        
+        if (FBTrace.DBG_HTML)							 						     /*@explore*/
+			FBTrace.sysout("\nhtml.mutateAttr target:"+target+" attrChange:"+attrChange+" attrName:"+attrName+"\n"); /*@explore*/
+		
         this.markChange();
 
         var objectNodeBox = Firebug.scrollToMutations || Firebug.expandMutations
@@ -276,9 +278,10 @@ Firebug.HTMLPanel.prototype = extend(Firebug.Panel,
     
     mutateNode: function(target, parent, nextSibling, removal)
     { 
-		if (parent.nodeType == 9)
-			parent = parent.documentElement;
-			
+		if (FBTrace.DBG_HTML)							 						     /*@explore*/
+			FBTrace.sysout("\nhtml.mutateNode target:"+target+" parent:"+parent+(removal?"REMOVE":"")+"\n"); /*@explore*/
+																				     /*@explore*/
+		
         this.markChange();
 
         var parentNodeBox = Firebug.scrollToMutations || Firebug.expandMutations
@@ -396,10 +399,25 @@ Firebug.HTMLPanel.prototype = extend(Firebug.Panel,
             return null;
 
         var parentNode = node ? node.parentNode : null;
-		if (parentNode && parentNode.nodeType == 9)
-            return parentNode.defaultView.frameElement;
-        else
-            return parentNode;        
+		if (parentNode)
+			if (parentNode.nodeType == 9)
+			{
+				if (FBTrace.DBG_HTML) /*@explore*/
+					FBTrace.sysout("html.getParentObject parentNode.nodeType 9\n"); /*@explore*/
+            	return parentNode.defaultView.frameElement;
+			}
+        	else
+            	return parentNode;
+		else 
+			if (node && node.nodeType == 9) // document type 
+			{
+				var embeddingFrame = node.defaultView.frameElement;
+				if (embeddingFrame)
+					return embeddingFrame.parentNode;
+				else
+					return null;  // top level has no parent 
+			}
+				  
     },
 
     getChildObject: function(node, index, previousSibling)
@@ -613,6 +631,20 @@ Firebug.HTMLPanel.prototype = extend(Firebug.Panel,
     
     watchWindow: function(win)
     {
+		if (this.context.window && this.context.window != win) // then I guess we are an embedded window
+		{
+			var htmlPanel = this;
+			iterateWindows(this.context.window, function(subwin)
+			{
+				if (win == subwin)
+				{
+					if (FBTrace.DBG_HTML) /*@explore*/
+						FBTrace.sysout("html.watchWindow found subwin.location.href="+win.location.href+"\n"); /*@explore*/
+					htmlPanel.mutateDocumentEmbedded(win, false);
+				}	
+			});
+			
+		}
         if (this.context.attachedMutation)
         {
             var doc = win.document;
@@ -625,13 +657,36 @@ Firebug.HTMLPanel.prototype = extend(Firebug.Panel,
     
     unwatchWindow: function(win)
     {
+		if (this.context.window && this.context.window != win) // then I guess we are an embedded window
+		{
+			var htmlPanel = this;
+			iterateWindows(this.context.window, function(subwin)
+			{
+				if (win == subwin)
+				{
+					if (FBTrace.DBG_HTML) /*@explore*/
+						FBTrace.sysout("html.unwatchWindow found subwin.location.href="+win.location.href+"\n"); /*@explore*/
+					htmlPanel.mutateDocumentEmbedded(win, true);
+				}	
+			});
+			
+		}
         var doc = win.document;
         doc.removeEventListener("DOMAttrModified", this.onMutateAttr, false);
         doc.removeEventListener("DOMCharacterDataModified", this.onMutateText, false);
         doc.removeEventListener("DOMNodeInserted", this.onMutateNode, false);
         doc.removeEventListener("DOMNodeRemoved", this.onMutateNode, false);
     },
-    
+	
+	mutateDocumentEmbedded: function(win, remove)
+	{
+		// document.documentElement    Returns the Element that is a direct child of document. For HTML documents, this normally the HTML element.
+		var target = win.document.documentElement;
+		var parent = win.frameElement;
+		var nextSibling = findNextSibling(target);
+		this.mutateNode(target, parent, nextSibling, remove); 
+	},
+
     supportsObject: function(object)
     {
         if (object instanceof Element || object instanceof Text || object instanceof CDATASection)
@@ -683,7 +738,8 @@ Firebug.HTMLPanel.prototype = extend(Firebug.Panel,
 					}
 					if (sourceRow) 
 					{
-						FBTrace.sysout("html panel updateSelection sourceLink.line="+sourceLink.line+" sourceRow="+sourceRow.innerHTML+"\n");
+						if (FBTrace.DBG_HTML) /*@explore*/
+							FBTrace.sysout("html panel updateSelection sourceLink.line="+sourceLink.line+" sourceRow="+sourceRow.innerHTML+"\n"); /*@explore*/
         				this.ioBox.sourceRow = sourceRow;
             			this.ioBox.sourceRow.setAttribute("exeLine", "true");
 					}

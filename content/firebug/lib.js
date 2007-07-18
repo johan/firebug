@@ -2079,7 +2079,7 @@ this.isShift = function(event)
 this.dispatch = function(listeners, name, args)
 {
 	if (FBTrace.DBG_WINDOWS)     /*@explore*/
-		FBTrace.sysout("dispatch "+name+" to "+listeners.length+" listeners\n");     /*@explore*/
+		FBTrace.sysout("FBL.dispatch "+name+" to "+listeners.length+" listeners\n");     /*@explore*/
 		                         /*@explore*/
 	try {
 	    for (var i = 0; i < listeners.length; ++i)
