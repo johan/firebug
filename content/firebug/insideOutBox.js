@@ -194,14 +194,14 @@ InsideOutBox.prototype =
 			{                                        /*@explore*/
 				FBTrace.sysout("Root already set:"); /*@explore*/
 				this.getRootNode(object);            /*@explore*/
-			}
+			}										 /*@explore*/
 
         // Get or create all of the boxes for the target and its ancestors
         var objectBox = this.createObjectBoxes(object, this.rootObject);
 		
-		if (FBTrace.DBG_HTML) /*@explore*/
+		if (FBTrace.DBG_HTML) 	/*@explore*/
 			FBTrace.sysout("\n----\ninsideOutBox.createObjectBox for object="+object+" got objectBox="+objectBox+"\n"); /*@explore*/
-
+								/*@explore*/
         if (!objectBox)
             return null;
         else if (object == this.rootObject)
