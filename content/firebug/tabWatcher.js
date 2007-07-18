@@ -222,8 +222,11 @@ top.TabWatcher =
         var context = this.getContextByWindow(win);
 
         var index = context ? context.windows.indexOf(win) : -1;
-        if (index != -1)
+
+        if (index != -1) {
             context.windows.splice(index, 1);
+			this.dispatch("unwatchWindow", [context, win]);  // XXXjjb Joe check
+		}
     },
     
     /**
