@@ -6,8 +6,15 @@ var FirebugLib = FBL = XPCOMUtils;
 
 // ************************************************************************************************
 // Constants
-
-this.fbs = this.CCSV("@joehewitt.com/firebug;1", "nsIFireBug");
+try 
+{
+	this.fbs = this.CCSV("@joehewitt.com/firebug;1", "nsIFireBug");
+}
+catch (exc)
+{
+	// Ok this is drastic
+	throw "Failed to load service @joehewitt.com/firebug;1, (components/firebug-service.js) caused: "+exc;
+}
 this.jsd = this.CCSV("@mozilla.org/js/jsd/debugger-service;1", "jsdIDebuggerService");
 
 var finder = this.finder = this.CCIN("@mozilla.org/embedcomp/rangefind;1", "nsIFind");

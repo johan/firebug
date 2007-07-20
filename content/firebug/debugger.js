@@ -1057,6 +1057,7 @@ Firebug.Debugger = extend(Firebug.Module,
     initialize: function()
     {
         $("cmd_breakOnErrors").setAttribute("checked", Firebug.breakOnErrors);
+		$("cmd_breakOnTopLevel").setAttribute("checked", Firebug.breakOnTopLevel);
     },
     
     shutdown: function()
@@ -1087,6 +1088,8 @@ Firebug.Debugger = extend(Firebug.Module,
     {
         if (name == "breakOnErrors")
             $("cmd_breakOnErrors").setAttribute("checked", value);
+		if (name == "breakOnTopLevel")
+            $("cmd_breakOnTopLevel").setAttribute("checked", value);
     },
     
     showPanel: function(browser, panel)
@@ -1656,6 +1659,7 @@ ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
         
         return [
             optionMenu("BreakOnAllErrors", "breakOnErrors"),
+			optionMenu("BreakOnTopLevel", "breakOnTopLevel"),
 			optionMenu("ShowEvalSources", "showEvalSources"),
 			optionMenu("UseLastLineForEvalName", "useLastLineForEvalName"),
 			optionMenu("UseFirstLineForEvalName", "useFirstLineForEvalName"),
