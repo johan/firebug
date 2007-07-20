@@ -31,10 +31,11 @@ Firebug.TraceModule = extend(Firebug.Console,
 	DBG_WINDOWS: false,    	// tabWatcher, dispatch events; very useful for understand modules/panels 
 	DBG_NET: false,        	// net.js
 	DBG_SHOW_SYSTEM: false,    // isSystemURL return false always.
-	DBG_INITIALIZE: false,		// registry (modules panels); initialize FB
+	DBG_INITIALIZE: true,		// registry (modules panels); initialize FB
 	DBG_OPTIONS: false,
 	DBG_TRACE: false,
 	DBG_FBS_CREATION: false, // firebug-service script creation
+	DBG_FBS_STEP: false,     // firebug-service stepping
 	DBG_FBS_BP: false, // firebug-service breakpoints
 	DBG_FBS_ERRORS: false, // firebug-service error handling
 	DBG_HTML: false, // HTML panel
@@ -186,9 +187,6 @@ Firebug.TracePanel.prototype = extend(Firebug.ConsolePanel.prototype,
 				});	
 			}
 		}
-		//items.push(optionMenu("DBG_FBS_CREATION", "debugFirebug_CREATION"));
-		//items.push(optionMenu("DBG_FBS_BP", "debugFirebug_BP"));
-		//items.push(optionMenu("DBG_FBS_ERRORS", "debugFirebug_ERRORS"));
 		return items;
     },
 

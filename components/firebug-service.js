@@ -138,11 +138,15 @@ function FirebugService()
 
     this.showStackTrace = prefs.getBoolPref("extensions.firebug.showStackTrace");
     this.breakOnErrors = prefs.getBoolPref("extensions.firebug.breakOnErrors");
+	this.breakOnTopLevel = prefs.getBoolPref("extensions.firebug.breakOnTopLevel");
 	
 	try {                            /*@explore*/
-	    this.DBG_CREATION = prefs.getBoolPref("extensions.firebug.FBS_CREATION");     /*@explore*/
-		this.DBG_BP = prefs.getBoolPref("extensions.firebug.FBS_BP");                 /*@explore*/
-		this.DBG_ERRORS = prefs.getBoolPref("extensions.firebug.FBS_ERRORS");         /*@explore*/
+		this.DBG_AT_STARTUP = false;    // CREATION and BP generate a huge trace /*@explore*/
+	    this.DBG_CREATION = this.DBG_AT_STARTUP ? prefs.getBoolPref("extensions.firebug.DBG_FBS_CREATION") : false;     /*@explore*/
+		this.DBG_BP = this.DBG_AT_STARTUP ? prefs.getBoolPref("extensions.firebug.DBG_FBS_BP") : false;                 /*@explore*/
+		this.DBG_ERRORS = prefs.getBoolPref("extensions.firebug.DBG_FBS_ERRORS");         /*@explore*/
+		this.DBG_STEP = prefs.getBoolPref("extensions.firebug.DBG_FBS_STEP");         /*@explore*/
+		ddd("fbs.DBG_CREATION: "+fbs.DBG_CREATION+" fbs.DBG_BP:"+fbs.DBG_BP+" fbs.DBG_ERRORS:"+fbs.DBG_ERRORS+" fbs.DBG_STEP:"+fbs.DBG_STEP+"\n"); /*@explore*/
     }                                /*@explore*/
 	catch (exc)                      /*@explore*/
 	{                                /*@explore*/
@@ -618,9 +622,10 @@ FirebugService.prototype =
 		
 		try             /*@explore*/
 		{               /*@explore*/
-			fbs.DBG_CREATION = prefs.getBoolPref("extensions.firebug.FBS_CREATION");     /*@explore*/
-			fbs.DBG_BP = prefs.getBoolPref("extensions.firebug.FBS_BP");                 /*@explore*/
-			fbs.DBG_ERRORS = prefs.getBoolPref("extensions.firebug.FBS_ERRORS");         /*@explore*/
+			fbs.DBG_CREATION = this.DBG_AT_STARTUP ? prefs.getBoolPref("extensions.firebug.DBG_FBS_CREATION") : false;    /*@explore*/
+			fbs.DBG_BP = this.DBG_AT_STARTUP ? prefs.getBoolPref("extensions.firebug.DBG_FBS_BP") : false;                 /*@explore*/
+			fbs.DBG_ERRORS = prefs.getBoolPref("extensions.firebug.DBG_FBS_ERRORS");         /*@explore*/
+			fbs.DBG_STEP = prefs.getBoolPref("extensions.firebug.DBG_FBS_STEP");             /*@explore*/
 		}               /*@explore*/
 		catch(exc)      /*@explore*/
 		{               /*@explore*/
@@ -628,9 +633,11 @@ FirebugService.prototype =
 		}               /*@explore*/
                         /*@explore*/
 		                /*@explore*/
-        if (fbs.DBG_CREATION || fbs.DBG_BP)               /*@explore*/
+        if (fbs.DBG_CREATION || fbs.DBG_BP || fbs.DBG_ERRORS || fbs.DBG_STEP)               /*@explore*/
+		{ /*@explore*/
 			ddd("start fbs debug log"+Date()+"\n\n");     /*@explore*/
-			                                              /*@explore*/
+			ddd("fbs.DBG_CREATION: "+fbs.DBG_CREATION+" fbs.DBG_BP:"+fbs.DBG_BP+" fbs.DBG_ERRORS:"+fbs.DBG_ERRORS+" fbs.DBG_STEP:"+fbs.DBG_STEP+"\n"); /*@explore*/
+		}	                                              /*@explore*/
 		if (enabledDebugger)
             return;
     
@@ -656,6 +663,7 @@ FirebugService.prototype =
             //jsd.throwHook = { onExecute: hook(this.onThrow, RETURN_CONTINUE) };
             jsd.errorHook = { onError: hook(this.onError, true) };
         }
+		this.syncTopLevelHook();
     },
 
     disableDebugger: function()
@@ -1511,7 +1519,8 @@ FirebugService.prototype =
             return;
 
         hookFrameCount = stepFrameCount;
-        
+     	if (fbs.DBG_STEP) ddd("startStepping stepMode = "+getPropertyName(nsIFireBug, stepMode)+" hookFrameCount="+hookFrameCount+" stepFrameCount="+stepFrameCount+"\n"); /*@explore*/
+       
         this.hookFunctions();
         
         if (stepMode == STEP_OVER || stepMode == STEP_INTO)
@@ -1520,6 +1529,7 @@ FirebugService.prototype =
     
     stopStepping: function()
     {
+		if (fbs.DBG_STEP) ddd("stopStepping\n"); /*@explore*/
         stepMode = 0;
         stepFrame = null;
         stepFrameCount = 0;
@@ -1546,22 +1556,17 @@ FirebugService.prototype =
                 case TYPE_FUNCTION_CALL:
                 {
                     ++hookFrameCount;
-					
-                    if (!frame.callingFrame)
-					{
-						jsd.interruptHook = null;	
-						jsd.functionHook = null;
-						ddd(" TYPE_FUNCTION_CALL without caller\n");
-					}
-					
+										
                     if (stepMode == STEP_OVER)
                         jsd.interruptHook = null;
-
+					if (fbs.DBG_STEP) ddd("functionHook TYPE_FUNCTION_CALL stepMode = "+getPropertyName(nsIFireBug, stepMode)+" hookFrameCount="+hookFrameCount+" stepFrameCount="+stepFrameCount+"\n"); /*@explore*/
                     break;
                 }
                 case TYPE_FUNCTION_RETURN:
                 {
                     --hookFrameCount;
+					
+					if (fbs.DBG_STEP) ddd("functionHook TYPE_FUNCTION_RETURN stepMode = "+getPropertyName(nsIFireBug, stepMode)+" hookFrameCount="+hookFrameCount+" stepFrameCount="+stepFrameCount+"\n"); /*@explore*/
 
                     if (hookFrameCount == 0)
                         fbs.stopStepping();
@@ -1580,10 +1585,21 @@ FirebugService.prototype =
                 }
             }
         }
-
+		if (fbs.DBG_STEP) ddd("set functionHook\n"); /*@explore*/
         jsd.functionHook = { onCall: functionHook };
     },
     
+	hookTopLevel: function()
+	{
+		function topLevelHook(frame, type)
+		{
+			if (fbs.DBG_STEP) dumpToFileWithStack("topLevel type="+(type==0?"TOPLEVEL_START":"TOPLEVEL_END"), frame); /*@explore*/
+			fbs.onBreak(frame, type);
+		}
+		if (fbs.DBG_STEP) ddd("set topLevelHook\n"); /*@explore*/
+		jsd.topLevelHook = { onCall: topLevelHook };
+	},
+	
     hookInterrupts: function()
     {
         function interruptHook(frame, type, rv)
@@ -1591,17 +1607,19 @@ FirebugService.prototype =
             // Sometimes the same line will have multiple interrupts, so check
             // a unique id for the line and don't break until it changes
             var frameLineId = hookFrameCount + frame.script.fileName + frame.line;
+			if (fbs.DBG_STEP) ddd("interruptHook frameLineId: "+frameLineId+"\n"); /*@explore*/
             if (frameLineId != stepFrameLineId)
                 return fbs.onBreak(frame, type, rv);
             else
                 return RETURN_CONTINUE;
         }
-        
+        if (fbs.DBG_STEP) ddd("set InterruptHook\n"); /*@explore*/
         jsd.interruptHook = { onExecute: interruptHook };
     },
         
     hookScripts: function()
     {
+		if (fbs.DBG_STEP) ddd("set scriptHook\n"); /*@explore*/
         jsd.scriptHook = {
             onScriptCreated: hook(this.onScriptCreated),
             onScriptDestroyed: hook(this.onScriptDestroyed)
@@ -1621,7 +1639,16 @@ FirebugService.prototype =
     {
         jsd.scriptHook = null;
         fbs.scriptInfoArrayByURL = null;
-    }
+		if (fbs.DBG_STEP) ddd("unset scriptHook\n"); /*@explore*/
+    },
+	
+	syncTopLevelHook: function() 
+	{
+		if (fbs.breakOnTopLevel)
+		    fbs.hookTopLevel();
+		else
+			jsd.topLevelHook = null;
+	}
 };
 
 // ************************************************************************************************
@@ -1813,9 +1840,18 @@ var FirebugPrefsObserver =
             fbs.showStackTrace =  prefs.getBoolPref("extensions.firebug.showStackTrace");
         else if (data == "extensions.firebug.breakOnErrors")
             fbs.breakOnErrors =  prefs.getBoolPref("extensions.firebug.breakOnErrors");
-			
-		if (fbs.DBG_ERRORS)     /*@explore*/
-			ddd("fbs.observe, showStackTrace="+fbs.showStackTrace + " breakOnErrors="+fbs.breakOnErrors+"\n");     /*@explore*/
+		else if (data == "extensions.firebug.breakOnTopLevel")
+			fbs.breakOnTopLevel = prefs.getBoolPref("extensions.firebug.breakOnTopLevel");
+		else if (data == "extensions.firebug.DBG_FBS_CREATION")
+			fbs.DBG_CREATION = prefs.getBoolPref("extensions.firebug.DBG_FBS_CREATION");
+		else if (data == "extensions.firebug.DBG_FBS_BP")
+			fbs.DBG_BP = prefs.getBoolPref("extensions.firebug.DBG_FBS_BP");
+		else if (data == "extensions.firebug.DBG_FBS_ERRORS")
+			fbs.DBG_ERRORS = prefs.getBoolPref("extensions.firebug.DBG_FBS_ERRORS");
+		else if (data == "extensions.firebug.DBG_FBS_STEP")
+			fbs.DBG_STEP = prefs.getBoolPref("extensions.firebug.DBG_FBS_STEP");
+
+		fbs.syncTopLevelHook();
     }
 };
 
@@ -1842,7 +1878,7 @@ function ERROR(text)
 
 function ddd(text)
 {
-    if (fbs.DBG_BP || fbs.DBG_CREATION || true)      /*@explore*/
+    if (true)      /*@explore*/
 		dumpToFile(text);     /*@explore*/
 	else      /*@explore*/
     	ERROR(text);
@@ -1939,3 +1975,12 @@ function getStackDump()
     
     return lines.join("\n");
 };
+
+
+function getPropertyName(object, value)
+{
+	for (p in object) 
+	{
+		if (value == object[p]) return p;	
+	}
+}

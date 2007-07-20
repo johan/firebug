@@ -64,6 +64,7 @@ const prefNames =
     
     // Script
     "breakOnErrors",
+	"breakOnTopLevel",
 	"useDebugAdapter",
 	"showEvalSources",
 	"useLastLineForEvalName",

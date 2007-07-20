@@ -37,6 +37,7 @@ pref("extensions.firebug.showComputedStyle", false);
 
 // Script
 pref("extensions.firebug.breakOnErrors", false);
+pref("extensions.firebug.breakOnTopLevel", false);
 pref("extensions.firebug.useDebugAdapter", false);
 pref("extensions.firebug.showEvalSources", true);
 pref("extensions.firebug.useLastLineForEvalName", false);
@@ -60,21 +61,22 @@ pref("extensions.firebug.disableNetMonitor", false);
 pref("extensions.firebug.collectHttpHeaders", true);
 
 // Trace  /*@explore*/
-pref("extensions.firebug.FBS_CREATION", false); // firebug-service script creation           /*@explore*/
-pref("extensions.firebug.FBS_BP", false);       // firebug-service breakpoints               /*@explore*/
-pref("extensions.firebug.FBS_ERRORS", false);   // firebug-service errors                    /*@explore*/
-pref("extensions.firebug.BP", false); 			// debugger.js and firebug-services.js; lots of output   /*@explore*/
-pref("extensions.firebug.TOPLEVEL", false); 	// top level jsd scripts                     /*@explore*/
-pref("extensions.firebug.STACK", false);  		// call stack, mostly debugger.js            /*@explore*/
-pref("extensions.firebug.UI_LOOP", false); 		// debugger.js                               /*@explore*/
-pref("extensions.firebug.ERRORS", true);  		// error.js                                  /*@explore*/
-pref("extensions.firebug.EVENTS", false);  		// debugger.js for event handlers, need more /*@explore*/
-pref("extensions.firebug.FUNCTION_NAMES", false);  // heuristics for anon functions          /*@explore*/
-pref("extensions.firebug.EVAL", false);    		// debugger.js and firebug-service.js        /*@explore*/
-pref("extensions.firebug.CACHE", false);   		// sourceCache                               /*@explore*/
-pref("extensions.firebug.SOURCEFILES", false); 	// debugger and sourceCache                  /*@explore*/
-pref("extensions.firebug.WINDOWS", false);    	// tabWatcher, dispatch events; very useful for understand modules/panels  /*@explore*/ 
-pref("extensions.firebug.NET", false);        	// net.js                                    /*@explore*/
-pref("extensions.firebug.SHOW_SYSTEM", false);  // isSystemURL return false always.          /*@explore*/
-pref("extensions.firebug.INITIALIZE", false);   // registry (modules panels); initialize FB  /*@explore*/
-pref("extensions.firebug.OPTIONS", false);      // /*@explore*/
+pref("extensions.firebug.DBG_FBS_CREATION", false); // firebug-service script creation           /*@explore*/
+pref("extensions.firebug.DBG_FBS_BP", false);       // firebug-service breakpoints               /*@explore*/
+pref("extensions.firebug.DBG_FBS_ERRORS", false);   // firebug-service errors                    /*@explore*/
+pref("extensions.firebug.DBG_FBS_STEP", false);     // firebug-service stepping                  /*@explore*/
+pref("extensions.firebug.DBG_BP", false); 			// debugger.js and firebug-services.js; lots of output   /*@explore*/
+pref("extensions.firebug.DBG_TOPLEVEL", false); 	// top level jsd scripts                     /*@explore*/
+pref("extensions.firebug.DBG_STACK", false);  		// call stack, mostly debugger.js            /*@explore*/
+pref("extensions.firebug.DBG_UI_LOOP", false); 		// debugger.js                               /*@explore*/
+pref("extensions.firebug.DBG_ERRORS", true);  		// error.js                                  /*@explore*/
+pref("extensions.firebug.DBG_EVENTS", false);  		// debugger.js for event handlers, need more /*@explore*/
+pref("extensions.firebug.DBG_FUNCTION_NAMES", false);  // heuristics for anon functions          /*@explore*/
+pref("extensions.firebug.DBG_EVAL", false);    		// debugger.js and firebug-service.js        /*@explore*/
+pref("extensions.firebug.DBG_CACHE", false);   		// sourceCache                               /*@explore*/
+pref("extensions.firebug.DBG_SOURCEFILES", false); 	// debugger and sourceCache                  /*@explore*/
+pref("extensions.firebug.DBG_WINDOWS", false);    	// tabWatcher, dispatch events; very useful for understand modules/panels  /*@explore*/ 
+pref("extensions.firebug.DBG_NET", false);        	// net.js                                    /*@explore*/
+pref("extensions.firebug.DBG_SHOW_SYSTEM", false);  // isSystemURL return false always.          /*@explore*/
+pref("extensions.firebug.DBG_INITIALIZE", false);   // registry (modules panels); initialize FB  /*@explore*/
+pref("extensions.firebug.DBG_OPTIONS", false);      // /*@explore*/
