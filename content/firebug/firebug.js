@@ -46,7 +46,7 @@ const prefDomain = "extensions.firebug";
 
 const prefNames =
 [
-    "disabledAlways", "disabledFile",
+    "disabledAlways", "disabledFile", "allowSystemPages",
     "defaultPanelName", "throttleMessages", "textSize", "showInfoTips",
     "largeCommandLine", "textWrapWidth", "openInWindow", "showErrorCount",
     
@@ -77,7 +77,10 @@ const prefNames =
     "showLayoutAdjacent", "showRulers",
     
     // Net
-    "netFilterCategory", "disableNetMonitor", "collectHttpHeaders"
+    "netFilterCategory", "disableNetMonitor", "collectHttpHeaders",
+	
+	// Stack
+	"omitObjectPathStack"
 ];
 
 // ************************************************************************************************
@@ -99,7 +102,7 @@ var clearContextTimeout = 0;
 
 top.Firebug =
 {
-    version: "1.05",
+    version: "1.1",
     
     module: modules,
     panelTypes: panelTypes,
@@ -342,7 +345,7 @@ top.Firebug =
             prefs.setBoolPref(prefName, value);
 			
 		if (FBTrace.DBG_OPTIONS)                                        /*@explore*/
-			FBTrace.sysout("firebug.setPref "+name+"="+value+"\n");     /*@explore*/
+			FBTrace.sysout("firebug.setPref type="+type+" name=value: "+name+"="+value+"\n");     /*@explore*/
     },
 
     increaseTextSize: function(amt)
@@ -706,6 +709,8 @@ top.Firebug =
     {
         var name = data.substr(prefDomain.length+1);
         var value = this.getPref(name);
+		if (FBTrace.DBG_OPTIONS)   /*@explore*/
+			FBTrace.sysout("firebug.observe name = value: "+name+"= "+value+"\n"); /*@explore*/
         this.updatePref(name, value);
     },
 
@@ -809,7 +814,15 @@ top.Firebug =
         // XXXjoe Move this to Firebug.Console
         if (!win.console)
             win.console = new FirebugConsole(context, win);
-        
+ 
+ 		if (FBTrace.DBG_WINDOWS)   	/*@explore*/ 
+		{							/*@explore*/ 
+			if (win.console)      	/*@explore*/ 
+				FBTrace.sysout("firebug.watchWindow created win.console for uid = "+win.__firebug__uid+"\n"); /*@explore*/ 
+			else 					/*@explore*/
+				FBTrace.sysout("firebug.watchWindow failed to create win.console for uid = "+win.__firebug__uid+"\n"); /*@explore*/ 
+		}							/*@explore*/
+        							/*@explore*/
         for (var panelName in context.panelMap)
         {
             var panel = context.panelMap[panelName];

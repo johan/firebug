@@ -16,7 +16,7 @@ this.namespaceName = "TracePanel";
 
 Firebug.TraceModule = extend(Firebug.Console, 
 { 
-	
+	// These will appear as options in FBTrace panel, with the DBG_ removed.
 		// Also add extension.firebug.BP etc to defaults/preferences/chromebug.js if you want persistence.
 	DBG_BP: false, 			// debugger.js and firebug-services.js; lots of output
 	DBG_TOPLEVEL: false, 		// firebug-service
@@ -27,18 +27,21 @@ Firebug.TraceModule = extend(Firebug.Console,
 	DBG_FUNCTION_NAMES: false,  // heuristics for anon functions
 	DBG_EVAL: false,    		// debugger.js and firebug-service.js
 	DBG_CACHE: false,   		// sourceCache
+	DBG_HTML: false,            // HTML panel
+	DBG_CSS: false,             // CSS panel or css stuff 
 	DBG_SOURCEFILES: false, 	// debugger and sourceCache
 	DBG_WINDOWS: false,    	// tabWatcher, dispatch events; very useful for understand modules/panels 
 	DBG_NET: false,        	// net.js
 	DBG_SHOW_SYSTEM: false,    // isSystemURL return false always.
 	DBG_INITIALIZE: true,		// registry (modules panels); initialize FB
-	DBG_OPTIONS: false,
+	DBG_OPTIONS: true,
 	DBG_TRACE: false,
 	DBG_FBS_CREATION: false, // firebug-service script creation
 	DBG_FBS_STEP: false,     // firebug-service stepping
 	DBG_FBS_BP: false, // firebug-service breakpoints
 	DBG_FBS_ERRORS: false, // firebug-service error handling
-	DBG_HTML: false, // HTML panel
+	DBG_FBS_FF_START: false, // firebug-service trace from start of firefox
+
 	
 	debug: this.DBG_TRACE,
 	
@@ -55,13 +58,21 @@ Firebug.TraceModule = extend(Firebug.Console,
 	initialize: function(prefDomain, prefNames)
 	{
 		FBTrace.sysout("TraceModule.initialize prefDomain="+prefDomain+"\n");
+		
+		var trace_startup = Firebug.getPref("DBG_FBS_FF_START");
+		if (!trace_startup)
+		{
+			Firebug.setPref("DBG_FBS_CREATION", false);
+			Firebug.setPref("DBG_FBS_BP", false);
+		}
+		
 		for (p in FBTrace) 
 		{
 			var m = reDBG.exec(p);
 			if (m) 
 			{
-				var name = m[1];
-				prefNames.push(name);	FBTrace.sysout("push name="+name+"\n");
+				var name = p;//m[1];
+				prefNames.push(name);	//FBTrace.sysout("push name="+name+"\n");
 			}
 		}
 	},
@@ -112,6 +123,7 @@ Firebug.TracePanel.prototype = extend(Firebug.ConsolePanel.prototype,
     {
 		if (this.debug) FBTrace.sysout("TracePanel initializeNode\n");
     },
+	
 	show: function()
 	{
 		if (this.debug) FBTrace.sysout("TraceFirebug.panel show context="+this.context+"\n");
@@ -196,9 +208,10 @@ Firebug.TracePanel.prototype = extend(Firebug.ConsolePanel.prototype,
 		var label = menuitem.getAttribute("label");
 		var category = 'DBG_'+label;
 		FBTrace[category] = !FBTrace[category];
-		prefs.setBoolPref(prefDomain +"." + category, FBTrace[category]);
+		Firebug.setPref(category, FBTrace[category] );
+		//prefs.setBoolPref(prefDomain +"." + category, FBTrace[category]);
 		if (FBTrace.DBG_OPTIONS)
-			FBTrace.sysout("tracePanel.setOption: "+category + " = " + FBTrace[category] + "\n");
+			FBTrace.sysout("tracePanel.setOption: "+prefDomain +"." + category + " = " + FBTrace[category] + "\n");
 	},
 
     getContextMenuItems: function(object, target)

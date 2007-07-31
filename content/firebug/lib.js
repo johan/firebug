@@ -2756,7 +2756,12 @@ this.StackTrace.prototype =
     	}
     	trace += "<bottom>\n";
         return trace;
-    }
+    },
+	reverse: function() 
+	{
+		this.frames.reverse();
+		return this;		
+	}
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 

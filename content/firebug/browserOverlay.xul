@@ -132,6 +132,8 @@
                             <menuitem type="checkbox"
                                       oncommand="FirebugChrome.onToggleOption(this)" option="disabledForSite"/>
                             <menuitem label="&firebug.AllowedSites;" command="cmd_openFirebugPermissions"/>
+                            <menuitem label="&firebug.AllowSystemPages;" type="checkbox"
+                                      oncommand="FirebugChrome.onToggleOption(this)"  option="allowSystemPages"/>
                             <menuseparator/>
 
                             <menu label="&firebug.TextSize;">

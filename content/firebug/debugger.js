@@ -550,7 +550,7 @@ Firebug.Debugger = extend(Firebug.Module,
 	        var context = this.breakContext;
 	        delete this.breakContext;
 	        
-			if (FBTrace.DBG_BP)    /*@explore*/
+			if (FBTrace.DBG_BP || FBTrace.DBG_UI_LOOP)    /*@explore*/
 				FBTrace.sysout("debugger.onBreak context="+context+"\n"); /*@explore*/
 									/*@explore*/
 	        if (!context)
@@ -1693,6 +1693,9 @@ ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
     
     getObjectPath: function(frame)
     {
+		if (Firebug.omitObjectPathStack)
+			return null;
+			
         frame = this.context.debugFrame;
         
         var frames = [];
@@ -2086,15 +2089,17 @@ CallstackPanel.prototype = extend(Firebug.Panel,
 			if (FBTrace.DBG_STACK) /*@explore*/
 				FBTrace.dumpProperties("debugger.callstackPanel.showStackFrame  uid="+this.uid+" frame:", frame);     /*@explore*/
 								   /*@explore*/
-			FBL.setClass(this.panelNode, "errorTrace objectBox-stackTrace");
-			trace = FBL.getStackTrace(frame, this.context);
+			FBL.setClass(this.panelNode, "objectBox-stackTrace");
+			trace = FBL.getStackTrace(frame, this.context).reverse();
 			FirebugReps.StackTrace.tag.append({object: trace}, this.panelNode);
         }
     },
 	
     getOptionsMenuItems: function()
     {
-        var items = [];
+        var items = [
+            optionMenu("OmitObjectPathStack", "omitObjectPathStack"),
+			];
         return items;
     }   
 });

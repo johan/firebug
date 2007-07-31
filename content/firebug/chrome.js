@@ -463,18 +463,19 @@ top.FirebugChrome =
             if (uri)
             {
                 var host = getURIHost(uri);
-                var cantDisplayPage = this.getCurrentBrowser().isSystemPage;
-				cantDisplayPage = false;  // XXXjjb this confuses users, let them see the system page
+                var isSystemPage = this.getCurrentBrowser().isSystemPage;
 
                 var caption;
-                if (!host || cantDisplayPage || Firebug.disabledAlways)
+				if (isSystemPage && !Firebug.allowSystemPages)
+					caption = FBL.$STR("IsSystemPage");
+                else if (!host || isSystemPage || Firebug.disabledAlways)
                     caption = FBL.$STR("DisabledHeader");
                 else
                     caption = FBL.$STRF("DisabledForSiteHeader", [host]);
 
                 disabledHead.firstChild.nodeValue = caption;
 
-                if (cantDisplayPage)
+                if (isSystemPage && !Firebug.allowSystemPages)
                 {
                     FBL.setClass(disabledBox, "cantDisplayPage");
                     disabledCaption.firstChild.nodeValue = FBL.$STR("CantDisplayCaption");
@@ -515,7 +516,7 @@ top.FirebugChrome =
         {
             var sidePanelName = FirebugContext.sidePanelNames[FirebugContext.panelName];
             sidePanelName = getBestSidePanelName(sidePanelName, panelTypes);
-
+// FF3: if the next line is commented out, Fbug allows FF to paint page when HTML with DOMside panels are up, else not.
             panelBar2.selectPanel(sidePanelName);
         }
         else
@@ -806,6 +807,9 @@ top.FirebugChrome =
         var target = document.popupNode;
         var panel = target ? Firebug.getElementPanel(target) : null;
         
+		if (!panel)
+			return false;
+		
         FBL.eraseNode(popup);
 
         if (!this.contextMenuObject && !$("cmd_copy").getAttribute("disabled"))
@@ -1050,6 +1054,7 @@ function onSelectingPanel(event)
 {
     var panel = panelBar1.selectedPanel;
     var panelName = panel ? panel.name : null;
+	if (FBTrace.DBG_WINDOWS) FBTrace.sysout("chrome.onSelectingPanel="+panelName+" FirebugContext="+FirebugContext+"\n"); /*@explore*/
 
     if (FirebugContext)
     {
@@ -1073,6 +1078,7 @@ function onSelectingPanel(event)
 function onSelectedSidePanel(event)
 {
     var sidePanel = panelBar2.selectedPanel;
+	if (FBTrace.DBG_WINDOWS) FBTrace.sysout("chrome.onSelectedSidePanel="+sidePanel+" FirebugContext="+FirebugContext+"\n"); /*@explore*/
     if (FirebugContext)
     {
         var panelName = FirebugContext.panelName;

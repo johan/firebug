@@ -1,6 +1,7 @@
 
 // Global
 pref("extensions.firebug.disabledAlways", false);
+pref("extensions.firebug.allowSystemPages", false);
 pref("extensions.firebug.disabledFile", true);
 pref("extensions.firebug.defaultPanelName", "html");
 pref("extensions.firebug.throttleMessages", true);
@@ -43,6 +44,8 @@ pref("extensions.firebug.showEvalSources", true);
 pref("extensions.firebug.useLastLineForEvalName", false);
 pref("extensions.firebug.useFirstLineForEvalName", false);
 
+// Stack
+pref("extensions.firebug.omitObjectPathStack", false);
 
 // DOM
 pref("extensions.firebug.showUserProps", true);
@@ -61,6 +64,7 @@ pref("extensions.firebug.disableNetMonitor", false);
 pref("extensions.firebug.collectHttpHeaders", true);
 
 // Trace  /*@explore*/
+pref("extensions.firebug.DBG_FBS_FF_START", false); // firebug-service trace from FF start(huge) /*@explore*/
 pref("extensions.firebug.DBG_FBS_CREATION", false); // firebug-service script creation           /*@explore*/
 pref("extensions.firebug.DBG_FBS_BP", false);       // firebug-service breakpoints               /*@explore*/
 pref("extensions.firebug.DBG_FBS_ERRORS", false);   // firebug-service errors                    /*@explore*/

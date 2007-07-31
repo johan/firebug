@@ -141,9 +141,9 @@ function FirebugService()
 	this.breakOnTopLevel = prefs.getBoolPref("extensions.firebug.breakOnTopLevel");
 	
 	try {                            /*@explore*/
-		this.DBG_AT_STARTUP = false;    // CREATION and BP generate a huge trace /*@explore*/
-	    this.DBG_CREATION = this.DBG_AT_STARTUP ? prefs.getBoolPref("extensions.firebug.DBG_FBS_CREATION") : false;     /*@explore*/
-		this.DBG_BP = this.DBG_AT_STARTUP ? prefs.getBoolPref("extensions.firebug.DBG_FBS_BP") : false;                 /*@explore*/
+		  // CREATION and BP generate a huge trace /*@explore*/
+	    this.DBG_CREATION = this.DBG_FBS_FF_START ? prefs.getBoolPref("extensions.firebug.DBG_FBS_CREATION") : false;     /*@explore*/
+		this.DBG_BP = this.DBG_FBS_FF_START ? prefs.getBoolPref("extensions.firebug.DBG_FBS_BP") : false;                 /*@explore*/
 		this.DBG_ERRORS = prefs.getBoolPref("extensions.firebug.DBG_FBS_ERRORS");         /*@explore*/
 		this.DBG_STEP = prefs.getBoolPref("extensions.firebug.DBG_FBS_STEP");         /*@explore*/
 		ddd("fbs.DBG_CREATION: "+fbs.DBG_CREATION+" fbs.DBG_BP:"+fbs.DBG_BP+" fbs.DBG_ERRORS:"+fbs.DBG_ERRORS+" fbs.DBG_STEP:"+fbs.DBG_STEP+"\n"); /*@explore*/
@@ -153,10 +153,10 @@ function FirebugService()
 		dumpProperties("firebug-service: constructor getBoolPrefs FAILED with exception=",exc);     /*@explore*/
 	}                                /*@explore*/
 	                                 /*@explore*/
-    this.currentLeveledScriptTag = 0;          // top- or eval-level
-    this.eventLevelScriptTag = {};    // event scripts like onclick
-	this.nestedScriptStack = {};  // scripts contained in leveledScript that have not been drained
-	this.sourceURLByTag = {};    // all script tags created by eval
+    this.topLevelScriptTag = {};          // top- or eval-level
+    this.eventLevelScriptTag = {};        // event scripts like onclick
+	this.nestedScriptStack = {};          // scripts contained in leveledScript that have not been drained
+	this.sourceURLByTag = {};             // all script tags created by eval
 	this.scriptInfoArrayByURL = {}; 
 	this.scriptInfoByTag = {};
 }
@@ -622,8 +622,8 @@ FirebugService.prototype =
 		
 		try             /*@explore*/
 		{               /*@explore*/
-			fbs.DBG_CREATION = this.DBG_AT_STARTUP ? prefs.getBoolPref("extensions.firebug.DBG_FBS_CREATION") : false;    /*@explore*/
-			fbs.DBG_BP = this.DBG_AT_STARTUP ? prefs.getBoolPref("extensions.firebug.DBG_FBS_BP") : false;                 /*@explore*/
+			fbs.DBG_CREATION = prefs.getBoolPref("extensions.firebug.DBG_FBS_CREATION");    /*@explore*/
+			fbs.DBG_BP = prefs.getBoolPref("extensions.firebug.DBG_FBS_BP");                 /*@explore*/
 			fbs.DBG_ERRORS = prefs.getBoolPref("extensions.firebug.DBG_FBS_ERRORS");         /*@explore*/
 			fbs.DBG_STEP = prefs.getBoolPref("extensions.firebug.DBG_FBS_STEP");             /*@explore*/
 		}               /*@explore*/
@@ -635,7 +635,7 @@ FirebugService.prototype =
 		                /*@explore*/
         if (fbs.DBG_CREATION || fbs.DBG_BP || fbs.DBG_ERRORS || fbs.DBG_STEP)               /*@explore*/
 		{ /*@explore*/
-			ddd("start fbs debug log"+Date()+"\n\n");     /*@explore*/
+			ddd("\nstart fbs debug log "+Date()+"\n");     /*@explore*/
 			ddd("fbs.DBG_CREATION: "+fbs.DBG_CREATION+" fbs.DBG_BP:"+fbs.DBG_BP+" fbs.DBG_ERRORS:"+fbs.DBG_ERRORS+" fbs.DBG_STEP:"+fbs.DBG_STEP+"\n"); /*@explore*/
 		}	                                              /*@explore*/
 		if (enabledDebugger)
@@ -662,8 +662,9 @@ FirebugService.prototype =
             jsd.breakpointHook = { onExecute: hook(this.onBreakpoint, RETURN_CONTINUE_THROW) };
             //jsd.throwHook = { onExecute: hook(this.onThrow, RETURN_CONTINUE) };
             jsd.errorHook = { onError: hook(this.onError, true) };
+			this.syncTopLevelHook();
         }
-		this.syncTopLevelHook();
+		
     },
 
     disableDebugger: function()
@@ -689,6 +690,7 @@ FirebugService.prototype =
     // || interuptHook.  rv is ignored 
     onBreak: function(frame, type, rv)
     {   
+		if (fbs.DBG_STEP) ddd("fbs.onBreak type="+getExecutionStopNameFromType(type)+"\n"); /*@explore*/
     	try 
 		{ 
 	        var debuggr = this.findDebugger(frame);
@@ -764,21 +766,21 @@ FirebugService.prototype =
 
     onBreakpoint: function(frame, type, val)
     {            
-		if (fbs.DBG_BP) ddd("onBreakpoint with frame.script.tag="+frame.script.tag+" evtag="+fbs.eventLevelScriptTag[frame.script.tag]+"\n");     /*@explore*/
-    	
-		if (frame.script.tag == fbs.currentLeveledScriptTag)
+		if (frame.script.tag in fbs.topLevelScriptTag)
     	{
-    		fbs.currentLeveledScriptTag = 0;
+			if (fbs.DBG_BP) ddd("onBreakpoint("+getExecutionStopNameFromType(type)+") with frame.script.tag="+frame.script.tag+" topLevelScriptTag\n");     /*@explore*/
+    		delete fbs.topLevelScriptTag[frame.script.tag];
     		return this.onEvalBreak(frame, type, val);
     	}
     	if (frame.script.tag in fbs.eventLevelScriptTag)
     	{
-			if (fbs.DBG_CREATION) ddd("onBreakpoint found eventLevelScriptTag\n");     /*@explore*/
+			if (fbs.DBG_CREATION) ddd("onBreakpoint("+getExecutionStopNameFromType(type)+") found eventLevelScriptTag: "+frame.script.tag+"\n");     /*@explore*/
 			delete fbs.eventLevelScriptTag[frame.script.tag];
     		return this.onEventScriptBreak(frame, type, val);
     	}
         if (disabledCount || monitorCount || conditionCount || runningUntil)
         {
+			if (fbs.DBG_BP) ddd("onBreakpoint("+getExecutionStopNameFromType(type)+") disabledCount:"+disabledCount+" monitorCount:"+monitorCount+" conditionCount:"+conditionCount+" runningUntil:"+runningUntil+"\n");     /*@explore*/
             var url = fbs.getSourceURL(frame.script);
 			var scriptInfo = fbs.scriptInfoByTag[frame.script.tag];
 			if (scriptInfo) 
@@ -810,6 +812,7 @@ FirebugService.prototype =
                 return RETURN_CONTINUE;
         }
 
+		if (fbs.DBG_BP) ddd("onBreakpoint("+getExecutionStopNameFromType(type)+") with frame.script.tag="+frame.script.tag+" evtag="+fbs.eventLevelScriptTag[frame.script.tag]+"\n");     /*@explore*/
         if (runningUntil) // XXXjjb ?? bp and after onCall? Seems dubious
             return RETURN_CONTINUE;
         else
@@ -1044,7 +1047,7 @@ FirebugService.prototype =
 	        	// top or eval-level
 	    		// We need to detect eval() and grab its source. For that we need a stack frame.
 	    		// Get a frame by breakpointing the no-name script that was just created.
-	    		fbs.currentLeveledScriptTag = script.tag;
+	    		fbs.topLevelScriptTag[script.tag] = true;
 	    		script.setBreakpoint(0);
 				if (fbs.DBG_CREATION) ddd("onScriptCreated: set BP at PC 0 in top or eval level tag="+script.tag+"\n");     /*@explore*/  
 	    	} 
@@ -1057,7 +1060,7 @@ FirebugService.prototype =
 	    	else
 	    	{
 	    		fbs.nestedScriptStack[script.tag] = script;
-				if (fbs.DBG_CREATION) ddd("onScriptCreated: stacked on "+fbs.currentLeveledScriptTag+"\n");     /*@explore*/ 
+				if (fbs.DBG_CREATION) ddd("onScriptCreated: nested script\n");     /*@explore*/ 
 	    	}	    	
          }
          catch(error)
@@ -1850,6 +1853,8 @@ var FirebugPrefsObserver =
 			fbs.DBG_ERRORS = prefs.getBoolPref("extensions.firebug.DBG_FBS_ERRORS");
 		else if (data == "extensions.firebug.DBG_FBS_STEP")
 			fbs.DBG_STEP = prefs.getBoolPref("extensions.firebug.DBG_FBS_STEP");
+		else if (data == "extensions.firebug.DBG_FBS_FF_START")
+			fbs.DBG_FBS_FF_START = prefs.getBoolPref("extensions.firebug.DBG_FBS_FF_START");
 
 		fbs.syncTopLevelHook();
     }
@@ -1982,5 +1987,17 @@ function getPropertyName(object, value)
 	for (p in object) 
 	{
 		if (value == object[p]) return p;	
+	}
+}
+function getExecutionStopNameFromType(type) 
+{
+	switch (type)
+	{
+		case jsdIExecutionHook.TYPE_INTERRUPTED: return "interrupted";
+		case jsdIExecutionHook.TYPE_BREAKPOINT: return "breakpoint";
+		case jsdIExecutionHook.TYPE_DEBUG_REQUESTED: return "debug requested";
+		case jsdIExecutionHook.TYPE_DEBUGGER_KEYWORD: return "debugger_keyword";
+		case jsdIExecutionHook.TYPE_THROW: return "interrupted";
+		default: return "unknown("+type+")";
 	}
 }

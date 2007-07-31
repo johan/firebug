@@ -58,6 +58,10 @@ this.dumpProperties = function(header, obj)
 
 		this.sysout(obj+"\n");	
 	}
+	//else if (obj.name && obj.name == 'NS_ERROR_XPC_JS_THREW_JS_OBJECT')
+	//{
+	//	
+	//}
 	else
 	{
 		if (FBTrace.dumpToPanel && FirebugContext)

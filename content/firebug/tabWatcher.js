@@ -176,8 +176,10 @@ top.TabWatcher =
         var isSystem = isSystemPage(win);
         
         var context = this.getContextByWindow(win);
-        if ((context && !context.window) || isSystem)
+        if ((context && !context.window) || (isSystem && !Firebug.allowSystemPages))
         {
+			if (FBTrace.DBG_WINDOWS) /*@explore*/
+				FBTrace.sysout("tabWatcher.watchLoadedTopWindow bailing, context.window:"+context.window+" isSystem:"+isSystem+"\n"); /*@explore*/
             this.unwatchTopWindow(win);
             this.watchContext(win, null, isSystem);
             return;
@@ -212,7 +214,7 @@ top.TabWatcher =
 			FBTrace.sysout("watchWindow for href="+href+" context="+context+"\n");     /*@explore*/
 			if (context)                                                               /*@explore*/
 				for (var i = 0; i < context.windows.length; i++)                       /*@explore*/
-					FBTrace.sysout("watchWindow context("+context.uid+").windows["+i+"]="+context.windows[i].location.href+"\n");     /*@explore*/
+					FBTrace.sysout("watchWindow context("+context.uid+").windows["+i+"]= ("+context.windows[i].__firebug__uid+") "+context.windows[i].location.href+"\n");     /*@explore*/
 		}                                                                              /*@explore*/
                                                                                        /*@explore*/
         if (context && context.windows.indexOf(win) == -1 && href != aboutBlank)
@@ -236,7 +238,7 @@ top.TabWatcher =
     {
         var context = this.getContextByWindow(win);
 		if (FBTrace.DBG_WINDOWS)                                                     /*@explore*/
-			FBTrace.sysout("tabWatcher.unwatchTopWindow context="+context+"\n");     /*@explore*/
+			FBTrace.dumpStack("tabWatcher.unwatchTopWindow context="+context+"\n");     /*@explore*/
         this.unwatchContext(win, context);
     },
     
@@ -307,7 +309,7 @@ top.TabWatcher =
         try
         {
             context.window.removeEventListener("pagehide", onUnloadTopWindow, true);
-			if (FBTrace.DBG_INITIALIZE) FBTrace.sysout("tabWatcher.unwatchContext  pagehide removeEventListener\n"); /*@explore*/
+			if (FBTrace.DBG_WINDOWS) FBTrace.sysout("tabWatcher.unwatchContext  pagehide removeEventListener\n"); /*@explore*/
         }
         catch (exc)
         {
@@ -332,8 +334,14 @@ top.TabWatcher =
 			return;
 		
 		if (FBTrace.DBG_WINDOWS)  // XXXjjb This shows a lot of calls to getContextByWindow, can some be avoided?     /*@explore*/
-			FBTrace.sysout("tabWatcher.getContextByWindow win.location "+(win.location?win.location.href:"(undefined)")+"\n");     /*@explore*/
-                                                        /*@explore*/
+		{
+			var uid = win.__firebug__uid;  					/*@explore*/
+			if (!uid) { 									/*@explore*/
+				uid = FBL.getUniqueId(); 					/*@explore*/ 
+				win.__firebug__uid = uid; 					/*@explore*/   
+			} 												/*@explore*/
+			FBTrace.sysout("tabWatcher.getContextByWindow win.uid: "+uid+" win.location "+(win.location?win.location.href:"(undefined)")+"\n");     /*@explore*/
+        }                                               	/*@explore*/
 		for (var i = 0; i < contexts.length; ++i)
         {
             var context = contexts[i];
@@ -462,7 +470,7 @@ var FrameProgressListener = extend(BaseProgressListener,
     onStateChange: function(progress, request, flag, status)
     {
 		if (FBTrace.DBG_WINDOWS)     /*@explore*/ 
-				FBTrace.sysout("FrameProgressListener "+getStateDescription(flag)+" for uri="+safeGetName(request)+"\n");     /*@explore*/
+				FBTrace.sysout("FrameProgressListener "+getStateDescription(flag)+" uid="+progress.DOMWindow.__firebug__uid+" uri="+safeGetName(request)+"\n");     /*@explore*/
 								
         if (flag & STATE_IS_REQUEST && flag & STATE_START)
         {
@@ -471,7 +479,7 @@ var FrameProgressListener = extend(BaseProgressListener,
         	// that the start of these "dummy" requests is the only state that works.
 				
 			var safeURI = safeGetName(request);
-            if (safeURI && (safeURI == dummyURI) )// || safeURI == "about:document-onload-blocker") )
+            if (safeURI && ((safeURI == dummyURI) || safeURI == "about:document-onload-blocker") )
             {
 				var win = progress.DOMWindow;
                 // Another weird edge case here - when opening a new tab with about:blank,
@@ -493,25 +501,27 @@ var FrameProgressListener = extend(BaseProgressListener,
 		
 		// XSLT does not raise DOMContentLoaded so we never know to set the context.loaded.
 		// As a fall back we set it here.
-		if (flag & STATE_IS_DOCUMENT && flag & STATE_STOP)
-        {
-			var win = progress.DOMWindow;
-            var context = TabWatcher.getContextByWindow(win);
-			if (context && !context.onLoadWindowContent && win.parent == win) 
-			{
-				var safeURI = safeGetName(request);
-				
-				if (FBTrace.DBG_WINDOWS)     /*@explore*/
-					FBTrace.sysout("FrameProgressListener no onLoadWindowContent "+(safeURI?"safeURI="+safeURI : "undefined safeURI")+"\n");     /*@explore*/
-					                         /*@explore*/
-				if (win.location && win.location.href == safeURI){
-					var fakeEvent = {type:"fake", currentTarget: win};  // TODO refactor onLoadWindowContent
-					onLoadWindowContent(fakeEvent);
-				}
-					
-			}
+		//if (flag & STATE_IS_DOCUMENT && flag & STATE_STOP)
+        //{
+		//	var win = progress.DOMWindow;
+        //   var context = TabWatcher.getContextByWindow(win);
+		//	if (FBTrace.DBG_WINDOWS)     /*@explore*/
+		//			FBTrace.sysout("FrameProgressListener context:"+context+" context.onLoadWindowContent:"+context.onLoadWindowContent+" win.parent == win:"+(win.parent == win)+" no onLoadWindowContent "+"\n");     /*@explore*/
+		//			                         /*@explore*/
+		//	if (context && !context.onLoadWindowContent && win.parent == win) 
+		//	{
+		//		var safeURI = safeGetName(request);
+		//		
+		//		
+		//		if (win.location && win.location.href == safeURI)
+		//      {
+		//			var fakeEvent = {type:"fake", currentTarget: win};  // TODO refactor onLoadWindowContent
+		//			onLoadWindowContent(fakeEvent);
+		//		}
+		//			
+		//	}
             	
-		}
+		//}
     }
 });
 

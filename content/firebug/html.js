@@ -724,6 +724,8 @@ Firebug.HTMLPanel.prototype = extend(Firebug.Panel,
              if (stylesheet)
              {
              	var ownerNode = stylesheet.ownerNode;
+				if (FBTrace.DBG_CSS) /*@explore*/
+						FBTrace.sysout("html panel updateSelection stylesheet.ownerNode="+stylesheet.ownerNode+" href:"+sourceLink.href+"\n"); /*@explore*/
                 if (ownerNode)
                 {
                 	var objectbox = this.ioBox.select(ownerNode, true, true, this.noScrollIntoView);
@@ -736,12 +738,14 @@ Firebug.HTMLPanel.prototype = extend(Firebug.Panel,
 						if (!sourceRow) break;
 						sourceRow = FBL.getNextByClass(sourceRow,  "sourceRow");
 					}
+					if (FBTrace.DBG_CSS) /*@explore*/
+						FBTrace.sysout("html panel updateSelection sourceLink.line="+sourceLink.line+" sourceRow="+(sourceRow?sourceRow.innerHTML:"undefined")+"\n"); /*@explore*/
 					if (sourceRow) 
 					{
-						if (FBTrace.DBG_HTML) /*@explore*/
-							FBTrace.sysout("html panel updateSelection sourceLink.line="+sourceLink.line+" sourceRow="+sourceRow.innerHTML+"\n"); /*@explore*/
         				this.ioBox.sourceRow = sourceRow;
             			this.ioBox.sourceRow.setAttribute("exeLine", "true");
+						scrollIntoCenterView(sourceRow);
+						this.ioBox.selectObjectBox(sourceRow, false);  // sourceRow isn't an objectBox, but the function should work anyway...
 					}
  				}
  			}

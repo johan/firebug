@@ -56,7 +56,8 @@ var Errors = Firebug.Errors = extend(Firebug.Module,
 	{
 		if (statusBar)
 			statusBar.setAttribute("errors", "true");
-		statusText.setAttribute("value", errorLabel);
+		if (statusText)  // sometimes this is undefined..how?
+			statusText.setAttribute("value", errorLabel);
 	},
 	
     showCount: function(errorCount)

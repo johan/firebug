@@ -347,6 +347,9 @@ function onHTTPSpyReadyStateChange(spy, event)
     }
     catch (exc)
     {
+		if (FBTrace.DBG_NET)      /*@explore*/
+			FBTrace.dumpProperties("onHTTPSpyReadyStateChange FAILED:", exc);     /*@explore*/
+		                      /*@explore*/
     }
 
     if (spy.request.readyState == 4)
