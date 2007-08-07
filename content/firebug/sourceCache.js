@@ -83,8 +83,11 @@ top.SourceCache.prototype =
             if (channel instanceof nsIUploadChannel)
             {
                 var postData = getPostStream(this.context);
-                var uploadChannel = QI(channel, nsIUploadChannel);
-                uploadChannel.setUploadStream(postData, "", -1);
+				if (postData)
+				{
+	                var uploadChannel = QI(channel, nsIUploadChannel);
+    	            uploadChannel.setUploadStream(postData, "", -1);
+				}
             }
             
             if (channel instanceof nsICachingChannel)
@@ -222,11 +225,15 @@ function getPostStream(context)
         var descriptor = QI(webNav, CI("nsIWebPageDescriptor")).currentDescriptor;
         var entry = QI(descriptor, CI("nsISHEntry"));
         
-        // Seek to the beginning, or it will probably start reading at the end
-        var postStream = QI(entry.postData, CI("nsISeekableStream"));
-        postStream.seek(0, 0);
+		if (entry.postData)
+		{
+			// Seek to the beginning, or it will probably start reading at the end
+	        var postStream = QI(entry.postData, CI("nsISeekableStream"));
+	        postStream.seek(0, 0);
         
-        return postStream;
+	        return postStream;
+		}
+
      }
      catch (exc)
      {

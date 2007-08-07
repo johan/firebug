@@ -41,7 +41,7 @@ Firebug.TraceModule = extend(Firebug.Console,
 	DBG_FBS_BP: false, // firebug-service breakpoints
 	DBG_FBS_ERRORS: false, // firebug-service error handling
 	DBG_FBS_FF_START: false, // firebug-service trace from start of firefox
-
+	DBG_FBS_SCRIPTINFO: false, // firebug-service dump scriptinfos
 	
 	debug: this.DBG_TRACE,
 	
@@ -95,6 +95,7 @@ Firebug.TraceModule = extend(Firebug.Console,
     { 
 		if (!panel || panel.name != "TraceFirebug")
 			return;
+		
 		if (this.debug) FBTrace.sysout("TraceModule showPanel module:\n");
 		if (!FBTrace.dumpToPanel && !this.intro) 
 		{
@@ -133,9 +134,12 @@ Firebug.TracePanel.prototype = extend(Firebug.ConsolePanel.prototype,
 	
 	hide: function() 
 	{
-		if (this.debug) FBTrace.sysout("TraceFirebug.panel hide\n");
-		var consoleButtons = this.context.browser.chrome.$("fbConsoleButtons");
-		collapse(consoleButtons, true);
+		if (this.debug) FBTrace.dumpStack("TraceFirebug.panel hide\n");
+		if (this.context && this.context.browser)
+		{
+			var consoleButtons = this.context.browser.chrome.$("fbConsoleButtons");
+			collapse(consoleButtons, true);
+		}
 	},
 
     watchWindow: function(win)
@@ -146,6 +150,9 @@ Firebug.TracePanel.prototype = extend(Firebug.ConsolePanel.prototype,
     unwatchWindow: function(win)
     {
 		if (this.debug) FBTrace.sysout("TraceFirebug.panel unwatchWindow\n");
+		var errorWin = fbs.lastErrorWindow;
+        if (errorWin)
+			FBTrace.sysout("tracePanel had to clear lastErrorWindow <*><*><*><*>\n");
     },
     
 
@@ -157,6 +164,7 @@ Firebug.TracePanel.prototype = extend(Firebug.ConsolePanel.prototype,
 	getObjectPath: function(object)
     {
 		if (this.debug) FBTrace.sysout("TraceFirebug.panel getObjectPath\n");
+		return TabWatcher.contexts;
     },
 
     getDefaultSelection: function()
@@ -166,7 +174,9 @@ Firebug.TracePanel.prototype = extend(Firebug.ConsolePanel.prototype,
     
     updateOption: function(name, value)
     {
-		if (this.debug) FBTrace.sysout("TraceFirebug.panel updateOption\n");
+		this.debug = FBTrace.DBG_TRACE;
+		//if (this.debug) 
+		FBTrace.sysout("TraceFirebug.panel updateOption this.debug="+this.debug+"\n");
     },
     
     getOptionsMenuItems: function()

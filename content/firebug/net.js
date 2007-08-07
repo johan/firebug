@@ -1129,8 +1129,7 @@ NetProgress.prototype =
             this.arriveFile(file, request);
             this.endLoad(file);
 
-            if (file.size == -1)
-                getFileSizeFromCache(file, this);
+            getFileSizeFromCache(file, this);
             
             return file;
         }
@@ -1502,7 +1501,14 @@ function getFileSizeFromCache(file, netProgress)
                 {
                     if (descriptor)
                     {
-                        file.size = descriptor.dataSize;
+						if (file.size == -1)
+						{
+                        	file.size = descriptor.dataSize;
+						}
+						if (descriptor.lastModified && descriptor.lastFetched &&
+                           descriptor.lastModified < Math.floor(file.startTime/1000)) 
+                           file.fromCache = true;
+						   
                         netProgress.update(file);
                     }
                 }

@@ -743,6 +743,8 @@ FirebugService.prototype =
 					if (nsIFireBugDebuggerWithEval && debuggr.QueryInterface(nsIFireBugDebuggerWithEval) ) 
 	        		{
 						debuggr.onErrorWithMessage(frame, nextErrorMessage);
+						nextErrorMessage = null;
+						debuggr = this.reFindDebugger(frame, debuggr);
 					}
 					else
 						debuggr.onError(frame);
@@ -1107,7 +1109,10 @@ FirebugService.prototype =
 
     onScriptDestroyed: function(script)
     {
-        if (script.tag in fbs.scriptInfoByTag) 
+		if (fbs.DBG_CREATION)      /*@explore*/ 
+			ddd("onScriptDestroyed tag:"+script.tag+"\n"+dumpStack()+"\n"); /*@explore*/
+			
+        if (script.tag in fbs.scriptInfoByTag)  
         {
         	var scriptInfo = fbs.scriptInfoByTag[script.tag];
  			var url = scriptInfo.url;
@@ -1372,7 +1377,7 @@ FirebugService.prototype =
             var scriptInfos = scriptInfo ? [scriptInfo] : this.findScriptInfos(url, lineNo); 
 			if (fbs.DBG_BP) ddd("addBreakpoint found "+scriptInfos.length+" for url="+lineNo+"@"+url+"\n");     /*@explore*/
 			
-			var onlyOnReload = true;
+			var onNextReloadOnly = true;
             for (var i = 0; i < scriptInfos.length; ++i)
             {
                 scriptInfo = scriptInfos[i];
@@ -1388,11 +1393,12 @@ FirebugService.prototype =
 				var firstSourceLine = scriptInfo.unshiftFromSourceBufferToScriptNumbering(script.baseLineNumber);
 				var bp = fbs.recordBreakpoint(type, url, lineNo, debuggr, firstSourceLine);
 				
-				onlyOnReload = false;
+				onNextReloadOnly = false;
 			}
-			if (onlyOnReload)
+			if (onNextReloadOnly)
 			{
-				var bp = fbs.recordBreakpoint(type | BP_ONRELOAD, url, lineNo, debuggr);
+				if (fbs.DBG_BP) ddd("recordBreakpoint onNextReloadOnly lineNo="+lineNo+" using pcmap="+pcmap+" pc="+pc+"\n");     /*@explore*/
+				var bp = fbs.recordBreakpoint(type | BP_ONRELOAD, url, lineNo, debuggr);  // mark for next reload
 			} 
         }
 
@@ -1401,16 +1407,16 @@ FirebugService.prototype =
 
 	recordBreakpoint: function(type, url, lineNo, debuggr, functionDeclarationLine)
 	{
-				var urlBreakpoints = breakpoints[url];
-          		if (!urlBreakpoints)
-                	breakpoints[url] = urlBreakpoints = [];
+		var urlBreakpoints = breakpoints[url];
+  		if (!urlBreakpoints)
+        	breakpoints[url] = urlBreakpoints = [];
 
-            	bp = {type: type, href: url, lineNo: lineNo, disabled: 0,
-                    startLineNo: functionDeclarationLine, debuggr: debuggr,
-                    condition: ""};
-            	urlBreakpoints.push(bp);
-            	++breakpointCount;
-				return bp;
+    	bp = {type: type, href: url, lineNo: lineNo, disabled: 0,
+            startLineNo: functionDeclarationLine, debuggr: debuggr,
+            condition: ""};
+    	urlBreakpoints.push(bp);
+    	++breakpointCount;
+		return bp;
 	},
 
     removeBreakpoint: function(type, url, lineNo, script) // xxxJJB script arg not used?
@@ -1434,7 +1440,7 @@ FirebugService.prototype =
             {
                 bp.type &= ~type;
 				
-                if (!(bp.type & !BP_ONRELOAD) )
+                if (!(bp.type & !BP_ONRELOAD) )  // if BP_ONRELOAD is not set...
                 {
 					// Check all scripts that may be defined on this line of url
 					// xxxJJB this is expensive, we could track the scripts
@@ -1446,7 +1452,6 @@ FirebugService.prototype =
 							
 							if (scriptInfo)
 							{
-								if (fbs.DBG_BP) ddd("removeBreakpoint checking "+script.tag+" at line="+lineNo+"\n");     /*@explore*/
 								var pcmap = scriptInfo.pcmap;
 								if(scriptInfo.url == url
 							  		&& script.isLineExecutable(lineNo, pcmap))
@@ -1454,7 +1459,7 @@ FirebugService.prototype =
 									var lineInScript = scriptInfo.shiftFromSourceBufferToScriptNumbering(lineNo);
                             		var pc = script.lineToPc(lineInScript, pcmap);
                             		script.clearBreakpoint(pc); 
-									if (fbs.DBG_BP) ddd("removeBreakpoint at "+lineNo+"@"+url+"\n");     /*@explore*/
+									if (fbs.DBG_BP) ddd("removeBreakpoint in tag="+script.tag+" at "+lineNo+"@"+url+"\n");     /*@explore*/
                         		}
 							}
                         }
@@ -1653,6 +1658,23 @@ FirebugService.prototype =
 		    fbs.hookTopLevel();
 		else
 			jsd.topLevelHook = null;
+	},
+	
+	dumpScriptInfo: function()
+	{
+		var reComponents = /file:.*\/components\/.*:enumerated/;
+		for (url in this.scriptInfoArrayByURL)
+		{
+			if (isSystemURL(url)) continue;
+			if (url.substr(0, 9) == "chrome://") continue;
+			if (url.match(reComponents)) continue;
+			
+			var scriptInfos = this.scriptInfoArrayByURL[url];
+			for (var i = 0; i < scriptInfos.length; i++)
+			{
+				ddd(i+"/"+scriptInfos.length+": "+this.formatScriptInfo(scriptInfos[i])+"\n");
+			}
+		}
 	}
 };
 
@@ -1857,7 +1879,12 @@ var FirebugPrefsObserver =
 			fbs.DBG_STEP = prefs.getBoolPref("extensions.firebug.DBG_FBS_STEP");
 		else if (data == "extensions.firebug.DBG_FBS_FF_START")
 			fbs.DBG_FBS_FF_START = prefs.getBoolPref("extensions.firebug.DBG_FBS_FF_START");
-
+		else if (data == "extensions.firebug.DBG_FBS_SCRIPTINFO")
+		{
+			fbs.DBG_FBS_SCRIPTINFO = prefs.getBoolPref("extensions.firebug.DBG_FBS_SCRIPTINFO");
+			if (fbs.DBG_FBS_SCRIPTINFO)
+				fbs.dumpScriptInfo();
+		}
 		fbs.syncTopLevelHook();
     }
 };

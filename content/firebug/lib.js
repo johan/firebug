@@ -23,6 +23,7 @@ var finder = this.finder = this.CCIN("@mozilla.org/embedcomp/rangefind;1", "nsIF
 
 var reNotWhitespace = /[^\s]/;
 var reSplitFile = /:\/{1,3}(.*?)\/([^\/]*?)\/?($|\?.*)/;
+var reURL = /(([^:]+:)\/{1,2}[^\/]*)(.*?)$/;  // This RE and the previous one should changed to be consistent
 this.reDataURL = /data:text\/javascript;fileName=([^;]*);baseLineNumber=(\d*?),((?:.*?%0A)|(?:.*))/g;
 this.reJavascript = /\s*javascript:\s*(.*)/;
 this.reChrome = /chrome:\/\/([^\/]*)\//;
@@ -2717,7 +2718,7 @@ this.SourceFile.prototype =
     	var pcmap_type = (sourceLines) ? FBL.PCMAP_PRETTYPRINT : FBL.PCMAP_SOURCETEXT;
     	var lineCount = (sourceLines) ? sourceLines.length : script.lineExtent;
     	
-    	if (FBTrace.DBG_BP) FBTrace.sysout("lib.addToLineTable lineCount="+lineCount+" trueBaseLineNumber="+trueBaseLineNumber+"\n");     /*@explore*/
+    	if (FBTrace.DBG_LINETABLE) FBTrace.sysout("lib.addToLineTable lineCount="+lineCount+" trueBaseLineNumber="+trueBaseLineNumber+"\n");     /*@explore*/
 		this.pcMapTypeByScriptTag[script.tag] = pcmap_type;
     	
     	for (var i = 0; i <= lineCount; i++) 
@@ -2728,7 +2729,7 @@ this.SourceFile.prototype =
     		if (script.isLineExecutable(scriptLineNo, pcmap_type))     			
     			this.lineMap[mapLineNo] = script.tag;
     			                                                                  /*@explore*/
-			if (FBTrace.DBG_BP)                                                   /*@explore*/
+			if (FBTrace.DBG_LINETABLE)                                                   /*@explore*/
 			{                                                                     /*@explore*/
 				var pcFromLine = script.lineToPc(scriptLineNo, pcmap_type);       /*@explore*/
 				var lineFromPC = script.pcToLine(pcFromLine, pcmap_type);         /*@explore*/
@@ -2739,7 +2740,7 @@ this.SourceFile.prototype =
 		    		FBTrace.sysout("SourceFile.addToLineTable not executable scriptLineNo="+scriptLineNo+" vs "+lineFromPC+"=lineFromPC; lineToPc="+pcFromLine+"\n");     /*@explore*/    		
 		    }                                                                     /*@explore*/
 	    }
-		if (FBTrace.DBG_BP) FBTrace.sysout("SourceFile.addToLineTable: "+this.toString()+"\n");     /*@explore*/
+		if (FBTrace.DBG_LINETABLE) FBTrace.sysout("SourceFile.addToLineTable: "+this.toString()+"\n");     /*@explore*/
     },
     
     isLineExecutable: function(lineNo) 
@@ -2786,9 +2787,10 @@ this.StackTrace.prototype =
 
 this.StackFrame = function(context, fn, script, href, lineNo, args)
 {
-    this.context = context;
     this.fn = fn;  // TODO ditch
-    this.script = script; /// TODO: if script destroyed??
+    //this.script = script; /// TODO: if script destroyed??
+	this.scriptBaseLineNumber = script.baseLineNumber;
+	this.scriptLineExtent = script.lineExtent; 
     this.href = href;
     this.lineNo = lineNo;
     this.args = args;
@@ -2799,7 +2801,7 @@ this.StackFrame.prototype =
 {
     toString: function()
     {// XXXjjb analyze args and fn?
-        return "("+this.flags+")"+this.href+":"+this.script.baseLineNumber+"-"+(this.script.baseLineNumber+this.script.lineExtent)+"@"+this.lineNo;
+        return "("+this.flags+")"+this.href+":"+this.scriptBaseLineNumber+"-"+(this.scriptBaseLineNumber+this.scriptLineExtent)+"@"+this.lineNo;
     }
 };
 
@@ -4676,7 +4678,7 @@ this.evalInTo = function(win, text)
 	}
 	catch(exc)
 	{
-		FBTrace.dumpProperties("evalInSandBox FAILS for text=\n"+text+"\n", exc);
+		FBTrace.dumpProperties("evalInSandBox FAILS sandbox uri="+win.location.href+" and text=\n"+text+"\n", exc);
 		try 
 		{
 			var evaledText = eval(text);

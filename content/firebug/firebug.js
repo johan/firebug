@@ -1111,7 +1111,8 @@ Firebug.Panel =
     },
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
-
+	// An array of objects that answer to getObjectLocation.
+	// Only shown if panel.location defined and supportsObject true
     getLocationList: function()
     {
         return null;

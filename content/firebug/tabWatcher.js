@@ -321,6 +321,10 @@ top.TabWatcher =
         context.destroy(persistedState);    
         
         remove(contexts, context);
+		for (var p in context)
+		{
+			delete context[p];
+		}
     },
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
