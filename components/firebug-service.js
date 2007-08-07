@@ -1245,7 +1245,7 @@ FirebugService.prototype =
         var win = getFrameWindow(frame);
         if (!win)
             return;
-        ddd("diagnoseFindDebugger find win.\n");
+        ddd("diagnoseFindDebugger find win.location ="+(win.location?win.location.href:"(undefined)")+"\n");
         for (var i = 0; i < debuggers.length; ++i)
         {
             try
@@ -1491,6 +1491,8 @@ FirebugService.prototype =
         // Before we break, clear information about previous stepping session
         this.stopStepping();
         
+		if (fbs.DBG_BP || fbs.DBG_CREATION || fbs.DBG_ERRORS || fbs.DBG_STEP) /*@explore*/
+			flushDebugStream(); /*@explore*/
         // Break into the debugger - execution will stop here until the user resumes
         var returned;
         try
@@ -1925,7 +1927,12 @@ var dumpStream;
 function dumpToFile(text) {
 	if (!dumpStream) dumpStream = getDumpStream();
     dumpStream.write(text, text.length);
-    dumpStream.flush();
+    //dumpStream.flush();  // If FF crashes you need to run with flush on every line
+}
+
+function flushDebugStream() 
+{
+	dumpStream.flush();
 }
 
 function dumpToFileWithStack(text, frame) {

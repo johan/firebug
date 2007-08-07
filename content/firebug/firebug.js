@@ -67,6 +67,7 @@ const prefNames =
 	"breakOnTopLevel",
 	"useDebugAdapter",
 	"showEvalSources",
+	"showAllSourceFiles",
 	"useLastLineForEvalName",
 	"useFirstLineForEvalName",
     

@@ -32,6 +32,7 @@ Firebug.TabContext = function(win, browser, chrome, persistedState)
     this.panelMap = {};
     this.sidePanelNames = {};
     this.sourceCache = new SourceCache(this);
+	this.sourceFileMap = {};
 };
 
 Firebug.TabContext.prototype =

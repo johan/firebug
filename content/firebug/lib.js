@@ -1859,18 +1859,19 @@ this.getStyleSheetByHref = function(url, context)
 
 this.updateScriptFiles = function(context, reload)
 {
-    var oldMap = reload ? context.sourceFileMap : null;
-    
-    if (!context.sourceFiles || reload)
+	if (!context.sourceFiles || reload)
+		context.sourceFiles = [];    // list of all SourceFiles, built here only and cached
+	
+    if (!context.sourceFileMap)
     {
-        context.sourceFileMap = {};
-        context.sourceFiles = [];
+        context.sourceFileMap = {};  // url->FBL.SourceFile built here and elsewhere
+		if (FBTrace.DBG_SOURCEFILES) FBTrace.sysout("lib.updateScriptFiles No sourceFileMap!\n"); /*@explore*/
     }
     
-    if (!context.loaded || !context.sourceFiles.length)
+    if (!context.loaded || !context.sourceFiles.length) // XXXjjb: TODO dynamics may also need a new list
     {
+		var oldMap = reload ? context.sourceFileMap : null;
         var sourceFileMap = context.sourceFileMap;
-        var sourceFiles = context.sourceFiles;
 
         function addFile(url)
         {
@@ -1880,17 +1881,15 @@ this.updateScriptFiles = function(context, reload)
                 {
                     var sourceFile = oldMap[url];
                     sourceFileMap[url] = sourceFile;
-                    sourceFiles.push(sourceFile);
                 }
                 else
                 {
-                    var sourceFile = new FBL.SourceFile(url);
-                    sourceFileMap[url] = sourceFile;
-                    sourceFiles.push(sourceFile);
+                    var sourceFile = new FBL.SourceFile(url, context);
                 }
             }
         }
 
+		// iff script tag mutation
         this.iterateWindows(context.window, this.bind(function(win)
         {
             if (!win.document.documentElement)
@@ -1907,26 +1906,33 @@ this.updateScriptFiles = function(context, reload)
             }
         }, this));
 
-		if (context.evalSourceFilesByURL && Firebug.showEvalSources)
-			this.addSourceFilesByURL(sourceFiles, sourceFileMap, context.evalSourceFilesByURL);
-		if (context.eventSourceFilesByURL) 
-			this.addSourceFilesByURL(sourceFiles, sourceFileMap, context.eventSourceFilesByURL);
+		this.addSourceFilesByURL(context.sourceFiles, sourceFileMap);
 
-        addFile(context.window.location.href);
+        //addFile(context.window.location.href); // ?? This should be handled by the first iteration of iterateWindows 
     }
     
     return context.sourceFiles;
 };
 
-this.addSourceFilesByURL = function(sourceFiles, sourceFileMap, sourceFilesByURL) 
+this.addSourceFilesByURL = function(sourceFiles, sourceFilesByURL) 
 {
 	for (url in sourceFilesByURL)
 	{
-		var sourceFile = sourceFilesByURL[url];   
-		sourceFileMap[url] = sourceFile; 
-		sourceFiles.push(sourceFile);
+		if (Firebug.showAllSourceFiles || this.showThisSourceFile(url)) 
+		{
+			var sourceFile = sourceFilesByURL[url];   
+			sourceFiles.push(sourceFile);     // will append, whether or not the map was overwritten
+		}
 	}
 };
+
+this.showThisSourceFile = function(url)
+{
+	//-----------------------123456789
+	if (url.substr(0, 9) == "chrome://")
+		return false;
+	return true;
+}
 
 // ************************************************************************************************
 // Firefox browsing
@@ -2670,11 +2676,14 @@ this.SourceLink.prototype =
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
 
-this.SourceFile = function(url)
+this.SourceFile = function(url, context)
 {
     this.href = url;
     this.lineMap = {};
-	this.contributingScripts = [];
+	this.pcMapTypeByScriptTag = {}; 
+	if (!context) /*@explore*/
+		FBTrace.dumpStack("lib.SourceFile called without context"); /*@explore*/
+	context.sourceFileMap[url] = this;
 };
 
 this.PCMAP_SOURCETEXT = this.CI("jsdIScript").PCMAP_SOURCETEXT;  // XXXjjb not the normal way constant are defined
@@ -2684,7 +2693,11 @@ this.SourceFile.prototype =
 {
 	toString: function()
 	{
-		return this.href;
+		var str = this.href + " ( ";
+		for (tag in this.pcMapTypeByScriptTag)
+			str += tag+" ";
+		str += ")";
+		return str;
 	},
 	
     dumpLineMap: function()
@@ -2694,13 +2707,18 @@ this.SourceFile.prototype =
 		return str;
     },
     
+	hasLineTableForScript: function(tag)
+	{
+		return this.pcMapTypeByScriptTag[tag];
+	},
+	
     addToLineTable: function(script, trueBaseLineNumber, sourceLines) 
     {	
     	var pcmap_type = (sourceLines) ? FBL.PCMAP_PRETTYPRINT : FBL.PCMAP_SOURCETEXT;
     	var lineCount = (sourceLines) ? sourceLines.length : script.lineExtent;
     	
     	if (FBTrace.DBG_BP) FBTrace.sysout("lib.addToLineTable lineCount="+lineCount+" trueBaseLineNumber="+trueBaseLineNumber+"\n");     /*@explore*/
-		this.contributingScripts.push[script.tag];
+		this.pcMapTypeByScriptTag[script.tag] = pcmap_type;
     	
     	for (var i = 0; i <= lineCount; i++) 
     	{
