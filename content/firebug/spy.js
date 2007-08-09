@@ -14,7 +14,7 @@ Firebug.Spy = extend(Firebug.Module,
     attachSpy: function(context, win)
     {
 		var uri = win.location.href; // don't attach spy to chrome 
-		if (uri &&  (uri.indexOf("about:") == 0 || uri.indexOf("chrome:") == 0)
+		if (uri &&  (uri.indexOf("about:") == 0 || uri.indexOf("chrome:") == 0))
 			return;
 			
         if (win && win.XMLHttpRequest && !win.XMLHttpRequest.wrapped)
