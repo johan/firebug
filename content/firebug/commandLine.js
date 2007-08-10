@@ -78,18 +78,26 @@ Firebug.CommandLine = extend(Firebug.Module,
             try
             {
                 FBL.evalInTo(win, scriptToEval);
-                iterateWindows(win, function(win) { delete win.__scope__; });
-                
-                if (threw)
-                    throw result;
+			}
+			catch (exc)
+			{
+				if (FBTrace.DBG_ERRORS)                                            /*@explore*/
+					FBTrace.dumpProperties("commandLine.evaluate FBL.evalInTo FAILS:",exc);     /*@explore*/
             }
+			try 
+			{
+				 iterateWindows(win, function(win) { delete win.__scope__; });
+			}
             catch (exc)
             {
-                iterateWindows(win, function(win) { delete win.__scope__; });
+           }   
+			if (threw) 
+			{
 				if (FBTrace.DBG_ERRORS)                                            /*@explore*/
-					FBTrace.dumpProperties("commandLine.evaluate threw=",exc);     /*@explore*/
-                throw exc;
-            }
+					FBTrace.dumpProperties("commandLine.evaluate evaluation threw:",exc);     /*@explore*/
+				throw result;
+			}
+                    
         }
 
         context.invalidatePanels("dom", "watches", "domSide");

@@ -271,6 +271,7 @@ Firebug.ConsolePanel.prototype = extend(Firebug.Panel,
 			optionMenu("ShowChromeErrors", "showChromeErrors"),
 			optionMenu("ShowChromeMessages", "showChromeMessages"),
 			optionMenu("ShowExternalErrors", "showExternalErrors"),
+			optionMenu("ShowStackTrace", "showStackTrace"),
             "-",
             optionMenu("LargeCommandLine", "largeCommandLine")
         ];

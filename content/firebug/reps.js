@@ -1203,8 +1203,9 @@ this.ErrorMessage = domplate(Firebug.Rep,
     getLastErrorStackTrace: function()
     {
         var trace = Firebug.errorStackTrace;
-        Firebug.errorStackTrace = null;
-		if (FBTrace.DBG_ERRORS)  /*@explore*/
+        if (FBTrace.DBG_STACK && trace) Firebug.errorStackTrace.destroy(); /*@explore*/
+		Firebug.errorStackTrace = null;
+		if (FBTrace.DBG_STACK)  /*@explore*/
 			FBTrace.sysout("reps.getLastErrorStackTrace cleared errorStackTrace\n"); /*@explore*/
         return trace;
     },

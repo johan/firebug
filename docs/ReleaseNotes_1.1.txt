@@ -23,6 +23,7 @@ Firebug 1.1 is Firebug 1.05 with additions by John J. Barton and Max Stepanov
 
 * Stack side panel on "Script" panel for callstack,
   This is visible when you BreakOnAllErrors or breakpoint and stop the debugger.
+  Stack side panel option: Omit Toolbar Stack, causes the toolbar to stop showing the stack (ie because it will be long).
   ** Internal: debugger.js but the implementation was done by refactoring code.
   
 * ScriptPanel->Options->Break On Top Level, like break on next

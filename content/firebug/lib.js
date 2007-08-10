@@ -1430,8 +1430,11 @@ this.getStackFrame = function(frame, context)
     {
     	if (frame.script.functionName) // normal js
     	{		
-	        var fn = frame.script.functionObject.getWrappedValue();
-    	    var args = this.getFunctionArgValues(fn, frame); 
+	        // This causes leak of script objects ?? 
+			//var fn = frame.script.functionObject.getWrappedValue();
+    	    //var args = this.getFunctionArgValues(fn, frame); 
+			var fn = null;
+			var args = null;
     	    if (context.evalSourceURLByTag && frame.script.tag in context.evalSourceURLByTag) 
     	    {
 				if (FBTrace.DBG_STACK) FBTrace.sysout("lib.getStackFrame evaled function frame\n");     /*@explore*/
@@ -1697,6 +1700,11 @@ this.getSourceForScript = function(script, context)
 
 this.getFunctionName = function(script, context, frame)  // XXXjjb need frame to avoid analyzing top level 
 {
+	if (!script || !script.functionName) 
+	{
+		if (FBTrace.DBG_STACK) FBTrace.dumpStack("lib.getFunctionaName"); /*@explore*/
+		return;
+	}
     var name = script.functionName;
     
     if (!name) // XXXjjb eval frames have blank names, !name == true
@@ -2762,6 +2770,11 @@ this.SourceText = function(lines, owner)
 this.StackTrace = function()
 {
     this.frames = [];
+	if (FBTrace.DBG_STACK) /*@explore*/
+	{                      /*@explore*/
+		this.uid = FBL.getUniqueId();                        /*@explore*/
+		FBTrace.dumpStack("lib.StackTrace create"+this.uid); /*@explore*/
+	}                      /*@explore*/
 };
 
 this.StackTrace.prototype = 
@@ -2780,6 +2793,16 @@ this.StackTrace.prototype =
 	{
 		this.frames.reverse();
 		return this;		
+	},
+	
+	destroy: function()
+	{
+		for (var i = 0; i < this.frames.length; i++)
+		{
+			this.frames[i].destroy();
+		}
+		if (FBTrace.DBG_STACK) /*@explore*/
+			FBTrace.dumpStack("lib.StackTrace destroy"+this.uid); /*@explore*/
 	}
 };
 
@@ -2787,10 +2810,14 @@ this.StackTrace.prototype =
 
 this.StackFrame = function(context, fn, script, href, lineNo, args)
 {
+	if (FBTrace.DBG_STACK)                       /*@explore*/
+	{                                            /*@explore*/
+		this.uid = FBL.getUniqueId();            /*@explore*/
+		FBTrace.sysout("New StackFrame created:"+this.uid+"\n");  /*@explore*/
+	}                                            /*@explore*/
+	this.context = context;
     this.fn = fn;  // TODO ditch
-    //this.script = script; /// TODO: if script destroyed??
-	this.scriptBaseLineNumber = script.baseLineNumber;
-	this.scriptLineExtent = script.lineExtent; 
+    this.script = script; 
     this.href = href;
     this.lineNo = lineNo;
     this.args = args;
@@ -2801,8 +2828,15 @@ this.StackFrame.prototype =
 {
     toString: function()
     {// XXXjjb analyze args and fn?
-        return "("+this.flags+")"+this.href+":"+this.scriptBaseLineNumber+"-"+(this.scriptBaseLineNumber+this.scriptLineExtent)+"@"+this.lineNo;
-    }
+        return "("+this.flags+")"+this.href+":"+this.script.baseLineNumber+"-"+(this.script.baseLineNumber+this.script.lineExtent)+"@"+this.lineNo;
+    },
+	destroy: function() 
+	{
+		if (FBTrace.DBG_STACK)                       /*@explore*/
+			FBTrace.sysout("StackFrame destroyed:"+this.uid+"\n");  /*@explore*/
+		this.script = null;
+		this.fn = null;
+	}
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 

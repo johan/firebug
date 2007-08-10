@@ -614,7 +614,7 @@ Firebug.Debugger = extend(Firebug.Module,
     	try 
     	{
         	Firebug.errorStackTrace = getStackTrace(frame, context);
-			Firebug.Errors.showErrorMessage(message);
+			Firebug.Errors.showMessageOnStatusBar(message);
 			if (FBTrace.DBG_ERRORS) FBTrace.sysout("debugger.onErrorWithMessage: "+message+"\n"+traceToString(Firebug.errorStackTrace)+"\n");     /*@explore*/
         } catch (exc) {
         	ERROR("debugger.onErrorWithMessage getStackTrace FAILED: "+exc+"\n");
