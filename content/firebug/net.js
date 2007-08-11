@@ -368,7 +368,7 @@ NetPanel.prototype = domplate(Firebug.Panel,
 
     getHref: function(file)
     {
-        if (file.status && file.status != 200 && file.status != 304)
+        if (file.status && file.status != 200)
             return getFileName(file.href) + " (" + file.status + ")";
         else
             return getFileName(file.href);
@@ -1129,7 +1129,7 @@ NetProgress.prototype =
             this.arriveFile(file, request);
             this.endLoad(file);
 
-            getFileSizeFromCache(file, this);
+            getCacheEntry(file, this);
             
             return file;
         }
@@ -1483,7 +1483,7 @@ function waitForCacheCompletion(request, file, netProgress)
     }        
 }
 
-function getFileSizeFromCache(file, netProgress)
+function getCacheEntry(file, netProgress)
 {
     // Pause first because this is usually called from stopFile, at which point
     // the file's cache entry is locked
@@ -1501,14 +1501,31 @@ function getFileSizeFromCache(file, netProgress)
                 {
                     if (descriptor)
                     {
-						if (file.size == -1)
-						{
-                        	file.size = descriptor.dataSize;
-						}
-						if (descriptor.lastModified && descriptor.lastFetched &&
-                           descriptor.lastModified < Math.floor(file.startTime/1000)) 
-                           file.fromCache = true;
-						   
+                        if(file.size == -1)
+                        {
+                            file.size = descriptor.dataSize;
+                        }
+                        if(descriptor.lastModified && descriptor.lastFetched &&
+                            descriptor.lastModified < Math.floor(file.startTime/1000)) {
+                            file.fromCache = true;
+                        }
+                        file.cacheEntry = [
+                          { name: "Last Modified",
+                            value: getDateFromSeconds(descriptor.lastModified)
+                          },
+                          { name: "Last Fetched",
+                            value: getDateFromSeconds(descriptor.lastFetched)
+                          },
+                          { name: "Data Size",
+                            value: descriptor.dataSize
+                          },
+                          { name: "Fetch Count",
+                            value: descriptor.fetchCount
+                          },
+                          { name: "Device",
+                            value: descriptor.deviceID
+                          }
+                        ]; 						
                         netProgress.update(file);
                     }
                 }
@@ -1519,6 +1536,13 @@ function getFileSizeFromCache(file, netProgress)
         }        
     });
 }
+
+function getDateFromSeconds(s)
+{
+    var d = new Date();
+    d.setTime(s*1000);
+    return d;
+} 
 
 function getHttpHeaders(request, file)
 {
@@ -1702,6 +1726,11 @@ Firebug.NetMonitor.NetInfoBody = domplate(Firebug.Rep,
                     view: "Response",
                     $collapsed: "$file|hideResponse"},
                     $STR("Response")
+                ),
+                A({class: "netInfoCacheTab netInfoTab", onclick: "$onClickTab",
+                   view: "Cache",
+                   $collapsed: "$file|hideCache"},
+                   "Cache" // todo: Localization 
                 )
             ),
             TABLE({class: "netInfoParamsText netInfoText netInfoParamsTable",
@@ -1728,7 +1757,12 @@ Firebug.NetMonitor.NetInfoBody = domplate(Firebug.Rep,
             ),
             DIV({class: "netInfoResponseText netInfoText"}, 
                 $STR("Loading")
-            )            
+            ),
+            DIV({class: "netInfoCacheText netInfoText"},
+                TABLE({class: "netInfoCacheTable", cellpadding: 0, cellspacing: 0},
+                    TBODY()
+                ) 
+            )
         ),
     
     headerDataTag:
@@ -1754,6 +1788,11 @@ Firebug.NetMonitor.NetInfoBody = domplate(Firebug.Rep,
         return file.category in binaryFileCategories;
     },
     
+    hideCache: function(file)
+    {
+        return !file.cacheEntry || file.category=="image";
+    }, 
+	
     onClickTab: function(event)
     {
         this.selectTab(event.currentTarget);
@@ -1869,6 +1908,16 @@ Firebug.NetMonitor.NetInfoBody = domplate(Firebug.Rep,
                     insertWrappedText(text, responseTextBox);
             }
         }
+		
+        if (hasClass(tab, "netInfoCacheTab") && file.loaded && !netInfoBox.cachePresented)
+        {
+            netInfoBox.cachePresented = true;
+
+            var responseTextBox = getChildByClass(netInfoBox, "netInfoCacheText");
+            if(file.cacheEntry) {
+              this.insertHeaderRows(netInfoBox, file.cacheEntry, "Cache");
+            }
+        } 
     },
     
     insertHeaderRows: function(netInfoBox, headers, tableName, rowName)
