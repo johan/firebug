@@ -161,7 +161,7 @@ var Errors = Firebug.Errors = extend(Firebug.Module,
 				{
 					// There was no trace, but one was requested. Therefore fbs never called 
 					// debuggr.onError() because the error was for a different window.
-					if (Firebug.showStackTrace)
+					if (Firebug.showStackTrace && isJSError)
 						return; 
 				}
                 var error = new ErrorMessage(object.errorMessage, sourceName,

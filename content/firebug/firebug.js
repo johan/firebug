@@ -346,7 +346,7 @@ top.Firebug =
             prefs.setBoolPref(prefName, value);
 			
 		if (FBTrace.DBG_OPTIONS)                                        /*@explore*/
-			FBTrace.sysout("firebug.setPref type="+type+" name=value: "+name+"="+value+"\n");     /*@explore*/
+			FBTrace.sysout("firebug.setPref type="+type+" name="+prefName+" value="+value+"\n");     /*@explore*/
     },
 
     increaseTextSize: function(amt)
@@ -393,7 +393,7 @@ top.Firebug =
         delete optionUpdateMap[name];
 		                             /*@explore*/
 		if (FBTrace.DBG_OPTIONS)     /*@explore*/
-			FBTrace.sysout("firebug.updatePrefs EXIT: "+name+"="+value+"\n");     /*@explore*/
+			FBTrace.sysout("firebug.updatePref EXIT: "+name+"="+value+"\n");     /*@explore*/
     },
     
     openPermissions: function()
