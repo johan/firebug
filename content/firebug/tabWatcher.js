@@ -338,7 +338,7 @@ top.TabWatcher =
 			return;
 		
 		if (FBTrace.DBG_WINDOWS)  // XXXjjb This shows a lot of calls to getContextByWindow, can some be avoided?     /*@explore*/
-		{
+		{													/*@explore*/
 			var uid = win.__firebug__uid;  					/*@explore*/
 			if (!uid) { 									/*@explore*/
 				uid = FBL.getUniqueId(); 					/*@explore*/ 

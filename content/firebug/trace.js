@@ -34,7 +34,7 @@ this.dumpToPanel = false;
 this.dumpProperties = function(header, obj) 
 {
 	try {
-		this.sysout(header+" sees obj \'"+obj+"\' with type: "+typeof(obj)+" contains:\n");
+		this.sysout(header+" sees object with typeof: \'"+typeof(obj)+"\'; object contains:\n");
 		if (obj instanceof Array)
 		{	
 			if (FBTrace.dumpToPanel && FirebugContext)

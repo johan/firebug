@@ -64,7 +64,7 @@ Firebug.TraceModule = extend(Firebug.Console,
 		{
 			var m = reDBG.exec(p);
 			if (m) 
-				FBTrace[p] = Firebug.getPref(p);
+				FBTrace[p] = Firebug.getPref(p); // set to 'true' to turn on all traces;
 		}
 		
 		var trace_startup = Firebug.getPref("DBG_FBS_FF_START");

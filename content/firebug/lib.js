@@ -1700,10 +1700,10 @@ this.getSourceForScript = function(script, context)
 
 this.getFunctionName = function(script, context, frame)  // XXXjjb need frame to avoid analyzing top level 
 {
-	if (!script || !script.functionName) 
+	if (!script) 
 	{
-		if (FBTrace.DBG_STACK) FBTrace.dumpStack("lib.getFunctionaName"); /*@explore*/
-		return;
+		if (FBTrace.DBG_STACK) FBTrace.dumpStack("lib.getFunctionName FAILS typeof(script)="+typeof(script)+"\n"); /*@explore*/
+		return "(no script)";
 	}
     var name = script.functionName;
     
@@ -2773,7 +2773,7 @@ this.StackTrace = function()
 	if (FBTrace.DBG_STACK) /*@explore*/
 	{                      /*@explore*/
 		this.uid = FBL.getUniqueId();                        /*@explore*/
-		FBTrace.dumpStack("lib.StackTrace create"+this.uid); /*@explore*/
+		FBTrace.sysout("lib.StackTrace create "+this.uid+"\n"); /*@explore*/
 	}                      /*@explore*/
 };
 
@@ -2802,7 +2802,7 @@ this.StackTrace.prototype =
 			this.frames[i].destroy();
 		}
 		if (FBTrace.DBG_STACK) /*@explore*/
-			FBTrace.dumpStack("lib.StackTrace destroy"+this.uid); /*@explore*/
+			FBTrace.sysout("lib.StackTrace destroy "+this.uid+"\n"); /*@explore*/
 	}
 };
 
@@ -2816,7 +2816,7 @@ this.StackFrame = function(context, fn, script, href, lineNo, args)
 		FBTrace.sysout("New StackFrame created:"+this.uid+"\n");  /*@explore*/
 	}                                            /*@explore*/
 	this.context = context;
-    this.fn = fn;  // TODO ditch
+    this.fn = fn;  
     this.script = script; 
     this.href = href;
     this.lineNo = lineNo;
