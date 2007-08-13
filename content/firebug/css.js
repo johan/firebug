@@ -588,7 +588,6 @@ CSSStyleSheetPanel.prototype = extend(Firebug.SourceBoxPanel,
 				clearNode(this.panelNode);  // replace rendered stylesheets
 	            this.showSourceFile(object, function(sourceLink, sourceBox) 
 				{
-					FBTrace.sysout("css.Decorator href="+sourceLink.href+" lineNo="+sourceLink.line+"\n");
 					if (sourceBox.sourceRow)
 						sourceBox.sourceRow.removeAttribute("exeLine");
 						
@@ -597,7 +596,10 @@ CSSStyleSheetPanel.prototype = extend(Firebug.SourceBoxPanel,
 					{
 						sourceBox.sourceRow = sourceBox.childNodes[lineNo-1];
 						if (sourceBox.sourceRow)
+						{
 							sourceBox.sourceRow.setAttribute("exeLine", "true");
+							scrollIntoCenterView(sourceBox.sourceRow, sourceBox);  // I don't know why this does not work.
+						}
 					}
 				});
 			}

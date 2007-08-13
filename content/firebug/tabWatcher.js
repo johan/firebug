@@ -168,7 +168,7 @@ top.TabWatcher =
         var isSystem = isSystemPage(win);
         
         var context = this.getContextByWindow(win);
-        if ((context && !context.window) || isSystem)
+        if ((context && !context.window) || (isSystem && !Firebug.allowSystemPages))
         {
             this.unwatchTopWindow(win);
             this.watchContext(win, null, isSystem);
@@ -290,6 +290,10 @@ top.TabWatcher =
         context.destroy(persistedState);    
         
         remove(contexts, context);
+		for (var p in context)
+		{
+			delete context[p];
+		}
     },
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
@@ -429,7 +433,7 @@ var FrameProgressListener = extend(BaseProgressListener,
         	// that the start of these "dummy" requests is the only state that works.
 				
 			var safeURI = safeGetName(request);
-            if (safeURI && (safeURI == dummyURI) )// || safeURI == "about:document-onload-blocker") )
+            if (safeURI && ((safeURI == dummyURI) || safeURI == "about:document-onload-blocker") )
             {
 				var win = progress.DOMWindow;
                 // Another weird edge case here - when opening a new tab with about:blank,
@@ -451,22 +455,24 @@ var FrameProgressListener = extend(BaseProgressListener,
 		
 		// XSLT does not raise DOMContentLoaded so we never know to set the context.loaded.
 		// As a fall back we set it here.
-		if (flag & STATE_IS_DOCUMENT && flag & STATE_STOP)
-        {
-			var win = progress.DOMWindow;
-            var context = TabWatcher.getContextByWindow(win);
-			if (context && !context.onLoadWindowContent && win.parent == win) 
-			{
-				var safeURI = safeGetName(request);
-				
-				if (win.location && win.location.href == safeURI){
-					var fakeEvent = {type:"fake", currentTarget: win};  // TODO refactor onLoadWindowContent
-					onLoadWindowContent(fakeEvent);
-				}
-					
-			}
+		//if (flag & STATE_IS_DOCUMENT && flag & STATE_STOP)
+        //{
+		//	var win = progress.DOMWindow;
+        //   var context = TabWatcher.getContextByWindow(win);
+		//	if (context && !context.onLoadWindowContent && win.parent == win) 
+		//	{
+		//		var safeURI = safeGetName(request);
+		//		
+		//		
+		//		if (win.location && win.location.href == safeURI)
+		//      {
+		//			var fakeEvent = {type:"fake", currentTarget: win};  // TODO refactor onLoadWindowContent
+		//			onLoadWindowContent(fakeEvent);
+		//		}
+		//			
+		//	}
             	
-		}
+		//}
     }
 });
 

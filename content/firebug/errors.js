@@ -51,12 +51,13 @@ var Errors = Firebug.Errors = extend(Firebug.Module,
         if (context == FirebugContext)
             this.showCount(context.errorCount);
     },
-    
-	showErrorMessage: function(errorLabel)
+	
+	showMessageOnStatusBar: function(errorLabel)
 	{
 		if (statusBar)
 			statusBar.setAttribute("errors", "true");
-		statusText.setAttribute("value", errorLabel);
+		if (statusText)  // sometimes this is undefined..how?
+			statusText.setAttribute("value", errorLabel);
 	},
 	
     showCount: function(errorCount)
@@ -134,8 +135,10 @@ var Errors = Firebug.Errors = extend(Firebug.Module,
 
                 if (!isWarning)    
                     this.increaseCount(context);
+					
     			var sourceName = object.sourceName;
     			var lineNumber = object.lineNumber;
+				
     			var trace = Firebug.errorStackTrace;
     			if (trace) 
     			{ 
@@ -146,8 +149,14 @@ var Errors = Firebug.Errors = extend(Firebug.Module,
 						lineNumber = stack_frame.lineNo;
 					}
 					var correctedError = object.init(object.errorMessage, sourceName, object.sourceLine,lineNumber, object.columnNumber, object.flags, object.category); 
-						
-    			}
+    			} 
+				else 
+				{
+					// There was no trace, but one was requested. Therefore fbs never called 
+					// debuggr.onError() because the error was for a different window.
+					if (Firebug.showStackTrace && isJSError)
+						return; 
+				}
                 var error = new ErrorMessage(object.errorMessage, sourceName,
                         lineNumber, object.sourceLine, category, context);
                 

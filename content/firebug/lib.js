@@ -23,6 +23,7 @@ var finder = this.finder = this.CCIN("@mozilla.org/embedcomp/rangefind;1", "nsIF
 
 var reNotWhitespace = /[^\s]/;
 var reSplitFile = /:\/{1,3}(.*?)\/([^\/]*?)\/?($|\?.*)/;
+var reURL = /(([^:]+:)\/{1,2}[^\/]*)(.*?)$/;  // This RE and the previous one should changed to be consistent
 this.reDataURL = /data:text\/javascript;fileName=([^;]*);baseLineNumber=(\d*?),((?:.*?%0A)|(?:.*))/g;
 this.reJavascript = /\s*javascript:\s*(.*)/;
 this.reChrome = /chrome:\/\/([^\/]*)\//;
@@ -1419,8 +1420,11 @@ this.getStackFrame = function(frame, context)
     {
     	if (frame.script.functionName) // normal js
     	{		
-	        var fn = frame.script.functionObject.getWrappedValue();
-    	    var args = this.getFunctionArgValues(fn, frame); 
+	        // This causes leak of script objects ?? 
+			//var fn = frame.script.functionObject.getWrappedValue();
+    	    //var args = this.getFunctionArgValues(fn, frame); 
+			var fn = null;
+			var args = null;
     	    if (context.evalSourceURLByTag && frame.script.tag in context.evalSourceURLByTag) 
     	    {
     	    	var url = context.evalSourceURLByTag[frame.script.tag];
@@ -1678,6 +1682,10 @@ this.getSourceForScript = function(script, context)
 
 this.getFunctionName = function(script, context, frame)  // XXXjjb need frame to avoid analyzing top level 
 {
+	if (!script) 
+	{
+		return "(no script)";
+	}
     var name = script.functionName;
     
     if (!name) // XXXjjb eval frames have blank names, !name == true
@@ -1838,18 +1846,18 @@ this.getStyleSheetByHref = function(url, context)
 
 this.updateScriptFiles = function(context, reload)
 {
-    var oldMap = reload ? context.sourceFileMap : null;
-    
-    if (!context.sourceFiles || reload)
+	if (!context.sourceFiles || reload)
+		context.sourceFiles = [];    // list of all SourceFiles, built here only and cached
+	
+    if (!context.sourceFileMap)
     {
-        context.sourceFileMap = {};
-        context.sourceFiles = [];
+        context.sourceFileMap = {};  // url->FBL.SourceFile built here and elsewhere
     }
     
-    if (!context.loaded || !context.sourceFiles.length)
+    if (!context.loaded || !context.sourceFiles.length) // XXXjjb: TODO dynamics may also need a new list
     {
+		var oldMap = reload ? context.sourceFileMap : null;
         var sourceFileMap = context.sourceFileMap;
-        var sourceFiles = context.sourceFiles;
 
         function addFile(url)
         {
@@ -1859,17 +1867,15 @@ this.updateScriptFiles = function(context, reload)
                 {
                     var sourceFile = oldMap[url];
                     sourceFileMap[url] = sourceFile;
-                    sourceFiles.push(sourceFile);
                 }
                 else
                 {
-                    var sourceFile = new FBL.SourceFile(url);
-                    sourceFileMap[url] = sourceFile;
-                    sourceFiles.push(sourceFile);
+                    var sourceFile = new FBL.SourceFile(url, context);
                 }
             }
         }
 
+		// iff script tag mutation
         this.iterateWindows(context.window, this.bind(function(win)
         {
             if (!win.document.documentElement)
@@ -1885,26 +1891,33 @@ this.updateScriptFiles = function(context, reload)
             }
         }, this));
 
-		if (context.evalSourceFilesByURL && Firebug.showEvalSources)
-			this.addSourceFilesByURL(sourceFiles, sourceFileMap, context.evalSourceFilesByURL);
-		if (context.eventSourceFilesByURL) 
-			this.addSourceFilesByURL(sourceFiles, sourceFileMap, context.eventSourceFilesByURL);
+		this.addSourceFilesByURL(context.sourceFiles, sourceFileMap);
 
-        addFile(context.window.location.href);
+        //addFile(context.window.location.href); // ?? This should be handled by the first iteration of iterateWindows 
     }
     
     return context.sourceFiles;
 };
 
-this.addSourceFilesByURL = function(sourceFiles, sourceFileMap, sourceFilesByURL) 
+this.addSourceFilesByURL = function(sourceFiles, sourceFilesByURL) 
 {
 	for (url in sourceFilesByURL)
 	{
-		var sourceFile = sourceFilesByURL[url];   
-		sourceFileMap[url] = sourceFile; 
-		sourceFiles.push(sourceFile);
+		if (Firebug.showAllSourceFiles || this.showThisSourceFile(url)) 
+		{
+			var sourceFile = sourceFilesByURL[url];   
+			sourceFiles.push(sourceFile);     // will append, whether or not the map was overwritten
+		}
 	}
 };
+
+this.showThisSourceFile = function(url)
+{
+	//-----------------------123456789
+	if (url.substr(0, 9) == "chrome://")
+		return false;
+	return true;
+}
 
 // ************************************************************************************************
 // Firefox browsing
@@ -2643,11 +2656,12 @@ this.SourceLink.prototype =
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
 
-this.SourceFile = function(url)
+this.SourceFile = function(url, context)
 {
     this.href = url;
     this.lineMap = {};
-	this.contributingScripts = [];
+	this.pcMapTypeByScriptTag = {}; 
+	context.sourceFileMap[url] = this;
 };
 
 this.PCMAP_SOURCETEXT = this.CI("jsdIScript").PCMAP_SOURCETEXT;  // XXXjjb not the normal way constant are defined
@@ -2657,7 +2671,11 @@ this.SourceFile.prototype =
 {
 	toString: function()
 	{
-		return this.href;
+		var str = this.href + " ( ";
+		for (tag in this.pcMapTypeByScriptTag)
+			str += tag+" ";
+		str += ")";
+		return str;
 	},
 	
     dumpLineMap: function()
@@ -2667,12 +2685,17 @@ this.SourceFile.prototype =
 		return str;
     },
     
+	hasLineTableForScript: function(tag)
+	{
+		return this.pcMapTypeByScriptTag[tag];
+	},
+	
     addToLineTable: function(script, trueBaseLineNumber, sourceLines) 
     {	
     	var pcmap_type = (sourceLines) ? FBL.PCMAP_PRETTYPRINT : FBL.PCMAP_SOURCETEXT;
     	var lineCount = (sourceLines) ? sourceLines.length : script.lineExtent;
     	
-		this.contributingScripts.push[script.tag];
+		this.pcMapTypeByScriptTag[script.tag] = pcmap_type;
     	
     	for (var i = 0; i <= lineCount; i++) 
     	{
@@ -2716,16 +2739,29 @@ this.StackTrace.prototype =
     	}
     	trace += "<bottom>\n";
         return trace;
-    }
+    },
+	reverse: function() 
+	{
+		this.frames.reverse();
+		return this;		
+	},
+	
+	destroy: function()
+	{
+		for (var i = 0; i < this.frames.length; i++)
+		{
+			this.frames[i].destroy();
+		}
+	}
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
 
 this.StackFrame = function(context, fn, script, href, lineNo, args)
 {
-    this.context = context;
-    this.fn = fn;  // TODO ditch
-    this.script = script; /// TODO: if script destroyed??
+	this.context = context;
+    this.fn = fn;  
+    this.script = script; 
     this.href = href;
     this.lineNo = lineNo;
     this.args = args;
@@ -2737,7 +2773,12 @@ this.StackFrame.prototype =
     toString: function()
     {// XXXjjb analyze args and fn?
         return "("+this.flags+")"+this.href+":"+this.script.baseLineNumber+"-"+(this.script.baseLineNumber+this.script.lineExtent)+"@"+this.lineNo;
-    }
+    },
+	destroy: function() 
+	{
+		this.script = null;
+		this.fn = null;
+	}
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
@@ -4613,7 +4654,7 @@ this.evalInTo = function(win, text)
 	}
 	catch(exc)
 	{
-		FBTrace.dumpProperties("evalInSandBox FAILS for text=\n"+text+"\n", exc);
+		FBTrace.dumpProperties("evalInSandBox FAILS sandbox uri="+win.location.href+" and text=\n"+text+"\n", exc);
 		try 
 		{
 			var evaledText = eval(text);

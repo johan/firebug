@@ -279,3 +279,12 @@
     border-top: none !important;
 }
  
+.panelNode-callstack  .objectLink-sourceLink {
+	display: none;
+}
+
+.panelNode-callstack {
+	margin-left: 4px;
+	overflow: auto;
+}
+

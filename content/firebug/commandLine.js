@@ -78,16 +78,22 @@ Firebug.CommandLine = extend(Firebug.Module,
             try
             {
                 FBL.evalInTo(win, scriptToEval);
-                iterateWindows(win, function(win) { delete win.__scope__; });
-                
-                if (threw)
-                    throw result;
+			}
+			catch (exc)
+			{
             }
+			try 
+			{
+				 iterateWindows(win, function(win) { delete win.__scope__; });
+			}
             catch (exc)
             {
-                iterateWindows(win, function(win) { delete win.__scope__; });
-                throw exc;
-            }
+           }   
+			if (threw) 
+			{
+				throw result;
+			}
+                    
         }
 
         context.invalidatePanels("dom", "watches", "domSide");

@@ -1203,7 +1203,7 @@ this.ErrorMessage = domplate(Firebug.Rep,
     getLastErrorStackTrace: function()
     {
         var trace = Firebug.errorStackTrace;
-        Firebug.errorStackTrace = null;
+		Firebug.errorStackTrace = null;
         return trace;
     },
 

@@ -602,7 +602,7 @@ Firebug.Debugger = extend(Firebug.Module,
     	try 
     	{
         	Firebug.errorStackTrace = getStackTrace(frame, context);
-			Firebug.Errors.showErrorMessage(message);
+			Firebug.Errors.showMessageOnStatusBar(message);
         } catch (exc) {
         	ERROR("debugger.onErrorWithMessage getStackTrace FAILED: "+exc+"\n");
         }
@@ -709,21 +709,18 @@ Firebug.Debugger = extend(Firebug.Module,
      	try {
 	     	var script = frame.script;
 	     	
-     	   	if (!context.sourceFiles)
+     	   	if (!context.sourceFileMap)
     		{ 
         		context.sourceFileMap = {};
-        		context.sourceFiles = [];
     		}
     		
     		var url = this.getDataURLForScript(script, script.functionName+"."+script.tag);
     			
-     		var sourceFile = new FBL.SourceFile(url);
+     		var sourceFile = new FBL.SourceFile(url, context);
+			
      		sourceFile.tag = script.tag;
      		sourceFile.title = script.functionName+"."+script.tag;
      		
-     		context.sourceFileMap[url] = sourceFile;
-        	context.sourceFiles.push(sourceFile);
-        	
         	if (context.eventSourceURLByTag == undefined) 
         	{
         		context.eventSourceURLByTag = {};
@@ -751,10 +748,9 @@ Firebug.Debugger = extend(Firebug.Module,
         delete this.breakContext;
         
      	try {
-   		   	if (!context.sourceFiles)
+   		   	if (!context.sourceFileMap)
     		{
         		context.sourceFileMap = {};
-        		context.sourceFiles = [];
     		}
 			
 			var script = frame.script;
@@ -763,9 +759,7 @@ Firebug.Debugger = extend(Firebug.Module,
 				var sourceFile = context.sourceFileMap[script.fileName];
 			else 
 			{
-				var sourceFile = new FBL.SourceFile(script.fileName);
-				context.sourceFileMap[script.fileName] = sourceFile;
-        		context.sourceFiles.push(sourceFile);
+				var sourceFile = new FBL.SourceFile(script.fileName, context);
 			}	
     		
 	   	   	sourceFile.tag = script.tag;
@@ -816,7 +810,7 @@ Firebug.Debugger = extend(Firebug.Module,
     	var sourceFile = context.sourceFileMap[script.fileName];   
 
     	if (sourceFile) 	
-	    	sourceFile.addToLineTable(script, script.baseLineNumber, false);	   	
+	    	sourceFile.addToLineTable(script, script.baseLineNumber, false);
     },    
         
     onEvalScript: function(url, lineNo, script) 
@@ -852,7 +846,7 @@ Firebug.Debugger = extend(Firebug.Module,
 		if (sourceFile == undefined)
 		{
 			var evalURL = this.getDataURLForScript(frame.script, eval_body);
-			var sourceFile = new FBL.SourceFile(evalURL); 
+			var sourceFile = new FBL.SourceFile(evalURL, context);
 			sourceFile.eval_body = eval_body;  
 		}
 
@@ -882,21 +876,21 @@ Firebug.Debugger = extend(Firebug.Module,
 			endLastLine = lastNewline - 1;
 		}
 		var lastLines = eval_body.slice(lastNewline + 1);
-		return this.getSourceFileFromSourceLine(lastLines, eval_body);
+		return this.getSourceFileFromSourceLine(lastLines, eval_body, context);
 	},
 	
 	getSourceFileFromFirstSourceLine: function(context, frame, eval_body)
 	{
 		var firstLine = eval_body.substr(0, 256);  // guard against giants
-		return this.getSourceFileFromSourceLine(firstLine, eval_body);
+		return this.getSourceFileFromSourceLine(firstLine, eval_body, context);
 	},
 	
-	getSourceFileFromSourceLine: function(line, eval_body)
+	getSourceFileFromSourceLine: function(line, eval_body, context)
 	{
 		var m = reURIinComment.exec(line);
 		if (m) 
 		{
-			var sourceFile = new FBL.SourceFile(m[1]);
+			var sourceFile = new FBL.SourceFile(m[1], context);
 			sourceFile.eval_body = eval_body; 
 		}
 		return sourceFile;
@@ -928,7 +922,7 @@ Firebug.Debugger = extend(Firebug.Module,
 			
 			Firebug.Debugger.evaluate(adapterScript, context, scope);
 			
-			var sourceFile = new FBL.SourceFile(evalBufferInfo.sourceURL);
+			var sourceFile = new FBL.SourceFile(evalBufferInfo.sourceURL, context);
 			sourceFile.eval_body = evalBufferInfo.source; 
 			
 			if (evalBufferInfo.invisible) 
@@ -1583,8 +1577,8 @@ ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
 
     getDefaultLocation: function()
     {
-        updateScriptFiles(this.context);
-        return this.context.sourceFiles[0];
+        var sourceFiles = updateScriptFiles(this.context);
+        return sourceFiles[0];
     },
     
     getTooltipObject: function(target)
@@ -1639,6 +1633,9 @@ ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
     
     getObjectPath: function(frame)
     {
+		if (Firebug.omitObjectPathStack)
+			return null;
+			
         frame = this.context.debugFrame;
         
         var frames = [];
@@ -1661,9 +1658,9 @@ ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
             optionMenu("BreakOnAllErrors", "breakOnErrors"),
 			optionMenu("BreakOnTopLevel", "breakOnTopLevel"),
 			optionMenu("ShowEvalSources", "showEvalSources"),
+			optionMenu("ShowAllSourceFiles", "showAllSourceFiles"),
 			optionMenu("UseLastLineForEvalName", "useLastLineForEvalName"),
-			optionMenu("UseFirstLineForEvalName", "useFirstLineForEvalName"),
-			optionMenu("UseDebugAdapter", "useDebugAdapter")
+			optionMenu("UseFirstLineForEvalName", "useFirstLineForEvalName")
         ];
     },
 
@@ -2021,15 +2018,17 @@ CallstackPanel.prototype = extend(Firebug.Panel,
 		
         if (panel && frame)
         {
-			FBL.setClass(this.panelNode, "errorTrace objectBox-stackTrace");
-			trace = FBL.getStackTrace(frame, this.context);
+			FBL.setClass(this.panelNode, "objectBox-stackTrace");
+			trace = FBL.getStackTrace(frame, this.context).reverse();
 			FirebugReps.StackTrace.tag.append({object: trace}, this.panelNode);
         }
     },
 	
     getOptionsMenuItems: function()
     {
-        var items = [];
+        var items = [
+            optionMenu("OmitObjectPathStack", "omitObjectPathStack"),
+			];
         return items;
     }   
 });

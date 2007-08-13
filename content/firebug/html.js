@@ -724,6 +724,8 @@ Firebug.HTMLPanel.prototype = extend(Firebug.Panel,
 					{
         				this.ioBox.sourceRow = sourceRow;
             			this.ioBox.sourceRow.setAttribute("exeLine", "true");
+						scrollIntoCenterView(sourceRow);
+						this.ioBox.selectObjectBox(sourceRow, false);  // sourceRow isn't an objectBox, but the function should work anyway...
 					}
  				}
  			}

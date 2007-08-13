@@ -46,7 +46,7 @@ const prefDomain = "extensions.firebug";
 
 const prefNames =
 [
-    "disabledAlways", "disabledFile",
+    "disabledAlways", "disabledFile", "allowSystemPages",
     "defaultPanelName", "throttleMessages", "textSize", "showInfoTips",
     "largeCommandLine", "textWrapWidth", "openInWindow", "showErrorCount",
     
@@ -67,6 +67,7 @@ const prefNames =
 	"breakOnTopLevel",
 	"useDebugAdapter",
 	"showEvalSources",
+	"showAllSourceFiles",
 	"useLastLineForEvalName",
 	"useFirstLineForEvalName",
     
@@ -77,7 +78,10 @@ const prefNames =
     "showLayoutAdjacent", "showRulers",
     
     // Net
-    "netFilterCategory", "disableNetMonitor", "collectHttpHeaders"
+    "netFilterCategory", "disableNetMonitor", "collectHttpHeaders",
+	
+	// Stack
+	"omitObjectPathStack"
 ];
 
 // ************************************************************************************************
@@ -99,7 +103,7 @@ var clearContextTimeout = 0;
 
 top.Firebug =
 {
-    version: "1.05",
+    version: "1.1",
     
     module: modules,
     panelTypes: panelTypes,
@@ -787,7 +791,7 @@ top.Firebug =
         // XXXjoe Move this to Firebug.Console
         if (!win.console)
             win.console = new FirebugConsole(context, win);
-        
+ 
         for (var panelName in context.panelMap)
         {
             var panel = context.panelMap[panelName];
@@ -1075,7 +1079,8 @@ Firebug.Panel =
     },
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
-
+	// An array of objects that answer to getObjectLocation.
+	// Only shown if panel.location defined and supportsObject true
     getLocationList: function()
     {
         return null;
