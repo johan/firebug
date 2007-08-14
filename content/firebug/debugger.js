@@ -819,9 +819,9 @@ Firebug.Debugger = extend(Firebug.Module,
 			sourceFile.addToLineTable(frame.script, 1, false); 
 			
 			if (FBTrace.DBG_EVAL)                                                            /*@explore*/
-			{                                                                                /*@explore*/
-				FBTrace.sysout(	traceToString(FBL.getStackTrace(frame, context))+"\n" );     /*@explore*/
+			{       																		 /*@explore*/
 				FBTrace.sysout("debugger.onEval url="+sourceFile.href+"\n");                 /*@explore*/			
+				FBTrace.sysout(	traceToString(FBL.getStackTrace(frame, context))+"\n" );     /*@explore*/
 			}	                                                                             /*@explore*/
 				                                                                             /*@explore*/
 			val.value = jsd.wrapValue(sourceFile.href);
@@ -876,8 +876,10 @@ Firebug.Debugger = extend(Firebug.Module,
 	createSourceFileForEval: function(frame, context) 
 	{
     	var eval_expr = this.getEvalExpression(frame, context); 
-	    var eval_body  = this.getEvalBody(frame, "lib.createSourceFileForEval.getEvalBody", 1, eval_expr);
-
+	    if (FBTrace.DBG_EVAL) FBTrace.sysout("createSourceFileForEval eval_expr:"+eval_expr+"\n"); /*@explore*/
+		var eval_body  = this.getEvalBody(frame, "lib.createSourceFileForEval.getEvalBody", 1, eval_expr);
+		if (FBTrace.DBG_EVAL) FBTrace.sysout("createSourceFileForEval eval_body:"+eval_body+"\n"); /*@explore*/
+		
 		if (Firebug.useDebugAdapter)
 			var sourceFile = this.getSourceFileFromDebugAdapter(context, frame, eval_body);
 		else if (Firebug.useLastLineForEvalName)
@@ -990,7 +992,7 @@ Firebug.Debugger = extend(Firebug.Module,
 
 	getEvalExpression: function(frame, context) 
 	{
-		var expr = this.getEvalExpressionFromEval(frame, context);
+		var expr = this.getEvalExpressionFromEval(frame, context);  // eval in eval 
 	 
 		return (expr) ? expr : this.getEvalExpressionFromFile(frame.script.fileName, frame.script.baseLineNumber, context); 
 	},	
@@ -1035,19 +1037,21 @@ Firebug.Debugger = extend(Firebug.Module,
 		var callingFrame = frame.callingFrame;
 		
 		var sourceFile = FBL.getSourceFileForEval(callingFrame.script, context);  // TODO this should be source for any script
-	
 		if (sourceFile)
 	    {
+			if (FBTrace.DBG_EVAL) FBTrace.sysout("debugger.getEvalExpressionFromEval sourceFile.href="+sourceFile.href+"\n"); /*@explore*/
+			if (FBTrace.DBG_EVAL) FBTrace.sysout("debugger.getEvalExpressionFromEval callingFrame.pc="+callingFrame.pc+" callingFrame.script.baseLineNumber="+callingFrame.script.baseLineNumber+"\n"); /*@explore*/
 			var lineNo = callingFrame.script.pcToLine(callingFrame.pc, PCMAP_SOURCETEXT);
-			lineNo = lineNo - callingFrame.script.baseLineNumber;
-			var lines = sourceFile.getSource().split(/\r\n|\r|\n/);
+			lineNo = lineNo - callingFrame.script.baseLineNumber + 1; 
+			var url  = sourceFile.href;
 			
 	        // Walk backwards from the first line in the function until we find the line which
 	        // matches the pattern above, which is the eval call
 	        var line = "";
 	        for (var i = 0; i < 3; ++i)
 	        {
-	            line = lines[lineNo-i] + line; 
+	            line = context.sourceCache.getLine(url, lineNo-i) + line;
+				if (FBTrace.DBG_EVAL) FBTrace.sysout("debugger.getEvalExpressionFromEval lineNo-i="+lineNo+"-"+i+"="+(lineNo-i)+" line:"+line+"\n"); /*@explore*/
 	            if (line && line != null)
 	            {
 	                var m = reEval.exec(line);  

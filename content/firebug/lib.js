@@ -1457,7 +1457,7 @@ this.getStackFrame = function(frame, context)
         	if (frame.callingFrame) // eval-level
         	{ 			
         		var sourceFile = this.getSourceFileForEval(frame.script, context);
-				if (FBTrace.DBG_STACK) FBTrace.dumpProperties("lib.getStackFrame eval-level sourceFile", sourceFile);     /*@explore*/
+				if (FBTrace.DBG_STACK) FBTrace.sysout("lib.getStackFrame eval-level sourceFile.href="+sourceFile.href+"\n");     /*@explore*/
         		var lineNo = FBL.getLineAtPCForEvaled(frame, context);
         		var eval_frame = new this.StackFrame(context, sourceFile.evalExpression, frame.script, sourceFile.href, lineNo, [sourceFile.evalExpression]);
          		return eval_frame;
