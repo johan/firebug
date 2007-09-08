@@ -12,7 +12,7 @@ function CI(ifaceName)
 {
     return Components.interfaces[ifaceName];
 }
- 
+
 // ************************************************************************************************
 // Constants
  
@@ -34,8 +34,9 @@ const jsdICallHook = CI("jsdICallHook");
 const jsdIExecutionHook = CI("jsdIExecutionHook");
 const jsdIErrorHook = CI("jsdIErrorHook");
 const nsIFireBug = CI("nsIFireBug");
-const nsIFireBugWithEval = CI("nsIFireBugWithEval");
-const nsIFireBugDebuggerWithEval = CI("nsIFireBugDebuggerWithEval");
+const nsIFireBugNetworkDebugger = CI("nsIFireBugNetworkDebugger");
+const nsIFireBugScriptListener = CI("nsIFireBugScriptListener");
+const nsIFireBugURLProvider = CI("nsIFireBugURLProvider");
 const nsIPrefBranch2 = CI("nsIPrefBranch2");
 const nsIComponentRegistrar = CI("nsIComponentRegistrar");
 const nsIFactory = CI("nsIFactory");
@@ -59,15 +60,20 @@ const MASK_TOP_FRAME_ONLY = jsdIDebuggerService.MASK_TOP_FRAME_ONLY;
 
 const TYPE_FUNCTION_CALL = jsdICallHook.TYPE_FUNCTION_CALL;
 const TYPE_FUNCTION_RETURN = jsdICallHook.TYPE_FUNCTION_RETURN;
+const TYPE_TOPLEVEL_START = jsdICallHook.TYPE_TOPLEVEL_START;
+const TYPE_TOPLEVEL_END = jsdICallHook.TYPE_TOPLEVEL_END;
 
 const RETURN_CONTINUE = jsdIExecutionHook.RETURN_CONTINUE;
-const RETURN_VALUE = jsdIExecutionHook.RETURN_RET_WITH_VAL;  
+const RETURN_VALUE = jsdIExecutionHook.RETURN_RET_WITH_VAL;
 const RETURN_THROW_WITH_VAL = jsdIExecutionHook.RETURN_THROW_WITH_VAL;
 const RETURN_CONTINUE_THROW = jsdIExecutionHook.RETURN_CONTINUE_THROW;
+
+const NS_OS_TEMP_DIR = "TmpD"
 
 const STEP_OVER = nsIFireBug.STEP_OVER;
 const STEP_INTO = nsIFireBug.STEP_INTO;
 const STEP_OUT = nsIFireBug.STEP_OUT;
+const STEP_SUSPEND = -1; // XXXms: find a better way
 
 const TYPE_ONE_SHOT = nsITimer.TYPE_ONE_SHOT;
 
@@ -76,11 +82,20 @@ const TYPE_ONE_SHOT = nsITimer.TYPE_ONE_SHOT;
 const BP_NORMAL = 1;
 const BP_MONITOR = 2;
 const BP_UNTIL = 4;
-const BP_ONRELOAD = 8;  // This is a mark for the UI to test
+const BP_ONRELOAD = 8;  // XXXjjb: This is a mark for the UI to test
 
 const LEVEL_TOP = 1;
 const LEVEL_EVAL = 2;
 const LEVEL_EVENT = 3;
+
+const COMPONENTS_FILTERS = [
+	new RegExp("^(file:/.*/)extensions/%7B[\\da-fA-F]{8}-[\\da-fA-F]{4}-[\\da-fA-F]{4}-[\\da-fA-F]{4}-[\\da-fA-F]{12}%7D/components/.*\\.js$"),
+	new RegExp("^(file:/.*/)extensions/firebug@software\\.joehewitt\\.com/components/.*\\.js$"),
+	new RegExp("^(file:/.*/extensions/)\\w+@mozilla\\.org/components/.*\\.js$"),
+	new RegExp("^(file:/.*/components/)ns[A-Z].*\\.js$"),
+	new RegExp("^(file:/.*/components/)firebug-service\\.js$"),
+	new RegExp("^(file:/.*/Contents/MacOS/extensions/.*/components/).*\\.js$")
+	];
 
 // ************************************************************************************************
 // Globals
@@ -89,8 +104,17 @@ var jsd, fbs, prefs;
 
 var contextCount = 0;
 
+var urlFilters = [
+	'chrome://',
+	'XStringBundle',
+	'javascript: eval(__firebugTemp__)'
+	];
+
+
 var clients = [];
 var debuggers = [];
+var netDebuggers = [];
+var scriptListeners = [];
 
 var stepMode = 0;
 var stepFrame;
@@ -114,8 +138,8 @@ var profileStart;
 
 var enabledDebugger = false;
 var reportNextError = false;
-var nextErrorMessage =""; 
 var breakOnNextError = false;
+var errorInfo = null;
 
 var timer = Timer.createInstance(nsITimer);
 var waitingForTimer = false;
@@ -138,12 +162,11 @@ function FirebugService()
 
     this.showStackTrace = prefs.getBoolPref("extensions.firebug.showStackTrace");
     this.breakOnErrors = prefs.getBoolPref("extensions.firebug.breakOnErrors");
-	this.breakOnTopLevel = prefs.getBoolPref("extensions.firebug.breakOnTopLevel");
 	
-    this.topLevelScriptTag = {};          // top- or eval-level
-    this.eventLevelScriptTag = {};        // event scripts like onclick
-	this.nestedScriptStack = {};          // scripts contained in leveledScript that have not been drained
-	this.sourceURLByTag = {};             // all script tags created by eval
+    this.topLevelScriptTag = {};  // top- or eval-level
+    this.eventLevelScriptTag = {};// event scripts like onclick
+	this.nestedScriptStack = {};  // scripts contained in leveledScript that have not been drained
+	this.sourceURLByTag = {};     // all script tags created by eval
 	this.scriptInfoArrayByURL = {}; 
 	this.scriptInfoByTag = {};
 }
@@ -163,7 +186,7 @@ FirebugService.prototype =
 
     QueryInterface: function(iid)
     {
-        if (!iid.equals(nsIFireBug) && !iid.equals(nsISupports) && !iid.equals(nsIFireBugWithEval))
+        if (!iid.equals(nsIFireBug) && !iid.equals(nsISupports))
             throw NS_ERROR_NO_INTERFACE;
 
         return this;
@@ -219,6 +242,14 @@ FirebugService.prototype =
         this.enableDebugger();
 
         debuggers.push(debuggr);
+		try {
+			netDebuggers.push(debuggr.QueryInterface(nsIFireBugNetworkDebugger));
+		} catch(exc) {
+		}
+		try {
+			scriptListeners.push(debuggr.QueryInterface(nsIFireBugScriptListener));
+		} catch(exc) {
+		}
     },
 
     unregisterDebugger: function(debuggr)
@@ -228,6 +259,22 @@ FirebugService.prototype =
             if (debuggers[i] == debuggr)
             {
                 debuggers.splice(i, 1);
+                break;
+            }
+        }
+        for (var i = 0; i < netDebuggers.length; ++i)
+        {
+            if (netDebuggers[i] == debuggr)
+            {
+                netDebuggers.splice(i, 1);
+                break;
+            }
+        }
+        for (var i = 0; i < scriptListeners.length; ++i)
+        {
+            if (scriptListeners[i] == debuggr)
+            {
+                scriptListeners.splice(i, 1);
                 break;
             }
         }
@@ -257,31 +304,26 @@ FirebugService.prototype =
     },
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
-    // nsIFireBugWithEval
-    
-    registerDebuggerWithEval: function(debuggr)
-    {
-        this.enableDebugger();
 
-        debuggers.push(debuggr);
-    },
-
-    unregisterDebuggerWithEval: function(debuggr)
-    {
-        for (var i = 0; i < debuggers.length; ++i)
-        {
-            if (debuggers[i] == debuggr)
-            {
-                debuggers.splice(i, 1);
-                break;
-            }
-        }
-
-        if (!debuggers.length)
-            this.disableDebugger();
-    },
-
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+	enterNestedEventLoop: function(callback)
+	{
+		dispatch(netDebuggers, "suspendActivity");
+		var result = jsd.enterNestedEventLoop({
+			onNest: function()
+			{
+				dispatch(netDebuggers, "resumeActivity");
+				callback.onNest();
+			}
+		});
+		dispatch(netDebuggers, "resumeActivity");
+		return result;
+	},
+	
+	exitNestedEventLoop: function()
+	{
+		dispatch(netDebuggers, "suspendActivity");
+		return jsd.exitNestedEventLoop();
+	},
 
     halt: function(debuggr)
     {
@@ -295,7 +337,14 @@ FirebugService.prototype =
         stepFrameCount = countFrames(startFrame);
         stepFrameLineId = stepFrameCount + startFrame.script.fileName + startFrame.line;
     },
-    
+
+	suspend: function()
+	{
+		stepMode = STEP_SUSPEND;
+		stepFrameLineId = null;
+		this.hookInterrupts();
+	},
+
     runUntil: function(url, lineNo, startFrame)
     {
         runningUntil = this.addBreakpoint(BP_UNTIL, url, lineNo);
@@ -305,16 +354,21 @@ FirebugService.prototype =
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
     
-    setBreakpoint: function(url, lineNo)
+    setBreakpoint: function(url, lineNo, props)
     {
-        if (this.addBreakpoint(BP_NORMAL, url, lineNo))
-            dispatch(debuggers, "onToggleBreakpoint", [url, lineNo, true]);
+    	var bp = this.addBreakpoint(BP_NORMAL, url, lineNo, null, null, props);
+        if (bp)
+        {
+            dispatch(debuggers, "onToggleBreakpoint", [url, lineNo, true, getBreakpointProperties(bp)]);
+            return true;
+		}
+		return false;
     },
 
     clearBreakpoint: function(url, lineNo)
     {
         if (this.removeBreakpoint(BP_NORMAL, url, lineNo))
-            dispatch(debuggers, "onToggleBreakpoint", [url, lineNo, false]);
+            dispatch(debuggers, "onToggleBreakpoint", [url, lineNo, false, null]);
     },
 
     enableBreakpoint: function(url, lineNo)
@@ -325,7 +379,7 @@ FirebugService.prototype =
         if (bp && bp.type & BP_NORMAL)
         {
             bp.disabled &= ~BP_NORMAL;
-            dispatch(debuggers, "onToggleBreakpointDisabled", [url, lineNo, false]);
+            dispatch(debuggers, "onToggleBreakpoint", [url, lineNo, true, getBreakpointProperties(bp)]);
             --disabledCount;
         }
     },
@@ -339,7 +393,7 @@ FirebugService.prototype =
         {
             bp.disabled |= BP_NORMAL;
             ++disabledCount;
-            dispatch(debuggers, "onToggleBreakpointDisabled", [url, lineNo, true]);
+            dispatch(debuggers, "onToggleBreakpoint", [url, lineNo, true, getBreakpointProperties(bp)]);
         }
     },
 
@@ -361,25 +415,25 @@ FirebugService.prototype =
         if (!bp)
         {
             bp = this.addBreakpoint(BP_NORMAL, url, lineNo);
-            if (bp)
-                dispatch(debuggers, "onToggleBreakpoint", [url, lineNo, true]);
         }
 
         if (!bp)
             return;
         
-        if (bp.condition && !condition)
+        if (bp.hitCount <= 0 )
         {
-            --conditionCount;
-            dispatch(debuggers, "onToggleBreakpointCondition", [url, lineNo, false]);            
+	        if (bp.condition && !condition)
+	        {
+	            --conditionCount;
+	        }
+	        else if (condition && !bp.condition)
+	        {
+	            ++conditionCount;        
+	        }
         }
-        else if (condition && !bp.condition)
-        {
-            ++conditionCount;        
-            dispatch(debuggers, "onToggleBreakpointCondition", [url, lineNo, true]);
-        }
-
         bp.condition = condition;
+        
+		dispatch(debuggers, "onToggleBreakpoint", [url, lineNo, true, getBreakpointProperties(bp)]);
     },
 
     getBreakpointCondition: function(url, lineNo)
@@ -408,10 +462,12 @@ FirebugService.prototype =
     },
 
     hasBreakpoint: function(script)
-    {  // Dead code
-        var url = fbs.getSourceURL(script);
-        
-        var lineNo = findFirstExecutableLine(script);  
+    {
+        var url = script.fileName;
+        var lineNo = findExecutableLine(script, script.baseLineNumber);
+		// Dead code XXXnew
+        //var url = fbs.getSourceURL(script);        
+        //var lineNo = this.findFirstExecutableLine(script);  
 
         var urlBreakpoints = breakpoints[url];
         if (urlBreakpoints)
@@ -440,8 +496,7 @@ FirebugService.prototype =
                 {
                     var bp = urlBreakpoints[i];
                     if (bp.type & BP_NORMAL)
-                        cb.call(url, bp.lineNo, bp.startLineNo, bp.disabled & BP_NORMAL,
-                            bp.condition);
+                        cb.call(url, bp.lineNo, bp.startLineNo, getBreakpointProperties(bp));
                 }
             }
         }
@@ -495,7 +550,7 @@ FirebugService.prototype =
             {
                 var bp = errorBreakpoints[i];
                 if (bp.href == url)
-                    cb.call(bp.href, bp.lineNo, bp.startLineNo, false, "");
+                    cb.call(bp.href, bp.lineNo, bp.startLineNo, null);
             }
         }
         else
@@ -503,7 +558,7 @@ FirebugService.prototype =
             for (var i = 0; i < errorBreakpoints.length; ++i)
             {
                 var bp = errorBreakpoints[i];
-                cb.call(bp.href, bp.lineNo, bp.startLineNo, false, "");
+                cb.call(bp.href, bp.lineNo, bp.startLineNo, null);
             }
         }
     },
@@ -512,20 +567,20 @@ FirebugService.prototype =
 
     monitor: function(script, debuggr)
     {
-        var lineNo = findFirstExecutableLine(script);
-		var scriptInfo = fbs.scriptInfoByTag[script.tag];
+        var lineNo = this.findFirstExecutableLine(script);
+		var scriptInfo = this.scriptInfoByTag[script.tag];
         var url = scriptInfo.url;
         if (lineNo != -1 && this.addBreakpoint(BP_MONITOR, url, lineNo, debuggr, scriptInfo))
         {
             ++monitorCount;
-            dispatch(debuggers, "onToggleMonitor", [script.fileName, lineNo, true]);
+            dispatch(debuggers, "onToggleMonitor", [url, lineNo, true]);
         }
     },
 
     unmonitor: function(script)
     {
-        var lineNo = findFirstExecutableLine(script);
-        var url = fbs.getSourceURL(script);
+        var lineNo = this.findFirstExecutableLine(script);
+        var url = this.getSourceURL(script);
         if (lineNo != -1 && this.removeBreakpoint(BP_MONITOR, url, lineNo, script))
         {
             --monitorCount;
@@ -535,8 +590,8 @@ FirebugService.prototype =
 
     isMonitored: function(script)
     {
-        var lineNo = findFirstExecutableLine(script);
-        var url = fbs.getSourceURL(script);
+        var lineNo = this.findFirstExecutableLine(script);
+        var url = this.getSourceURL(script);
         var bp = lineNo != -1 ? this.findBreakpoint(url, lineNo) : null;
         return bp && bp.type & BP_MONITOR;
     },
@@ -554,7 +609,7 @@ FirebugService.prototype =
                 {
                     var bp = urlBreakpoints[i];
                     if (bp.type & BP_MONITOR)
-                        cb.call(url, bp.lineNo, bp.startLineNo, false, "");
+                        cb.call(url, bp.lineNo, bp.startLineNo, null);
                 }
             }
         }
@@ -563,6 +618,23 @@ FirebugService.prototype =
             for (var url in breakpoints)
                 this.enumerateBreakpoints(url, cb);
         }
+    },
+    
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+
+    enumerateScripts: function(length)
+    {
+		var scripts = [];
+		jsd.enumerateScripts( {
+			enumerateScript: function(script) {
+				var fileName = script.fileName;
+				if ( !isSystemURL(fileName) ) {
+					scripts.push(script);			
+				}
+			}
+		});
+		length.value = scripts.length;
+		return scripts;
     },
     
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
@@ -606,8 +678,8 @@ FirebugService.prototype =
             timer.cancel();
             waitingForTimer = false;
         }
-		
-		if (enabledDebugger)
+
+        if (enabledDebugger)
             return;
     
         enabledDebugger = true;
@@ -616,6 +688,7 @@ FirebugService.prototype =
         {
             jsd.unPause();
             this.hookScripts();
+            this.hookTopLevel();
         }
         else
         {
@@ -625,28 +698,28 @@ FirebugService.prototype =
 
             jsd.on();
             this.hookScripts();
+            this.hookTopLevel();
 
             jsd.debuggerHook = { onExecute: hook(this.onDebugger, RETURN_CONTINUE) };
             jsd.debugHook = { onExecute: hook(this.onDebug, RETURN_CONTINUE) };
-            jsd.breakpointHook = { onExecute: hook(this.onBreakpoint, RETURN_CONTINUE_THROW) };
-            //jsd.throwHook = { onExecute: hook(this.onThrow, RETURN_CONTINUE) };
+            jsd.breakpointHook = { onExecute: hook(this.onBreakpoint, RETURN_CONTINUE) };
+            jsd.throwHook = { onExecute: hook(this.onThrow, RETURN_CONTINUE_THROW) };
             jsd.errorHook = { onError: hook(this.onError, true) };
-			this.syncTopLevelHook();
         }
-		
     },
 
     disableDebugger: function()
     {
         if (!enabledDebugger)
             return;
-        
+		
         timer.init({observe: function()
         {
             enabledDebugger = false;
 
             jsd.pause();
             fbs.unhookScripts();
+            fbs.unhookTopLevel();
         }}, 1000, TYPE_ONE_SHOT);
         
         waitingForTimer = true;
@@ -658,42 +731,44 @@ FirebugService.prototype =
     // When (debugger keyword and not halt)||(bp and BP_UNTIL) || (onBreakPoint && no conditions)
     // || interuptHook.  rv is ignored 
     onBreak: function(frame, type, rv)
-    {   
+    {    
     	try 
 		{ 
 	        var debuggr = this.findDebugger(frame);
         	if (debuggr)
-            	return this.breakIntoDebugger(debuggr, frame);
+            	return this.breakIntoDebugger(debuggr, frame, type);
         } 
         catch(exc) 
         {
-	        ERROR("onDebugger failed: "+exc);
+	        ERROR("onBreak failed: "+exc);
         }
         return RETURN_CONTINUE;
     },
-
-    onDebugger: function(frame, type, rv) // When engine encounters debugger keyword (only)
-    {   
+		
+	// When engine encounters debugger keyword (only)
+    onDebugger: function(frame, type, rv)
+    {
     	try {  
 	        if (haltDebugger)
 	        {
 	            var debuggr = haltDebugger;
-	            haltDebugger = null;
-	            
+	            haltDebugger = null;	            
 	            return debuggr.onHalt(frame);
 	        }
 	        else
 	            return this.onBreak(frame, type, rv);
 	        } 
-        catch(exc) 
-        {
+         catch(exc) 
+         {
         	ERROR("onDebugger failed: "+exc);
         	return RETURN_CONTINUE;
-        }
+         }
     },
     
     onDebug: function(frame, type, rv)
-    {   
+    {
+    	if ( isSystemURL(frame.script.fileName) )
+    		return RETURN_CONTINUE;        
     	try 
     	{ 
 			var debuggr = reportNextError || breakOnNextError ? this.findDebugger(frame) : null;
@@ -701,53 +776,52 @@ FirebugService.prototype =
 	        if (reportNextError)
 	        {
 	            reportNextError = false;
-	            if (debuggr) {
-					if (nsIFireBugDebuggerWithEval && debuggr.QueryInterface(nsIFireBugDebuggerWithEval) ) 
-	        		{
-						debuggr.onErrorWithMessage(frame, nextErrorMessage);
-						nextErrorMessage = null;
-						debuggr = this.reFindDebugger(frame, debuggr);
-					}
-					else
-						debuggr.onError(frame);
+	            if (debuggr)
+				{
+					var hookReturn = debuggr.onError(frame,errorInfo);
+					if (hookReturn >=0)
+						return hookReturn;
+					else if (hookReturn==-1)
+						breakOnNextError = true;
+					//debuggr = this.reFindDebugger(frame, debuggr); //XXXnew
 				}
-	               
 	        }
 	
 	        if (breakOnNextError)
 	        {
 	            breakOnNextError = false;
 	            if (debuggr)
-	                return this.breakIntoDebugger(debuggr, frame);
+	                return this.breakIntoDebugger(debuggr, frame, type);
 	        }
         } catch (exc) {
 	        ERROR("onDebug failed: "+exc);
-        	return RETURN_CONTINUE;
         }
-
         return RETURN_CONTINUE;
     },
 
     onBreakpoint: function(frame, type, val)
-    {            
-		if (frame.script.tag in fbs.topLevelScriptTag)
+    {
+    	if ( isSystemURL(frame.script.fileName) )
+    		return RETURN_CONTINUE;
+		var scriptTag = frame.script.tag;
+		if (scriptTag in this.topLevelScriptTag)
     	{
-    		delete fbs.topLevelScriptTag[frame.script.tag];
-    		return this.onEvalBreak(frame, type, val);
+    		delete this.topLevelScriptTag[scriptTag];
+    		this.onEvalBreak(frame, type, val);
+			var checkBP = true;
     	}
-    	if (frame.script.tag in fbs.eventLevelScriptTag)
+    	if (scriptTag in fbs.eventLevelScriptTag)
     	{
-			delete fbs.eventLevelScriptTag[frame.script.tag];
+			delete this.eventLevelScriptTag[scriptTag];
     		return this.onEventScriptBreak(frame, type, val);
     	}
-        if (disabledCount || monitorCount || conditionCount || runningUntil)
+        if (checkBP || disabledCount || monitorCount || conditionCount || runningUntil)
         {
-            var url = fbs.getSourceURL(frame.script);
-			var scriptInfo = fbs.scriptInfoByTag[frame.script.tag];
+            var url = this.getSourceURL(frame.script);
+			var scriptInfo = this.scriptInfoByTag[scriptTag];
+			var lineNo = frame.line;
 			if (scriptInfo) 
-				var lineNo = scriptInfo.unshiftFromSourceBufferToScriptNumbering(frame.line);
-			else
-				var lineNo = frame.line;
+				lineNo = scriptInfo.unshiftFromSourceBufferToScriptNumbering(lineNo);
 				
             var bp = this.findBreakpoint(url, lineNo);
             if (bp)
@@ -760,9 +834,9 @@ FirebugService.prototype =
                     this.stopStepping();
                     return this.onBreak(frame, type, val);
                 }
-                else if (bp.type & BP_NORMAL && bp.condition)
+                else if (bp.type & BP_NORMAL)
                 {
-                    var passed = evaluateCondition(frame, bp.condition);
+                    var passed = testBreakpoint(frame, bp);
                     if (!passed)
                         return RETURN_CONTINUE;
                 }
@@ -779,12 +853,18 @@ FirebugService.prototype =
             return this.onBreak(frame, type, val);
     },
 
-    onThrow: function(frame, type, val)
+    onThrow: function(frame, type, rv)
     {
+    	if ( isSystemURL(frame.script.fileName) )
+    		return RETURN_CONTINUE_THROW;
         // Remember the error where the last exception is thrown - this will
         // be used later when the console service reports the error, since
         // it doesn't currently report the window where the error occured
         this._lastErrorWindow = getFrameWindow(frame);
+
+        var debuggr = this.findDebugger(frame);
+        if (debuggr)
+        	return debuggr.onThrow(frame, rv);
 
         return RETURN_CONTINUE_THROW;
     },
@@ -792,13 +872,12 @@ FirebugService.prototype =
     onError: function(message, fileName, lineNo, pos, flags, errnum, exc)
     {   
 			
+		errorInfo = { message: message, fileName: fileName, lineNo: lineNo, pos: pos, flags: flags, errnum: errnum, exc: exc };
         if (this.showStackTrace)
         {
             reportNextError = true;
-			nextErrorMessage = message; // file and line on frame
             var theNeed = this.needToBreakForError(fileName, lineNo);
-			
-            return false;  // Drop into onDebug
+            return false; // Drop into onDebug
         }
         else
         {
@@ -818,17 +897,20 @@ FirebugService.prototype =
 			
 	        if (debuggr) 
 	        {
-	        	if (nsIFireBugDebuggerWithEval && debuggr.QueryInterface(nsIFireBugDebuggerWithEval) ) 
-	        	{
-	        		var eventURL = fbs.getURLFromDebugger(debuggr.onEventScript, frame);
+				try
+				{
+					debuggr.QueryInterface(nsIFireBugURLProvider);
+					var eventURL = this.getURLFromDebugger(debuggr.onEventScript, frame);
 					if (eventURL)
 					{
-						fbs.registerEventLevelScript(frame.script, eventURL, "event level");     // 1 is determined experimentally
-						//fbs.drainTopLevelScriptStack(eventURL, frame, frame.script, debuggr);  TODO test multiple functions in event
-					}
-	   
+						this.registerEventLevelScript(script, eventURL, "event level"); // 1 is determined experimentally
+						//fbs.drainTopLevelScriptStack(eventURL, frame, script, debuggr);  TODO test multiple functions in event
+					}	   
 					return RETURN_CONTINUE;	 
-	        	}
+				}
+				catch (exc)
+				{
+				}
 	        }
 	    } catch(exc) {
 	    	ERROR("onEventScriptBreak failed: "+exc);
@@ -850,76 +932,69 @@ FirebugService.prototype =
 				script.clearBreakpoint(0);
 			} 
 			
-			var debuggr = this.findDebugger(frame);  // sets debuggr.breakContext
-			
+			var debuggr = this.findDebugger(frame);  // sets debuggr.breakContext			
 	        if (!debuggr)
 	        {
-	        	return RETURN_CONTINUE;
+	        	return;
 	        }
 	        
-	       	if (! (nsIFireBugDebuggerWithEval && debuggr.QueryInterface(nsIFireBugDebuggerWithEval)) )
-	       	{
-	        	ERROR("firebug-service: no DebuggerWithEval\n"); 
-	        	return RETURN_CONTINUE;
-	        }
+			try
+			{
+				debuggr.QueryInterface(nsIFireBugURLProvider);
+			}
+			catch (exc)
+			{
+				return;
+			}
 	         
        		if (!frame.callingFrame) 
 			{
-				var topLevelURL = fbs.getURLFromDebugger(debuggr.onTopLevel, frame);
+				var topLevelURL = this.getURLFromDebugger(debuggr.onTopLevel, frame);
 				if (topLevelURL)
 				{
-
-					fbs.registerTopLevelScript(script, topLevelURL, "top-level");      
-					fbs.drainTopLevelScriptStack(topLevelURL, frame, script, debuggr);
+					this.registerTopLevelScript(script, topLevelURL, "top-level");      
+					this.drainTopLevelScriptStack(topLevelURL, frame, script, debuggr);
 				}
-				return RETURN_CONTINUE;	 // top_level
 			}
        		else
        		{	
-				var leveledScriptURL = fbs.getURLFromDebugger(debuggr.onEval, frame);
+				var leveledScriptURL = this.getURLFromDebugger(debuggr.onEval, frame);
 				if (leveledScriptURL)
 				{
-            		fbs.registerEvalLevelScript(script, leveledScriptURL, "eval-level", 1);           			
-					fbs.drainEvalScriptStack(leveledScriptURL, frame, script, debuggr);
+            		this.registerEvalLevelScript(script, leveledScriptURL, "eval-level", 1);           			
+					this.drainEvalScriptStack(leveledScriptURL, frame, script, debuggr);
 				}
-       			return RETURN_CONTINUE;
        		}
         } 
 		catch (exc) 
 		{
 			ERROR("onEvalBreak failed: "+exc);
 		}
-		return RETURN_CONTINUE;
 	}, 
 	
 	getURLFromDebugger: function(callback, frame) 
 	{
-		var result_url = {};
    		try 
 		{
-			var rc = callback(frame, result_url);
-         
-	        if (!rc) 
+			var url = callback(frame);
+	        if (!url)
 	        {
 	        	ERROR("firebug-service: debuggr callback for url failed \n");
 	        	return;
-	        }  
+	        }
+			return url;
 		} 
 		catch(exc)
 		{
 			ERROR("firebug-service: debuggr callback for url FAILED with exception="+exc+"\n");
-			return;
 		}
-   		
-        		
-        return result_url.value.getWrappedValue();
 	},
 	
-
 	drainTopLevelScriptStack: function(leveledScriptURL, frame, leveledScript, debuggr) 
 	{   	 
-		for (tag in fbs.nestedScriptStack) {
-        	var nestedScript = fbs.nestedScriptStack[tag];
+		for (tag in this.nestedScriptStack)
+		{
+        	var nestedScript = this.nestedScriptStack[tag];
         	if (nestedScript.fileName != leveledScriptURL) 
         		continue;
 				
@@ -928,15 +1003,15 @@ FirebugService.prototype =
 			debuggr = this.reFindDebugger(frame, debuggr);
         	debuggr.onTopLevelScript(leveledScriptURL, lineNo, nestedScript);
         	
-			var scriptInfo = fbs.registerTopLevelScript(nestedScript, leveledScriptURL, "nested in top-level");
+			var scriptInfo = this.registerTopLevelScript(nestedScript, leveledScriptURL, "nested in top-level");
        }
        fbs.nestedScriptStack = {}; // XXXjjb TODO we lose all the moz scripts here
 	},
 	
 	drainEvalScriptStack: function(leveledScriptURL, frame, script, debuggr) 
 	{    	 
-		for (tag in fbs.nestedScriptStack) {
-        	var nestedScript = fbs.nestedScriptStack[tag];
+		for (tag in this.nestedScriptStack) {
+        	var nestedScript = this.nestedScriptStack[tag];
 			if (nestedScript.fileName != script.fileName) 
         		continue;
         	var baseLineNumberWithEvalBuffer = nestedScript.baseLineNumber - script.baseLineNumber + 1;
@@ -947,24 +1022,23 @@ FirebugService.prototype =
         	debuggr = this.reFindDebugger(frame, debuggr);
         	debuggr.onEvalScript(leveledScriptURL, baseLineNumberWithEvalBuffer, nestedScript);
         	
-        	var scriptInfo = fbs.registerEvalLevelScript(nestedScript, leveledScriptURL, "nested in eval-level",  script.baseLineNumber);
+        	var scriptInfo = this.registerEvalLevelScript(nestedScript, leveledScriptURL, "nested in eval-level",  script.baseLineNumber);
 
        }
        fbs.nestedScriptStack = {};
 	},
-	
+
     onScriptCreated: function(script)
-    { 
-        try {
-        
-	        if (!script.fileName) return;  // some internal thing?
-	        if (script.fileName.indexOf(":") == -1) return; // XStringBundle etal
-	        //if (script.fileName.indexOf("chrome:") != -1) return; // can't deal with extensions (yet?)
-	        
-           	
-           	if (script.fileName.indexOf("__firebugTemp__") != -1) return; // see spy.js
-           	
-	        if (!script.functionName) 
+    {
+		if(!fbs) return;
+        try
+        {
+			var fileName = script.fileName;
+			if (!fileName || isSystemURL(fileName))
+				return;
+         
+
+			if (!script.functionName) 
 	        { 	
 	        	// top or eval-level
 	    		// We need to detect eval() and grab its source. For that we need a stack frame.
@@ -972,7 +1046,7 @@ FirebugService.prototype =
 	    		fbs.topLevelScriptTag[script.tag] = true;
 	    		script.setBreakpoint(0);
 	    	} 
-	    	else if (script.baseLineNumber == 1 && script.fileName in fbs.scriptInfoArrayByURL) 
+	    	else if (script.baseLineNumber == 1 && (fileName in this.scriptInfoArrayByURL)) 
 	    	{
 		        fbs.eventLevelScriptTag[script.tag]= true; 
 		        script.setBreakpoint(0);  // XXXjjb possible conflict with bp set by user
@@ -980,14 +1054,33 @@ FirebugService.prototype =
 	    	else
 	    	{
 	    		fbs.nestedScriptStack[script.tag] = script;
-	    	}	    	
-         }
-         catch(error)
-         { 
-         	ERROR(error);
-         }
+	    	}
+		}
+        catch(exc)
+        {
+			ERROR("onScriptCreated failed: "+exc);
+		}
     },
-    
+
+    onScriptDestroyed: function(script)
+    {
+		if(!fbs) return;
+		var scriptTag = script.tag;
+			
+        if (scriptTag in this.scriptInfoByTag)  
+        {
+        	var scriptInfo = this.scriptInfoByTag[scriptTag];
+ 			var url = scriptInfo.url;
+			if (url in this.scriptInfoArrayByURL)
+        		remove(this.scriptInfoArrayByURL[url], scriptInfo);
+        	delete this.scriptInfoByTag[scriptTag];
+        }    
+		delete this.nestedScriptStack[scriptTag];
+        delete this.eventLevelScriptTag[scriptTag];
+		
+		dispatch(scriptListeners,"onScriptDestroyed",[script]);
+    },
+
 	resetBreakpoints: function(scriptInfo) 
 	{ 
         // If the new script is replacing an old script with a breakpoint still
@@ -1004,11 +1097,9 @@ FirebugService.prototype =
                 var endScript = scriptInfo.baseLineNumber + scriptInfo.lineExtent;
                 var sourceLineNo = bp.lineNo; 
 				var lineInScript = scriptInfo.shiftFromSourceBufferToScriptNumbering(sourceLineNo);
-                if (scriptInfo.baseLineNumber <= lineInScript 
-                    && lineInScript <= endScript)
+                if ((scriptInfo.baseLineNumber <= lineInScript) && (lineInScript <= endScript))
                 { 
 					var script = scriptInfo.script;
-					
                     if (script.isLineExecutable(lineInScript, pcmap))
                     {
                         var pc = script.lineToPc(lineInScript, pcmap);
@@ -1020,28 +1111,10 @@ FirebugService.prototype =
         }
     },
 
-    onScriptDestroyed: function(script)
-    {
-			
-        if (script.tag in fbs.scriptInfoByTag)  
-        {
-        	var scriptInfo = fbs.scriptInfoByTag[script.tag];
- 			var url = scriptInfo.url;
-			if (url in fbs.scriptInfoArrayByURL)
-        		remove(fbs.scriptInfoArrayByURL[url], scriptInfo);
-        	delete fbs.scriptInfoByTag[script.tag];
-        }
-            
-        if (script.tag in fbs.nestedScriptStack) delete fbs.nestedScriptStack[script.tag];
-        if (script.tag in fbs.eventLevelScriptTag) delete fbs.eventLevelScriptTag[script.tag];
-        
-
-    },
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
 	// ScriptInfo
 	// the script exists between baseLineNumber and baseLineNumber + lineExtent.
-	
-	
+		
 	registerScriptInfo: function(script, url, typename) 
 	{
 		var scriptInfo = new Object();
@@ -1049,39 +1122,35 @@ FirebugService.prototype =
 		scriptInfo.url = url;
 		scriptInfo.typename = typename;
 		
-		if (scriptInfo.url in fbs.scriptInfoArrayByURL)
-			fbs.scriptInfoArrayByURL[scriptInfo.url].push(scriptInfo);
+		if (url in this.scriptInfoArrayByURL)
+			this.scriptInfoArrayByURL[url].push(scriptInfo);
 		else 
-			fbs.scriptInfoArrayByURL[scriptInfo.url]= [scriptInfo];
+			this.scriptInfoArrayByURL[url]= [scriptInfo];
 		
-		fbs.scriptInfoByTag[scriptInfo.script.tag] = scriptInfo;
+		this.scriptInfoByTag[script.tag] = scriptInfo;
 		
 		return scriptInfo;
 	},			
 
-	shiftNone: function(lineNo) 
-	{
-		return lineNo;
-	},
-
 	registerTopLevelScript: function(script, url, typename) 
 	{
-		var scriptInfo = fbs.registerScriptInfo(script, url, typename);
+		var scriptInfo = this.registerScriptInfo(script, url, typename);
 		scriptInfo.pcmap = PCMAP_SOURCETEXT;
 		scriptInfo.lineExtent = script.lineExtent;
 		scriptInfo.baseLineNumber = script.baseLineNumber; 
-		scriptInfo.shiftFromSourceBufferToScriptNumbering = fbs.shiftNone;
-		scriptInfo.unshiftFromSourceBufferToScriptNumbering = fbs.shiftNone;
+		scriptInfo.shiftFromSourceBufferToScriptNumbering = shiftNone;
+		scriptInfo.unshiftFromSourceBufferToScriptNumbering = shiftNone;
 		
-		fbs.resetBreakpoints(scriptInfo);
+		this.resetBreakpoints(scriptInfo);
 		
 		
+		dispatch(scriptListeners,"onScriptCreated",[script, url, script.baseLineNumber]);
 		return scriptInfo;
 	},
 	
 	registerEvalLevelScript: function(script, url, typename, evalLineNumber) 
 	{
-		var scriptInfo = fbs.registerScriptInfo(script, url, typename);
+		var scriptInfo = this.registerScriptInfo(script, url, typename);
 		scriptInfo.pcmap = PCMAP_SOURCETEXT;
 		scriptInfo.lineExtent = script.lineExtent;
 		scriptInfo.baseLineNumber = script.baseLineNumber;
@@ -1098,38 +1167,48 @@ FirebugService.prototype =
 		{
 			return lineNo - this.evalLineNumber + 1;
 		}
-		fbs.resetBreakpoints(scriptInfo);
+		this.resetBreakpoints(scriptInfo);
 		
 		
+		dispatch(scriptListeners,"onScriptCreated",[script, url, evalLineNumber]);
 		return scriptInfo;
-	},
-	
-	shiftOne: function(lineNo)
-	{
-		return lineNo + 1;	
-	},
-		
-	unshiftOne: function(lineNo)
-	{
-		return lineNo - 1;	
 	},
 	
 	registerEventLevelScript: function(script, url, typename) 
 	{
-		var scriptInfo  = fbs.registerScriptInfo(script, url, typename);
+		var scriptInfo  = this.registerScriptInfo(script, url, typename);
 		scriptInfo.pcmap = PCMAP_PRETTYPRINT;
-		scriptInfo.lineExtent = fbs.countLines(script);
+		scriptInfo.lineExtent = countLines(script);
 		scriptInfo.baseLineNumber = script.baseLineNumber;
-		scriptInfo.shiftFromSourceBufferToScriptNumbering = fbs.shiftOne;  // heursitic
-		scriptInfo.unshiftFromSourceBufferToScriptNumbering = fbs.unshiftOne;
-		fbs.resetBreakpoints(scriptInfo);
+		scriptInfo.shiftFromSourceBufferToScriptNumbering = shiftOne;  // heursitic
+		scriptInfo.unshiftFromSourceBufferToScriptNumbering = unshiftOne;
+		this.resetBreakpoints(scriptInfo);
 		
+		dispatch(scriptListeners,"onScriptCreated",[script, url, script.baseLineNumber]);
 		return scriptInfo;
 	},
-	
-	formatScriptInfo: function(scriptInfo) 
+
+	findFirstExecutableLine: function(script)
 	{
-		return scriptInfo.script.tag+"@("+scriptInfo.baseLineNumber+"-"+(scriptInfo.baseLineNumber+scriptInfo.lineExtent)+")"+ scriptInfo.url+":"+scriptInfo.typename;
+		var scriptInfo = this.scriptInfoByTag[script.tag];
+		var url = scriptInfo.tag;
+		var pcmap = scriptInfo.pcmap;
+		var line = script.pcToLine(0, pcmap);
+		return line;
+	},
+
+	dumpScriptInfo: function()
+	{
+		for (url in this.scriptInfoArrayByURL)
+		{
+			if (isSystemURL(url)) continue;
+			
+			var scriptInfos = this.scriptInfoArrayByURL[url];
+			for (var i = 0; i < scriptInfos.length; i++)
+			{
+				ddd(i+"/"+scriptInfos.length+": "+formatScriptInfo(scriptInfos[i])+"\n");
+			}
+		}
 	},
 	
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
@@ -1148,10 +1227,10 @@ FirebugService.prototype =
                 if (debuggr.supportsWindow(win))
                     return debuggr;
             }
-            catch (exc) { /* ERROR("firebug-service findDebugger: "+exc)*/}
+            catch (exc) {  ERROR("firebug-service findDebugger: "+exc);}
         }
     },
-    
+
     diagnoseFindDebugger: function(frame)
     {
     	dumpToFileWithStack("diagnoseFindDebugger", frame);
@@ -1180,22 +1259,17 @@ FirebugService.prototype =
     
     getSourceURL: function(script)
     {
-    	if (script.tag in fbs.scriptInfoByTag) 
-        	return fbs.scriptInfoByTag[script.tag].url;
+    	if (script.tag in this.scriptInfoByTag) 
+        	return this.scriptInfoByTag[script.tag].url;
         else
         	return script.fileName;
     },
-    
-    countLines: function(script) {
-    	var lines = script.functionSource.split(/\r\n|\r|\n/);
-    	return lines.length;
-    },
-    
+
     findScriptInfos: function(url, lineNo)
     {    
         var hits = [];
 		
-        var scriptInfos = fbs.scriptInfoArrayByURL[url]; 
+        var scriptInfos = this.scriptInfoArrayByURL[url]; 
         if (scriptInfos)
         {	        	
             for (var i = 0; i < scriptInfos.length; ++i)
@@ -1252,18 +1326,19 @@ FirebugService.prototype =
     
         return -1;
     },
-    
+
     findZeroPCBreakpoint: function(script, pcmap) 
     {
-    	    var url = fbs.getSourceURL(script);
-    	    var line = script.pcToLine(0, pcmap);
-            return this.findBreakpoint(url, line);
+		var url = this.getSourceURL(script);
+		var line = script.pcToLine(0, pcmap);
+		return this.findBreakpoint(url, line);
     },
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
 
-    addBreakpoint: function(type, url, lineNo, debuggr, scriptInfo)
-    { // ddd("addBreakpoint type="+type+"\n");
+    addBreakpoint: function(type, url, lineNo, debuggr, scriptInfo, props)
+    {
+		// ddd("addBreakpoint type="+type+"\n");
         url = denormalizeURL(url);
 
         var bp = this.findBreakpoint(url, lineNo);
@@ -1279,10 +1354,10 @@ FirebugService.prototype =
         }
         else
         {
-            var scriptInfos = scriptInfo ? [scriptInfo] : this.findScriptInfos(url, lineNo); 
+            var scriptInfos = scriptInfo ? [scriptInfo] : this.findScriptInfos(url, lineNo);
 			
 			var onNextReloadOnly = true;
-            for (var i = 0; i < scriptInfos.length; ++i)
+			for (var i = 0; i < scriptInfos.length; ++i)
             {
                 scriptInfo = scriptInfos[i];
 				var script = scriptInfo.script;
@@ -1294,28 +1369,41 @@ FirebugService.prototype =
 				
 				
 				var firstSourceLine = scriptInfo.unshiftFromSourceBufferToScriptNumbering(script.baseLineNumber);
-				var bp = fbs.recordBreakpoint(type, url, lineNo, debuggr, firstSourceLine);
+				bp = this.recordBreakpoint(type, url, lineNo, debuggr, firstSourceLine, props);
 				
 				onNextReloadOnly = false;
-			}
+            }
 			if (onNextReloadOnly)
 			{
-				var bp = fbs.recordBreakpoint(type | BP_ONRELOAD, url, lineNo, debuggr);  // mark for next reload
+				bp = this.recordBreakpoint(type | BP_ONRELOAD, url, lineNo, debuggr, null, props);  // mark for next reload
 			} 
         }
 
         return bp;
     },
-
-	recordBreakpoint: function(type, url, lineNo, debuggr, functionDeclarationLine)
+		
+    recordBreakpoint: function(type, url, lineNo, debuggr, functionDeclarationLine, props)
 	{
 		var urlBreakpoints = breakpoints[url];
   		if (!urlBreakpoints)
         	breakpoints[url] = urlBreakpoints = [];
 
-    	bp = {type: type, href: url, lineNo: lineNo, disabled: 0,
+		var bp = {type: type, href: url, lineNo: lineNo, disabled: 0,
             startLineNo: functionDeclarationLine, debuggr: debuggr,
-            condition: ""};
+            condition: "", onTrue: true, hitCount: -1, hit: 0};
+		if (props)
+		{
+			bp.condition = props.condition;
+			bp.onTrue = props.onTrue;
+			bp.hitCount = props.hitCount;
+			if (bp.condition || bp.hitCount > 0)
+				++conditionCount;
+			if(props.disabled)
+			{
+				bp.disabled |= BP_NORMAL;
+				++disabledCount;
+			}
+		}
     	urlBreakpoints.push(bp);
     	++breakpointCount;
 		return bp;
@@ -1332,28 +1420,27 @@ FirebugService.prototype =
 		
         for (var i = 0; i < urlBreakpoints.length; ++i)
         {
-            var bp = urlBreakpoints[i];
-			
+            var bp = urlBreakpoints[i];			
 			
             if (bp.lineNo == lineNo)
             {
-                bp.type &= ~type;
-				
+                bp.type &= ~type;				
                 if (!(bp.type & !BP_ONRELOAD) )  // if BP_ONRELOAD is not set...
                 {
+                    // Theoretically, there should only be one script to be found here,
+                    // but due to leaks sometimes we'll have multiple scripts with the
+                    // breakpoint set, so we need to be sure to clear all of them
 					// Check all scripts that may be defined on this line of url
 					// xxxJJB this is expensive, we could track the scripts
 					jsd.enumerateScripts({enumerateScript: function(script)
                     {
                         if (script)
                         {
-							var scriptInfo = fbs.scriptInfoByTag[script.tag];
-							
+							var scriptInfo = fbs.scriptInfoByTag[script.tag];							
 							if (scriptInfo)
 							{
 								var pcmap = scriptInfo.pcmap;
-								if(scriptInfo.url == url
-							  		&& script.isLineExecutable(lineNo, pcmap))
+								if(scriptInfo.url == url && script.isLineExecutable(lineNo, pcmap))
                         		{
 									var lineInScript = scriptInfo.shiftFromSourceBufferToScriptNumbering(lineNo);
                             		var pc = script.lineToPc(lineInScript, pcmap);
@@ -1369,10 +1456,9 @@ FirebugService.prototype =
                     if (bp.disabled)
                         --disabledCount;
                     
-                    if (bp.condition)
+                    if (bp.condition || bp.hitCount)
                     {
                         --conditionCount;
-                        dispatch(debuggers, "onToggleBreakpointCondition", [url, lineNo, false]);
                     }
                     
                     if (!urlBreakpoints.length)
@@ -1389,16 +1475,17 @@ FirebugService.prototype =
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
-    breakIntoDebugger: function(debuggr, frame)
+    breakIntoDebugger: function(debuggr, frame, type)
     {
         // Before we break, clear information about previous stepping session
         this.stopStepping();
-        
+
+
         // Break into the debugger - execution will stop here until the user resumes
         var returned;
         try
         {
-            returned = debuggr.onBreak(frame);
+            returned = debuggr.onBreak(frame, type);
         }
         catch (exc)
         {
@@ -1425,7 +1512,8 @@ FirebugService.prototype =
             return;
 
         hookFrameCount = stepFrameCount;
-       
+
+
         this.hookFunctions();
         
         if (stepMode == STEP_OVER || stepMode == STEP_INTO)
@@ -1460,49 +1548,85 @@ FirebugService.prototype =
                 case TYPE_FUNCTION_CALL:
                 {
                     ++hookFrameCount;
-										
+                    
                     if (stepMode == STEP_OVER)
                         jsd.interruptHook = null;
+
                     break;
                 }
                 case TYPE_FUNCTION_RETURN:
                 {
                     --hookFrameCount;
-					
 
-                    if (hookFrameCount == 0)
-                        fbs.stopStepping();
-                    else if (stepMode == STEP_OVER || stepMode == STEP_INTO)
+                    if (hookFrameCount == 0) {
+                    	if ( (stepMode == STEP_INTO) || (stepMode == STEP_OVER) ) {
+                    	    fbs.stopStepping();
+                    	    stepMode = STEP_SUSPEND;
+                    	    fbs.hookInterrupts();
+                    	} else
+                    	{ 
+                            fbs.stopStepping();
+                        }
+                    }
+                    else if (stepMode == STEP_OVER) //XXXnew - conflict
                     {
-                        if (hookFrameCount <= stepFrameCount) 
-							 return fbs.onBreak(frame, type);
+                        if (hookFrameCount <= stepFrameCount)
+                            fbs.hookInterrupts();
                     }
                     else if (stepMode == STEP_OUT)
                     {
                         if (hookFrameCount < stepFrameCount)
-                            return fbs.onBreak(frame, type);
+                            fbs.hookInterrupts();
                     }
                     
                     break;
                 }
             }
         }
+
         jsd.functionHook = { onCall: functionHook };
     },
-    
-	hookTopLevel: function()
-	{
-		function topLevelHook(frame, type)
-		{
-			fbs.onBreak(frame, type);
-		}
-		jsd.topLevelHook = { onCall: topLevelHook };
-	},
-	
+
+    hookTopLevel: function()
+    {
+        function topLevelHook(frame, type)
+        {
+			if(!fbs) return;
+        	if ( isSystemURL(frame.script.fileName) )
+        		return;
+
+            switch (type)
+            {
+                case TYPE_TOPLEVEL_START:
+                {
+                	var debuggr = fbs.findDebugger(frame);
+					// XXXms: unused code ?
+                	//if (debuggr)
+                	//	debuggr.onTopLevelScript(null, 0, frame.script);
+					break;
+                }
+                case TYPE_TOPLEVEL_END:
+					break;
+            }
+        }
+
+		// XXXms - not sure if we need topLevelHook any more as we use BP at pc=0 for every top-level script
+        //jsd.topLevelHook = { onCall: topLevelHook };
+    },
+     
+    unhookTopLevel: function()
+    {
+		// XXXms - not sure if we need topLevelHook any more as we use BP at pc=0 for every top-level script
+        //jsd.topLevelHook = null;
+    },
+  
     hookInterrupts: function()
     {
         function interruptHook(frame, type, rv)
         {
+        	if ( isSystemURL(frame.script.fileName) )
+        		return RETURN_CONTINUE;
+
             // Sometimes the same line will have multiple interrupts, so check
             // a unique id for the line and don't break until it changes
             var frameLineId = hookFrameCount + frame.script.fileName + frame.line;
@@ -1511,6 +1635,7 @@ FirebugService.prototype =
             else
                 return RETURN_CONTINUE;
         }
+        
         jsd.interruptHook = { onExecute: interruptHook };
     },
         
@@ -1521,46 +1646,20 @@ FirebugService.prototype =
             onScriptDestroyed: hook(this.onScriptDestroyed)
         };
 
-        fbs.scriptInfoArrayByURL = {};  
-		
-		jsd.enumerateScripts({enumerateScript: function(script)
+        this.scriptInfoArrayByURL = {};  
+        jsd.enumerateScripts({enumerateScript: function(script)
         {
-            var url = script.fileName;  
-            fbs.registerTopLevelScript(script, url, "enumerated");  
+			var url = script.fileName;
+			if ( !isSystemURL(url) )
+				fbs.registerTopLevelScript(script, url, "enumerated");  
         }});
-        
     },
 
     unhookScripts: function()
     {
         jsd.scriptHook = null;
-        fbs.scriptInfoArrayByURL = null;
-    },
-	
-	syncTopLevelHook: function() 
-	{
-		if (fbs.breakOnTopLevel)
-		    fbs.hookTopLevel();
-		else
-			jsd.topLevelHook = null;
-	},
-	
-	dumpScriptInfo: function()
-	{
-		var reComponents = /file:.*\/components\/.*:enumerated/;
-		for (url in this.scriptInfoArrayByURL)
-		{
-			if (isSystemURL(url)) continue;
-			if (url.substr(0, 9) == "chrome://") continue;
-			if (url.match(reComponents)) continue;
-			
-			var scriptInfos = this.scriptInfoArrayByURL[url];
-			for (var i = 0; i < scriptInfos.length; i++)
-			{
-				ddd(i+"/"+scriptInfos.length+": "+this.formatScriptInfo(scriptInfos[i])+"\n");
-			}
-		}
-	}
+        this.scriptInfoArrayByURL = null;
+    }
 };
 
 // ************************************************************************************************
@@ -1642,14 +1741,22 @@ function denormalizeURL(url)
 
 function isSystemURL(url)
 {
-    if (url.substr(0, 17) == "chrome://firebug/")
-        return true;
-    else if (url.indexOf("firebug-service.js") != -1)
-        return true;
-    else if (url == "XStringBundle")
-        return true;
-    else
-        return false;
+	for( var i = 0; i < urlFilters.length; ++i )
+	{
+		var filter = urlFilters[i];
+		if ( url.substr(0,filter.length) == filter )
+			return true;
+	}
+	for( var i = 0; i < COMPONENTS_FILTERS.length; ++i )
+	{
+		if ( COMPONENTS_FILTERS[i].test(url) )
+		{
+			var match = COMPONENTS_FILTERS[i].exec(url);
+			urlFilters.push(match[1]);
+			return true;
+		}
+	}
+    return false;
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
@@ -1687,16 +1794,16 @@ function getFrameWindow(frame)
 {
     try
     {
-        var result_frameWindow = {};
-        frame.eval("window", "", 1, result_frameWindow);
+        var result = {};
+        frame.eval("window", "", 1, result);
 
-        var win = result_frameWindow.value.getWrappedValue();
+        var win = result.value.getWrappedValue();
         return getRootWindow(win);
     }
     catch (exc)
     {
         ERROR("firebug-service getFrameWindow fails: "+exc);  // FBS.DBG_WINDOWS
-		return null;
+        return null;
     }
 }
 
@@ -1718,21 +1825,46 @@ function countFrames(frame)
     return frameCount;
 }
 
-function findFirstExecutableLine(script)
+function testBreakpoint(frame, bp)
 {
-	var scriptInfo = fbs.scriptInfoByTag[script.tag];
-	var url = scriptInfo.tag;
-	var pcmap = scriptInfo.pcmap;
-	var line = script.pcToLine(0, pcmap);
-	return line;
+	if ( bp.condition && bp.condition != "" )
+	{
+	    var result = {};
+	    frame.scope.refresh();
+	    if (frame.eval(bp.condition, "", 1, result))
+	    {
+	    	if (bp.onTrue)
+	    	{
+	    		if (!result.value.booleanValue)
+	    			return false;
+	    	} else
+	    	{
+	    		var value = result.value.getWrappedValue();
+	    		if (typeof bp.lastValue == "undefined")
+	    		{
+	    			bp.lastValue = value;
+	    			return false;
+	    		} else
+	    		{
+	    			if (bp.lastValue == value)
+	    				return false;
+	    			bp.lastValue = value;
+	    		}
+	    	}
+	    }
+    }
+    ++bp.hit;
+    if ( bp.hitCount > 0 )
+    {
+    	if ( bp.hit < bp.hitCount )
+    		return false;
+    }
+    return true;
 }
 
-function evaluateCondition(frame, condition)
+function getBreakpointProperties(bp)
 {
-    var result_condition = {};
-    frame.scope.refresh();
-    var ok = frame.eval(condition, "", 1, result_condition);
-    return ok && !!result_condition.value.getWrappedValue();
+	return { disabled: bp.disabled & BP_NORMAL, condition: bp.condition, onTrue: bp.onTrue, hitCount: bp.hitCount };
 }
 
 function remove(list, item)
@@ -1740,6 +1872,33 @@ function remove(list, item)
     var index = list.indexOf(item);
     if (index != -1)
         list.splice(index, 1);
+}
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+
+function formatScriptInfo(scriptInfo) 
+{
+	return scriptInfo.script.tag+"@("+scriptInfo.baseLineNumber+"-"+(scriptInfo.baseLineNumber+scriptInfo.lineExtent)+")"+ scriptInfo.url+":"+scriptInfo.typename;
+}
+
+function shiftNone(lineNo) 
+{
+	return lineNo;
+}
+
+function shiftOne(lineNo)
+{
+	return lineNo + 1;	
+}
+	
+function unshiftOne(lineNo)
+{
+	return lineNo - 1;	
+}
+
+function countLines(script) {
+	var lines = script.functionSource.split(/\r\n|\r|\n/);
+	return lines.length;
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
@@ -1752,8 +1911,6 @@ var FirebugPrefsObserver =
             fbs.showStackTrace =  prefs.getBoolPref("extensions.firebug.showStackTrace");
         else if (data == "extensions.firebug.breakOnErrors")
             fbs.breakOnErrors =  prefs.getBoolPref("extensions.firebug.breakOnErrors");
-		else if (data == "extensions.firebug.breakOnTopLevel")
-			fbs.breakOnTopLevel = prefs.getBoolPref("extensions.firebug.breakOnTopLevel");
 		else if (data == "extensions.firebug.DBG_FBS_CREATION")
 			fbs.DBG_CREATION = prefs.getBoolPref("extensions.firebug.DBG_FBS_CREATION");
 		else if (data == "extensions.firebug.DBG_FBS_BP")
@@ -1770,7 +1927,6 @@ var FirebugPrefsObserver =
 			if (fbs.DBG_FBS_SCRIPTINFO)
 				fbs.dumpScriptInfo();
 		}
-		fbs.syncTopLevelHook();
     }
 };
 
@@ -1794,19 +1950,26 @@ function ERROR(text)
     consoleService.logStringMessage(text + "");
 }
 
-
 function ddd(text)
 {
-    	ERROR(text);
+    ERROR(text);
 }
 
-function dumpProperties(title, obj) {
-	var msg = title + "\n";
-	for (p in obj)
-	{
-		msg += "["+p+"]="+obj[p]+"\n";	
-	}
-	ddd(msg);
+function dumpit(text)
+{
+	const DirService = 	CC("@mozilla.org/file/directory_service;1")
+		.getService(CI("nsIDirectoryServiceProvider"));
+	var tmpDir = DirService.getFile(NS_OS_TEMP_DIR, {});
+	var file = tmpDir.QueryInterface(CI("nsILocalFile"));
+	file.appendRelativePath("firebug/dump.txt");
+   	if (!file.exists())
+   		file.create(CI("nsIFile").NORMAL_FILE_TYPE, 664);    
+    var stream = CC("@mozilla.org/network/file-output-stream;1")
+        .createInstance(CI("nsIFileOutputStream"));
+    stream.init(file, 0x04 | 0x08 | 0x10, 664, 0);
+    stream.write(text, text.length);
+    stream.flush();
+    stream.close();
 }
 
 function dFormat(script, url) 
@@ -1814,26 +1977,33 @@ function dFormat(script, url)
 	return script.tag+"@("+script.baseLineNumber+"-"+(script.baseLineNumber+script.lineExtent)+")"+ url;
 }
 
+
+
+
+
 function getDumpStream()
 {
-	var path = "c:\\download\\tmp\\firebug.txt";  // I welcome your corrections.
-    var f = CC("@mozilla.org/file/local;1").createInstance(CI("nsILocalFile"));
-    f.initWithPath(path);
-    if( f.exists() == true ) f.remove( false );
-    if ( f.exists() == false ) {
-    	f.create(Components.interfaces.nsIFile.NORMAL_FILE_TYPE, 420 );
-    	ERROR("creating file "+path);
-    } else {
-    	ERROR("file exists "+path);
-    }
-    var stream = CC("@mozilla.org/network/file-output-stream;1")
-        .createInstance(CI("nsIFileOutputStream"));
-    stream.init(f, 0x04 | 0x08 | 0x10, 424, 0);
-    return stream;
+	try
+	{
+		var path = "c:\\download\\tmp\\firebug.txt";  // I welcome your corrections.
+		var file = CC("@mozilla.org/file/local;1").createInstance(CI("nsILocalFile"));
+		file.initWithPath(path);
+		if ( !file.exists())
+			file.create(CI("nsIFile").NORMAL_FILE_TYPE, 664 );
+		var stream = CC("@mozilla.org/network/file-output-stream;1").createInstance(CI("nsIFileOutputStream"));
+		stream.init(file, 0x04 | 0x08 | 0x20, 664, 0); // write, create, truncate
+		return stream;		
+	}
+	catch (exc)
+	{
+		ERROR("createDumpStream failed "+exc);
+	}
 }
+
 var dumpStream;
 
-function dumpToFile(text) {
+function dumpToFile(text)
+{
 	if (!dumpStream) dumpStream = getDumpStream();
     dumpStream.write(text, text.length);
     //dumpStream.flush();  // If FF crashes you need to run with flush on every line
@@ -1841,11 +2011,12 @@ function dumpToFile(text) {
 
 function flushDebugStream() 
 {
-	dumpStream.flush();
+	if(dumpStream) dumpStream.flush();
 }
 
-function dumpToFileWithStack(text, frame) {
-	if (!dumpStream) dumpStream = getDumpStream();
+function dumpToFileWithStack(text, frame)
+{
+	if (!dumpStream) dumpStream = createDumpStream();
     dumpStream.write(text, text.length);
 	text = " stack: \n";
 	while(frame) {
@@ -1855,65 +2026,4 @@ function dumpToFileWithStack(text, frame) {
 	text += "-------------------------------------\n";
 	dumpStream.write(text, text.length); 
     dumpStream.flush();
-}
-function dumpit(text)
-{
-    var f = CC("@mozilla.org/file/local;1").createInstance(CI("nsILocalFile"));
-    f.initWithPath("/dump.txt");
-    
-    var stream = CC("@mozilla.org/network/file-output-stream;1")
-        .createInstance(CI("nsIFileOutputStream"));
-    stream.init(f, 0x04 | 0x08 | 0x10, 424, 0);
-    stream.write(text, text.length);
-    stream.flush();
-    stream.close();
-}
-
-function dumpStack() 
-{
-   	var str = "<top>";
-	var frame = Components.stack;
-    while (frame) 
-    {
-        str += "\n" + frame;  
-   	    frame = frame.caller;
-    }
-	str += "\n<bottom>";
-    return str;
-}
-var hD="0123456789ABCDEF";
-function d2h(d) {
-	var h = hD.substr(d&15,1);
-	while(d>15) {d>>=4;h=hD.substr(d&15,1)+h;}
-	return h;
-}
-
-function getStackDump()
-{
-    var lines = [];
-    for (var frame = Components.stack; frame; frame = frame.caller)
-        lines.push(frame.filename + " (" + frame.lineNumber + ")");
-    
-    return lines.join("\n");
-};
-
-
-function getPropertyName(object, value)
-{
-	for (p in object) 
-	{
-		if (value == object[p]) return p;	
-	}
-}
-function getExecutionStopNameFromType(type) 
-{
-	switch (type)
-	{
-		case jsdIExecutionHook.TYPE_INTERRUPTED: return "interrupted";
-		case jsdIExecutionHook.TYPE_BREAKPOINT: return "breakpoint";
-		case jsdIExecutionHook.TYPE_DEBUG_REQUESTED: return "debug requested";
-		case jsdIExecutionHook.TYPE_DEBUGGER_KEYWORD: return "debugger_keyword";
-		case jsdIExecutionHook.TYPE_THROW: return "interrupted";
-		default: return "unknown("+type+")";
-	}
 }

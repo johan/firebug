@@ -503,8 +503,8 @@ CSSStyleSheetPanel.prototype = extend(Firebug.SourceBoxPanel,
         this.onClick = bind(this.onClick, this);
 
         Firebug.Panel.initialize.apply(this, arguments);
-		this.initializeSourceBoxes();
-		
+        this.initializeSourceBoxes();
+        
     },
     
     destroy: function(state)
@@ -583,29 +583,29 @@ CSSStyleSheetPanel.prototype = extend(Firebug.SourceBoxPanel,
         }
         else if (object instanceof SourceLink)
         {
-			try 
-		    {
-				clearNode(this.panelNode);  // replace rendered stylesheets
-	            this.showSourceFile(object, function(sourceLink, sourceBox) 
-				{
-					if (sourceBox.sourceRow)
-						sourceBox.sourceRow.removeAttribute("exeLine");
-						
-					var lineNo = sourceLink.line;
-					if (lineNo)
-					{
-						sourceBox.sourceRow = sourceBox.childNodes[lineNo-1];
-						if (sourceBox.sourceRow)
-						{
-							sourceBox.sourceRow.setAttribute("exeLine", "true");
-							scrollIntoCenterView(sourceBox.sourceRow, sourceBox);  // I don't know why this does not work.
-						}
-					}
-				});
-			}
-			catch(exc) {
-				FBTrace.dumpProperties("css.upDateSelection FAILS", exc);
-			}             
+            try 
+            {
+                clearNode(this.panelNode);  // replace rendered stylesheets
+                this.showSourceFile(object, function(sourceLink, sourceBox) 
+                {
+                    if (sourceBox.sourceRow)
+                        sourceBox.sourceRow.removeAttribute("exeLine");
+                        
+                    var lineNo = sourceLink.line;
+                    if (lineNo)
+                    {
+                        sourceBox.sourceRow = sourceBox.childNodes[lineNo-1];
+                        if (sourceBox.sourceRow)
+                        {
+                            sourceBox.sourceRow.setAttribute("exeLine", "true");
+                            scrollIntoCenterView(sourceBox.sourceRow, sourceBox);  // I don't know why this does not work.
+                        }
+                    }
+                });
+            }
+            catch(exc) {
+                FBTrace.dumpProperties("css.upDateSelection FAILS", exc);
+            }             
         }
     },
     
@@ -1072,9 +1072,9 @@ CSSElementPanel.prototype = extend(CSSStyleSheetPanel.prototype,
 
     updateSelection: function(element)
     {
-		if ( !(element instanceof Element) ) // html supports SourceLink
-			return;  
-			
+        if ( !(element instanceof Element) ) // html supports SourceLink
+            return;  
+            
         if (sothinkInstalled)
         {
             FirebugReps.Warning.tag.replace({object: "SothinkWarning"}, this.panelNode);

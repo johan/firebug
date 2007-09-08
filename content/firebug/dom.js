@@ -22,12 +22,11 @@ const ignoreVars =
     "java": 1,
     "sun": 1,
     "Packages": 1,
-    // XXXjjb I added these globals for the same reason as the comment above
     "JavaArray": 1,
-    "JavaObject": 1,
     "JavaMember": 1,
+    "JavaObject": 1,
     "JavaClass": 1,
-    "JavaPackage": 1,
+    "JavaPackage": 1
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 

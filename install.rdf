@@ -5,7 +5,7 @@
 
   <Description about="urn:mozilla:install-manifest">
     <em:id>firebug@software.joehewitt.com</em:id>
-    <em:version>1.1eval.97.1.05</em:version>
+    <em:version>1.1.0b1</em:version>
     <em:type>2</em:type>
    
     <!-- Firefox -->
@@ -27,12 +27,12 @@
     </em:targetApplication>
 
     <em:name>Firebug</em:name>
-    <em:description>Web Development Evolved - Experimental Fireclipse Version </em:description>
+    <em:description>Web Development Evolved</em:description>
     <em:creator>Joe Hewitt</em:creator>
-	<em:contributor>Fireclipse version: John J. Barton</em:contributor>
+    <em:contributor>1.1 enhancements: John J. Barton</em:contributor>
+    <em:contributor>Aptana IDE integration: Max Stepanov</em:contributor>
     <em:iconURL>chrome://firebug/content/firebug.png</em:iconURL>
     <em:homepageURL>http://www.getfirebug.com/</em:homepageURL>
-	<em:updateURL>${update.path}/update.rdf</em:updateURL>
-    <!--<em:updateURL>http://www.getfirebug.com/releases/update.rdf</em:updateURL>-->
+    <em:updateURL>http://fireclipse.xucia.com/files/fireclipse/update.rdf</em:updateURL>
   </Description>      
 </RDF>

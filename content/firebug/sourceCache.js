@@ -43,23 +43,23 @@ top.SourceCache.prototype =
         var d = FBL.reDataURL.exec(url);
         if (d) 
         {
-        	var src = url.substring(FBL.reDataURL.lastIndex); 
-        	var data = decodeURIComponent(src);
-        	var lines = data.split(/\r\n|\r|\n/);
+            var src = url.substring(FBL.reDataURL.lastIndex); 
+            var data = decodeURIComponent(src);
+            var lines = data.split(/\r\n|\r|\n/);
             this.cache[url] = lines;
             
             return lines;
         }
-		
-		var j = FBL.reJavascript.exec(url);
-		if (j) 
-		{
-			var src = url.substring(FBL.reJavascript.lastIndex);
-			var lines = src.split(/\r\n|\r|\n/);
+        
+        var j = FBL.reJavascript.exec(url);
+        if (j) 
+        {
+            var src = url.substring(FBL.reJavascript.lastIndex);
+            var lines = src.split(/\r\n|\r|\n/);
             this.cache[url] = lines;
             
             return lines;
-		}
+        }
         
         var charset = this.context.window.document.characterSet;
         
@@ -73,7 +73,7 @@ top.SourceCache.prototype =
         }
         catch (exc)
         {
-        	ERROR("sourceCache.load fails newChannel for url="+url+ " cause:"+exc+"\n");
+            ERROR("sourceCache.load fails newChannel for url="+url+ " cause:"+exc+"\n");
             return;
         }
 
@@ -82,11 +82,11 @@ top.SourceCache.prototype =
             if (channel instanceof nsIUploadChannel)
             {
                 var postData = getPostStream(this.context);
-				if (postData)
-				{
-	                var uploadChannel = QI(channel, nsIUploadChannel);
-    	            uploadChannel.setUploadStream(postData, "", -1);
-				}
+                if (postData)
+                {
+                    var uploadChannel = QI(channel, nsIUploadChannel);
+                    uploadChannel.setUploadStream(postData, "", -1);
+                }
             }
             
             if (channel instanceof nsICachingChannel)
@@ -103,10 +103,10 @@ top.SourceCache.prototype =
         }
         catch (exc)
         {
-			
-			if (FBL.reChrome.test(url))  // chrome urls cannot be read with this code.
-				return;
-			return;
+            
+            if (FBL.reChrome.test(url))  // chrome urls cannot be read with this code.
+                return;
+            return;
         }
         
         try
@@ -218,14 +218,14 @@ function getPostStream(context)
         var descriptor = QI(webNav, CI("nsIWebPageDescriptor")).currentDescriptor;
         var entry = QI(descriptor, CI("nsISHEntry"));
         
-		if (entry.postData)
-		{
-			// Seek to the beginning, or it will probably start reading at the end
-	        var postStream = QI(entry.postData, CI("nsISeekableStream"));
-	        postStream.seek(0, 0);
+        if (entry.postData)
+        {
+            // Seek to the beginning, or it will probably start reading at the end
+            var postStream = QI(entry.postData, CI("nsISeekableStream"));
+            postStream.seek(0, 0);
         
-	        return postStream;
-		}
+            return postStream;
+        }
 
      }
      catch (exc)

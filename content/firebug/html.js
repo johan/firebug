@@ -183,7 +183,7 @@ Firebug.HTMLPanel.prototype = extend(Firebug.Panel,
         // is only bad for performance
         if (attrName == "curpos")
             return;
-		
+        
         this.markChange();
 
         var objectNodeBox = Firebug.scrollToMutations || Firebug.expandMutations
@@ -276,13 +276,12 @@ Firebug.HTMLPanel.prototype = extend(Firebug.Panel,
     
     mutateNode: function(target, parent, nextSibling, removal)
     { 
-		
         this.markChange();
 
         var parentNodeBox = Firebug.scrollToMutations || Firebug.expandMutations
             ? this.ioBox.createObjectBox(parent)
             : this.ioBox.findObjectBox(parent);
-			
+            
         if (!parentNodeBox)
             return;
 
@@ -389,23 +388,23 @@ Firebug.HTMLPanel.prototype = extend(Firebug.Panel,
             return null;
 
         var parentNode = node ? node.parentNode : null;
-		if (parentNode)
-			if (parentNode.nodeType == 9)
-			{
-            	return parentNode.defaultView.frameElement;
-			}
-        	else
-            	return parentNode;
-		else 
-			if (node && node.nodeType == 9) // document type 
-			{
-				var embeddingFrame = node.defaultView.frameElement;
-				if (embeddingFrame)
-					return embeddingFrame.parentNode;
-				else
-					return null;  // top level has no parent 
-			}
-				  
+        if (parentNode)
+            if (parentNode.nodeType == 9)
+            {
+                return parentNode.defaultView.frameElement;
+            }
+            else
+                return parentNode;
+        else 
+            if (node && node.nodeType == 9) // document type 
+            {
+                var embeddingFrame = node.defaultView.frameElement;
+                if (embeddingFrame)
+                    return embeddingFrame.parentNode;
+                else
+                    return null;  // top level has no parent 
+            }
+                  
     },
 
     getChildObject: function(node, index, previousSibling)
@@ -483,14 +482,14 @@ Firebug.HTMLPanel.prototype = extend(Firebug.Panel,
         
         this.context.delay(function()
         {
-			try 
-			{
-				 this.mutateNode(target, parent, nextSibling, removal);
-			}
-			catch (exc)
-			{
-				FBTrace.dumpProperties("html.onMutateNode FAILS:", exc);
-			}
+            try 
+            {
+                 this.mutateNode(target, parent, nextSibling, removal);
+            }
+            catch (exc)
+            {
+                FBTrace.dumpProperties("html.onMutateNode FAILS:", exc);
+            }
         }, this);
     },
 
@@ -619,18 +618,18 @@ Firebug.HTMLPanel.prototype = extend(Firebug.Panel,
     
     watchWindow: function(win)
     {
-		if (this.context.window && this.context.window != win) // then I guess we are an embedded window
-		{
-			var htmlPanel = this;
-			iterateWindows(this.context.window, function(subwin)
-			{
-				if (win == subwin)
-				{
-					htmlPanel.mutateDocumentEmbedded(win, false);
-				}	
-			});
-			
-		}
+        if (this.context.window && this.context.window != win) // then I guess we are an embedded window
+        {
+            var htmlPanel = this;
+            iterateWindows(this.context.window, function(subwin)
+            {
+                if (win == subwin)
+                {
+                    htmlPanel.mutateDocumentEmbedded(win, false);
+                }   
+            });
+            
+        }
         if (this.context.attachedMutation)
         {
             var doc = win.document;
@@ -643,39 +642,39 @@ Firebug.HTMLPanel.prototype = extend(Firebug.Panel,
     
     unwatchWindow: function(win)
     {
-		if (this.context.window && this.context.window != win) // then I guess we are an embedded window
-		{
-			var htmlPanel = this;
-			iterateWindows(this.context.window, function(subwin)
-			{
-				if (win == subwin)
-				{
-					htmlPanel.mutateDocumentEmbedded(win, true);
-				}	
-			});
-			
-		}
+        if (this.context.window && this.context.window != win) // then I guess we are an embedded window
+        {
+            var htmlPanel = this;
+            iterateWindows(this.context.window, function(subwin)
+            {
+                if (win == subwin)
+                {
+                    htmlPanel.mutateDocumentEmbedded(win, true);
+                }   
+            });
+            
+        }
         var doc = win.document;
         doc.removeEventListener("DOMAttrModified", this.onMutateAttr, false);
         doc.removeEventListener("DOMCharacterDataModified", this.onMutateText, false);
         doc.removeEventListener("DOMNodeInserted", this.onMutateNode, false);
         doc.removeEventListener("DOMNodeRemoved", this.onMutateNode, false);
     },
-	
-	mutateDocumentEmbedded: function(win, remove)
-	{
-		// document.documentElement    Returns the Element that is a direct child of document. For HTML documents, this normally the HTML element.
-		var target = win.document.documentElement;
-		var parent = win.frameElement;
-		var nextSibling = findNextSibling(target);
-		this.mutateNode(target, parent, nextSibling, remove); 
-	},
+    
+    mutateDocumentEmbedded: function(win, remove)
+    {
+        // document.documentElement    Returns the Element that is a direct child of document. For HTML documents, this normally the HTML element.
+        var target = win.document.documentElement;
+        var parent = win.frameElement;
+        var nextSibling = findNextSibling(target);
+        this.mutateNode(target, parent, nextSibling, remove); 
+    },
 
     supportsObject: function(object)
     {
         if (object instanceof Element || object instanceof Text || object instanceof CDATASection)
             return 1;
-		else if (object instanceof SourceLink && object.type == "css" && !reCSS.test(object.href))
+        else if (object instanceof SourceLink && object.type == "css" && !reCSS.test(object.href))
             return 2;
         else
             return 0;
@@ -698,38 +697,38 @@ Firebug.HTMLPanel.prototype = extend(Firebug.Panel,
     
     updateSelection: function(object)
     {
-		if (this.ioBox.sourceRow)
-        	this.ioBox.sourceRow.removeAttribute("exeLine");
+        if (this.ioBox.sourceRow)
+            this.ioBox.sourceRow.removeAttribute("exeLine");
 
-		if (object instanceof SourceLink) // && object.type == "css"
+        if (object instanceof SourceLink) // && object.type == "css"
          {
              var sourceLink = object;
              var stylesheet = getStyleSheetByHref(sourceLink.href, this.context);
              if (stylesheet)
              {
-             	var ownerNode = stylesheet.ownerNode;
+                var ownerNode = stylesheet.ownerNode;
                 if (ownerNode)
                 {
-                	var objectbox = this.ioBox.select(ownerNode, true, true, this.noScrollIntoView);
-					
-					// XXXjjb seems like this could be bad for errors at the end of long files
-					//
-					var sourceRow = FBL.getElementByClass(objectbox, "sourceRow");
-					for (var lineNo = 1; lineNo < sourceLink.line; lineNo++)
-					{
-						if (!sourceRow) break;
-						sourceRow = FBL.getNextByClass(sourceRow,  "sourceRow");
-					}
-					if (sourceRow) 
-					{
-        				this.ioBox.sourceRow = sourceRow;
-            			this.ioBox.sourceRow.setAttribute("exeLine", "true");
-						scrollIntoCenterView(sourceRow);
-						this.ioBox.selectObjectBox(sourceRow, false);  // sourceRow isn't an objectBox, but the function should work anyway...
-					}
- 				}
- 			}
- 		}
+                    var objectbox = this.ioBox.select(ownerNode, true, true, this.noScrollIntoView);
+                    
+                    // XXXjjb seems like this could be bad for errors at the end of long files
+                    //
+                    var sourceRow = FBL.getElementByClass(objectbox, "sourceRow");
+                    for (var lineNo = 1; lineNo < sourceLink.line; lineNo++)
+                    {
+                        if (!sourceRow) break;
+                        sourceRow = FBL.getNextByClass(sourceRow,  "sourceRow");
+                    }
+                    if (sourceRow) 
+                    {
+                        this.ioBox.sourceRow = sourceRow;
+                        this.ioBox.sourceRow.setAttribute("exeLine", "true");
+                        scrollIntoCenterView(sourceRow);
+                        this.ioBox.selectObjectBox(sourceRow, false);  // sourceRow isn't an objectBox, but the function should work anyway...
+                    }
+                }
+            }
+        }
         else if (Firebug.Inspector.inspecting)
             this.ioBox.highlight(object);
         else
@@ -1241,7 +1240,9 @@ function getNodeTag(node, expandAll)
 {
     if (node instanceof Element)
     {
-        if (node.firebugIgnore)
+        if (node instanceof HTMLAppletElement)
+            return Firebug.HTMLPanel.EmptyElement.tag;
+        else if (node.firebugIgnore)
             return null;
         else if (isContainerElement(node))
             return expandAll ? Firebug.HTMLPanel.CompleteElement.tag : Firebug.HTMLPanel.Element.tag;
@@ -1354,6 +1355,8 @@ function isEmptyElement(element)
 
 function isWhitespaceText(node)
 {
+    if (node instanceof HTMLAppletElement)
+        return false;
     return node.nodeType == 3 && isWhitespace(node.nodeValue);
 }
 

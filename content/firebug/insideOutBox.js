@@ -192,7 +192,7 @@ InsideOutBox.prototype =
 
         // Get or create all of the boxes for the target and its ancestors
         var objectBox = this.createObjectBoxes(object, this.rootObject);
-		
+        
         if (!objectBox)
             return null;
         else if (object == this.rootObject)

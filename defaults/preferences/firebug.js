@@ -64,3 +64,6 @@ pref("extensions.firebug.netFilterCategory", "all");
 pref("extensions.firebug.disableNetMonitor", false);
 pref("extensions.firebug.collectHttpHeaders", true);
 
+// External Editors
+pref("extensions.firebug.externalEditors", "");
+

@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <r:RDF xmlns:r="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
        xmlns="http://www.mozilla.org/2004/em-rdf#">
-<!-- Firebug-Fireclipse Experimental Extension -->
+<!-- Firebug -->
 <r:Description about="urn:mozilla:extension:firebug@software.joehewitt.com">
   <updates>
     <r:Seq>
@@ -12,7 +12,7 @@
             <r:Description>
               <id>{ec8030f7-c20a-464f-9b0e-13a3a9e97384}</id>
               <minVersion>1.5</minVersion>
-              <maxVersion>2.9</maxVersion>
+              <maxVersion>3.9</maxVersion>
               <updateLink>@UPDATEPATH@/firebug-@VERSION@.xpi</updateLink>
             </r:Description>
           </targetApplication>

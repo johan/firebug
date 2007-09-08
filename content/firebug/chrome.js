@@ -26,8 +26,8 @@ const negativeZoomFactors = [1, 0.95, 0.8, 0.7, 0.5, 0.2, 0.1];
 // ************************************************************************************************
 // Globals
 
-var panelBox, panelSplitter, sidePanelDeck, panelBar1, panelBar2, locationList, panelStatus,
-    panelStatusSeparator;
+var panelBox, panelSplitter, sidePanelDeck, panelBar1, panelBar2, locationList, locationSeparator,
+    panelStatus, panelStatusSeparator;
 
 var waitingPanelBarCount = 2;
 
@@ -51,35 +51,35 @@ top.FirebugChrome =
 
     panelBarReady: function(panelBar)
     {
-		try 
-		{
-        	// Wait until all panelBar bindings are ready before initializing
-        	if (--waitingPanelBarCount == 0)
-            	this.initialize();
-		}
-		catch (exc)
-		{
-			FBTrace.dumpProperties("chrome.panelBarReady FAILS", exc);
-		}
-		
+        try 
+        {
+            // Wait until all panelBar bindings are ready before initializing
+            if (--waitingPanelBarCount == 0)
+                this.initialize();
+        }
+        catch (exc)
+        {
+            FBTrace.dumpProperties("chrome.panelBarReady FAILS", exc);
+        }
+        
     },
     
     initialize: function()
     {
-	    var detachArgs = window.arguments[0];
-		
-		if (!detachArgs) 
-			detachArgs = {};
-			
-		if (detachArgs.FBL)
-			top.FBL = detachArgs.FBL;
-		else 
-			FBL.initialize();           
+        var detachArgs = window.arguments[0];
+        
+        if (!detachArgs) 
+            detachArgs = {};
+            
+        if (detachArgs.FBL)
+            top.FBL = detachArgs.FBL;
+        else 
+            FBL.initialize();           
 
-		if (detachArgs.Firebug)
+        if (detachArgs.Firebug)
             Firebug = detachArgs.Firebug;
-		else
-			Firebug.initialize();
+        else
+            Firebug.initialize();
         
         panelBox = $("fbPanelBox");
         panelSplitter = $("fbPanelSplitter");
@@ -103,8 +103,8 @@ top.FirebugChrome =
      */
     initializeUI: function()
     { 
-	try { 
-		var detachArgs = window.arguments[0];
+    try { 
+        var detachArgs = window.arguments[0];
         if (detachArgs)
         {
             FirebugContext = detachArgs.context ? detachArgs.context : FirebugContext;
@@ -150,10 +150,10 @@ top.FirebugChrome =
             this.attachBrowser(externalBrowser, FirebugContext);
         else
             Firebug.initializeUI(detachArgs);       
-		} catch (exc) {
-			FBTrace.dumpProperties("chrome.initializeUI fails", exc);
-		}
-		 
+        } catch (exc) {
+            FBTrace.dumpProperties("chrome.initializeUI fails", exc);
+        }
+         
     },
     
     shutdown: function()
@@ -454,8 +454,8 @@ top.FirebugChrome =
                 var isSystemPage = this.getCurrentBrowser().isSystemPage;
 
                 var caption;
-				if (isSystemPage && !Firebug.allowSystemPages)
-					caption = FBL.$STR("IsSystemPage");
+                if (isSystemPage && !Firebug.allowSystemPages)
+                    caption = FBL.$STR("IsSystemPage");
                 else if (!host || isSystemPage || Firebug.disabledAlways)
                     caption = FBL.$STR("DisabledHeader");
                 else
@@ -795,9 +795,9 @@ top.FirebugChrome =
         var target = document.popupNode;
         var panel = target ? Firebug.getElementPanel(target) : null;
         
-		if (!panel)
-			return false;
-		
+        if (!panel)
+            return false;
+        
         FBL.eraseNode(popup);
 
         if (!this.contextMenuObject && !$("cmd_copy").getAttribute("disabled"))
@@ -872,6 +872,32 @@ top.FirebugChrome =
             return false;
     },
 
+    onEditorsShowing: function(popup)
+    {
+        var editors = Firebug.registeredEditors;
+        if ( editors.length > 0 )
+        {
+            var lastChild = popup.lastChild;
+            FBL.eraseNode(popup);
+            var disabled = (!FirebugContext);
+            for( var i = 0; i < editors.length; ++i )
+            {
+                if (editors[i] == "-")
+                {
+                    FBL.createMenuItem(popup, "-");
+                    continue;
+                }
+                var item = {label: editors[i].label, image: editors[i].image,
+                                nol10n: true, disabled: disabled };
+                var menuitem = FBL.createMenuItem(popup, item);
+                menuitem.setAttribute("command", "cmd_openInEditor");
+                menuitem.value = editors[i].id;
+            }
+            FBL.createMenuItem(popup, "-");
+            popup.appendChild(lastChild);
+        }
+    },
+    
     getInspectMenuItems: function(object)
     {
         var items = [];
@@ -1234,4 +1260,5 @@ function dddx()
 {
     Firebug.Console.logFormatted(arguments);
 }
+
 

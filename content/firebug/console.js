@@ -4,15 +4,21 @@ FBL.ns(function() { with (FBL) {
 
 // ************************************************************************************************
 
+var listeners = [];
+
+// ************************************************************************************************
+
 Firebug.Console = extend(Firebug.Module,
 {
     log: function(object, context, className, rep, noThrottle, sourceLink)
     {
+        dispatch(listeners,"log",[context, object, className, sourceLink]);
         return this.logRow(appendObject, object, context, className, rep, sourceLink, noThrottle);
     },
 
     logFormatted: function(objects, context, className, noThrottle, sourceLink)
     {
+        dispatch(listeners,"logFormatted",[context, objects, className, sourceLink]);
         return this.logRow(appendFormatted, objects, context, className, null, sourceLink, noThrottle);
     },
     
@@ -30,6 +36,7 @@ Firebug.Console = extend(Firebug.Module,
     {
         if (!context)
             context = FirebugContext;
+
 
         if (noThrottle)
         {
@@ -63,12 +70,22 @@ Firebug.Console = extend(Firebug.Module,
         if (panel)
             panel.clear();
     },
-	
-	// Override to direct output to your panel 
-	getPanel: function(context, noCreate)
-	{
-		return context.getPanel("console", noCreate);
-	},
+    
+    // Override to direct output to your panel 
+    getPanel: function(context, noCreate)
+    {
+        return context.getPanel("console", noCreate);
+    },
+
+    addListener: function(listener)
+    {
+        listeners.push(listener);
+    },
+    
+    removeListener: function(listener)
+    {
+        remove(listeners, listener);
+    },
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
     // extends Module
@@ -80,7 +97,7 @@ Firebug.Console = extend(Firebug.Module,
 
     showPanel: function(browser, panel)
     {
-		// XXXjjb moved to panel show/hide
+        // XXXjjb moved to panel show/hide
         //var isConsole = panel && panel.name == "console";
         //var consoleButtons = browser.chrome.$("fbConsoleButtons");
         //collapse(consoleButtons, !isConsole);
@@ -95,6 +112,17 @@ Firebug.Console = extend(Firebug.Module,
         collapse(htmlButtons, !isHTML);
     }
 });
+
+Firebug.ConsoleListener = 
+{
+    log: function(context, object, className, sourceLink)
+    {
+    },
+    
+    logFormatted: function(context, objects, className, sourceLink)
+    {
+    }
+};
 
 // ************************************************************************************************
 
@@ -146,7 +174,8 @@ Firebug.ConsolePanel.prototype = extend(Firebug.Panel,
     
     appendObject: function(object, row, rep)
     {
-        var rep = rep ? rep : Firebug.getRep(object);
+        if (!rep)
+            rep = Firebug.getRep(object);
         return rep.tag.append({object: object}, row);
     },
 
@@ -242,7 +271,7 @@ Firebug.ConsolePanel.prototype = extend(Firebug.Panel,
     
     show: function(state)
     {
-		var consoleButtons = this.context.browser.chrome.$("fbConsoleButtons");
+        var consoleButtons = this.context.browser.chrome.$("fbConsoleButtons");
         collapse(consoleButtons, false);
         if (this.wasScrolledToBottom)
             scrollToBottom(this.panelNode);
@@ -250,7 +279,7 @@ Firebug.ConsolePanel.prototype = extend(Firebug.Panel,
     
     hide: function()
     {
-		var consoleButtons = this.context.browser.chrome.$("fbConsoleButtons");
+        var consoleButtons = this.context.browser.chrome.$("fbConsoleButtons");
         collapse(consoleButtons, true);
         this.wasScrolledToBottom = isScrolledToBottom(this.panelNode);
     },
@@ -263,11 +292,11 @@ Firebug.ConsolePanel.prototype = extend(Firebug.Panel,
             optionMenu("ShowCSSErrors", "showCSSErrors"),
             optionMenu("ShowXMLErrors", "showXMLErrors"),
             optionMenu("ShowXMLHttpRequests", "showXMLHttpRequests"),
-			optionMenu("ShowWebErrors", "showWebErrors"),
-			optionMenu("ShowChromeErrors", "showChromeErrors"),
-			optionMenu("ShowChromeMessages", "showChromeMessages"),
-			optionMenu("ShowExternalErrors", "showExternalErrors"),
-			optionMenu("ShowStackTrace", "showStackTrace"),
+            optionMenu("ShowWebErrors", "showWebErrors"),
+            optionMenu("ShowChromeErrors", "showChromeErrors"),
+            optionMenu("ShowChromeMessages", "showChromeMessages"),
+            optionMenu("ShowExternalErrors", "showExternalErrors"),
+            optionMenu("ShowStackTrace", "showStackTrace"),
             "-",
             optionMenu("LargeCommandLine", "largeCommandLine")
         ];

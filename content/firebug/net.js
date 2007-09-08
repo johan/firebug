@@ -38,12 +38,18 @@ const LOAD_FROM_CACHE = nsIRequest.LOAD_FROM_CACHE;
 const LOAD_DOCUMENT_URI = nsIChannel.LOAD_DOCUMENT_URI;
 
 const ACCESS_READ = nsICache.ACCESS_READ;
+const STORE_ANYWHERE = nsICache.STORE_ANYWHERE;
+
+const NS_ERROR_CACHE_KEY_NOT_FOUND = 0x804B003D;
+const NS_ERROR_CACHE_WAIT_FOR_VALIDATION = 0x804B0040;
+
 
 const observerService = CCSV("@mozilla.org/observer-service;1", "nsIObserverService");
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
 
 const maxPendingCheck = 200;
+const maxQueueRequests = 50;
 
 const mimeExtensionMap =
 {
@@ -120,6 +126,8 @@ const reIgnore = /about:|javascript:|resource:|chrome:|jar:/;
 const layoutInterval = 300;
 const phaseInterval = 1000;
 const indentWidth = 18;
+
+var cacheSession = null;
 
 // ************************************************************************************************
 
@@ -404,7 +412,7 @@ NetPanel.prototype = domplate(Firebug.Panel,
     formatTime: function(elapsed)
     {
         if (elapsed == -1)
-            return "&nbsp;";
+            return "_"; // should be &nbsp; but this will be escaped so we need something that is no whitespace
         else if (elapsed < 1000)
             return elapsed + "ms";
         else if (elapsed < 60000)
@@ -967,21 +975,23 @@ function NetProgress(context)
         {
             var file = handler.apply(this, args);
             if (file)
-			{
-                panel.updateFile(file);
-				return file;				
-			}
+            {
+                 panel.updateFile(file);
+                return file;                
+            }
         }
         else
+        {
+            if (queue.length/2 >= maxQueueRequests)
+                queue.splice(0, 2);
             queue.push(handler, args);
-			
+        }
     };
     
     this.flush = function()
     {
         for (var i = 0; i < queue.length; i += 2)
         {
-			
             var file = queue[i].apply(this, queue[i+1]);
             if (file)
                 panel.updateFile(file);
@@ -1026,7 +1036,7 @@ NetProgress.prototype =
     
     respondedTopWindow: function(request, time, webProgress)
     {
-		var win = webProgress ? safeGetWindow(webProgress) : null; 
+        var win = webProgress ? safeGetWindow(webProgress) : null; 
         this.requestedFile(request, time, win);
         return this.respondedFile(request, time);
     },
@@ -1043,14 +1053,15 @@ NetProgress.prototype =
             file.startTime = file.endTime = time;
             //file.fromCache = true;
             //file.loaded = true;
-            file.category = category;
+            if (category && !file.category)
+                file.category = category;
             file.isBackground = request.loadFlags & LOAD_BACKGROUND;
             
             this.awaitFile(request, file);
             this.extendPhase(file);
-			
-			return file;
-        } 
+ 
+            return file;
+        }
     },
     
     respondedFile: function(request, time)
@@ -1190,6 +1201,7 @@ NetProgress.prototype =
             var index = this.windows.indexOf(win);
             if (index == -1)
             {
+                var doc = new NetDocument(win);
                 var doc = new NetDocument(win);  // XXXjjb arg ignored
                 if (win.parent != win)
                     doc.parent = this.getRequestDocument(win.parent);
@@ -1318,8 +1330,9 @@ NetProgress.prototype =
         if (topic == "http-on-modify-request")
         {
             var webProgress = getRequestWebProgress(request, this);
-			var win = webProgress ? safeGetWindow(webProgress) : null;
-            this.post(requestedFile, [request, now(), win]);
+            var category = getRequestCategory(request);
+            var win = webProgress ? safeGetWindow(webProgress) : null;
+            this.post(requestedFile, [request, now(), win, category]);
         }
         else
         {
@@ -1339,7 +1352,10 @@ NetProgress.prototype =
                 this.post(respondedTopWindow, [request, now(), progress]);
         }
         else if (flag & STATE_STOP && flag & STATE_IS_REQUEST)
-            this.post(stopFile, [request, now()]);
+        {
+            if (this.getRequestFile(request))
+                this.post(stopFile, [request, now()]);
+        }
     },
     
     onProgressChange : function(progress, request, current, max, total, maxTotal)
@@ -1390,7 +1406,6 @@ function NetFile(href, document)
 {
     this.href = href;
     this.document = document
-	
 }
 
 NetFile.prototype = 
@@ -1440,26 +1455,33 @@ function unmonitorContext(context)
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
 
+function initCacheSession()
+{
+    if (!cacheSession)
+    {
+        var cacheService = CacheService.getService(nsICacheService);
+        cacheSession = cacheService.createSession("HTTP", STORE_ANYWHERE, true);
+        cacheSession.doomEntriesIfExpired = false;
+    }
+}
+
 function waitForCacheCompletion(request, file, netProgress)
 {
     try
     {
-        var cacheService = CacheService.getService(nsICacheService);
-
-        var session = cacheService.createSession("HTTP", 0, true);
-        session.doomEntriesIfExpired = false;
-
-        session.asyncOpenCacheEntry(file.href, ACCESS_READ, {
-            onCacheEntryAvailable: function(descriptor, accessGranted, status)
-            {
-                if (descriptor)
-                    netProgress.post(cacheEntryReady, [request, file, descriptor.dataSize]);
-            }
-        });
+        initCacheSession();
+        var descriptor = cacheSession.openCacheEntry(file.href, ACCESS_READ, false);
+        if (descriptor)
+            netProgress.post(cacheEntryReady, [request, file, descriptor.dataSize]);
     }
     catch (exc)
     {
-        netProgress.post(cacheEntryReady, [request, file, -1]);
+        if (exc.result != NS_ERROR_CACHE_WAIT_FOR_VALIDATION
+            && exc.result != NS_ERROR_CACHE_KEY_NOT_FOUND)
+        {
+            ERROR(exc);
+            netProgress.post(cacheEntryReady, [request, file, -1]);
+        }
     }        
 }
 
@@ -1471,12 +1493,8 @@ function getCacheEntry(file, netProgress)
     {
         try
         {
-            var cacheService = CacheService.getService(nsICacheService);
-
-            var session = cacheService.createSession("HTTP", 0, true);
-            session.doomEntriesIfExpired = false;
-
-            session.asyncOpenCacheEntry(file.href, ACCESS_READ, {
+            initCacheSession();
+            cacheSession.asyncOpenCacheEntry(file.href, ACCESS_READ, {
                 onCacheEntryAvailable: function(descriptor, accessGranted, status)
                 {
                     if (descriptor)
@@ -1505,7 +1523,7 @@ function getCacheEntry(file, netProgress)
                           { name: "Device",
                             value: descriptor.deviceID
                           }
-                        ]; 						
+                        ];                      
                         netProgress.update(file);
                     }
                 }
@@ -1513,6 +1531,7 @@ function getCacheEntry(file, netProgress)
         }
         catch (exc)
         {
+            ERROR(exc);
         }        
     });
 }
@@ -1539,23 +1558,23 @@ function getHttpHeaders(request, file)
         // Disable temporarily
         if (!file.responseHeaders && Firebug.collectHttpHeaders)
         {
-            var request = [], response = [];
+            var requestHeaders = [], responseHeaders = [];
 
             http.visitRequestHeaders({
                 visitHeader: function(name, value)
                 {
-                    request.push({name: name, value: value});
+                    requestHeaders.push({name: name, value: value});
                 }
             });
             http.visitResponseHeaders({
                 visitHeader: function(name, value)
                 {
-                    response.push({name: name, value: value});
+                    responseHeaders.push({name: name, value: value});
                 }
             });
 
-            file.requestHeaders = request;
-            file.responseHeaders = response;
+            file.requestHeaders = requestHeaders;
+            file.responseHeaders = responseHeaders;
         }
     }
     catch (exc)
@@ -1581,17 +1600,30 @@ function getRequestWebProgress(request, netProgress)
                     }
                 });
             }
-			// XXXjjb Joe review: code above sets bypass, so this stmt should be in if (gives exceptions otherwise)
-	        if (!bypass)
-    	        return request.notificationCallbacks.getInterface(nsIWebProgress);
-		}
+            // XXXjjb Joe review: code above sets bypass, so this stmt should be in if (gives exceptions otherwise)
+            if (!bypass)
+                return request.notificationCallbacks.getInterface(nsIWebProgress);
+        }
     }
     catch (exc) {}
 
     try
     {
-		if (request.loadGroup && request.loadGroup.groupObserver)
-        	return QI(request.loadGroup.groupObserver, nsIWebProgress);
+        if (request.loadGroup && request.loadGroup.groupObserver)
+            return QI(request.loadGroup.groupObserver, nsIWebProgress);
+    }
+    catch (exc) {}
+}
+
+function getRequestCategory(request)
+{
+    try
+    {
+        if (request.notificationCallbacks)
+        {
+            if (request.notificationCallbacks instanceof XMLHttpRequest)
+                return "xhr";
+        }
     }
     catch (exc) {}
 }
@@ -1772,7 +1804,7 @@ Firebug.NetMonitor.NetInfoBody = domplate(Firebug.Rep,
     {
         return !file.cacheEntry || file.category=="image";
     }, 
-	
+    
     onClickTab: function(event)
     {
         this.selectTab(event.currentTarget);
@@ -1812,7 +1844,7 @@ Firebug.NetMonitor.NetInfoBody = domplate(Firebug.Rep,
     },
     
     updateInfo: function(netInfoBox, file, context)
-    { 
+    {
         var tab = netInfoBox.selectedTab;
         if (hasClass(tab, "netInfoParamsTab"))
         {
@@ -1846,7 +1878,7 @@ Firebug.NetMonitor.NetInfoBody = domplate(Firebug.Rep,
                 netInfoBox.postPresented  = true;
 
                 var text = getPostText(file, context);
-                if (text)
+                if (text != undefined)
                 {
                     if (isURLEncodedFile(file, text))
                     {
@@ -1881,11 +1913,13 @@ Firebug.NetMonitor.NetInfoBody = domplate(Firebug.Rep,
                     ? file.responseText
                     : context.sourceCache.loadText(file.href);
                 
-                if (text != undefined)
+                if (text)
                     insertWrappedText(text, responseTextBox);
+                else
+                    insertWrappedText("", responseTextBox);
             }
         }
-		
+        
         if (hasClass(tab, "netInfoCacheTab") && file.loaded && !netInfoBox.cachePresented)
         {
             netInfoBox.cachePresented = true;

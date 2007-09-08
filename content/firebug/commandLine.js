@@ -78,21 +78,21 @@ Firebug.CommandLine = extend(Firebug.Module,
             try
             {
                 FBL.evalInTo(win, scriptToEval);
-			}
-			catch (exc)
-			{
             }
-			try 
-			{
-				 iterateWindows(win, function(win) { delete win.__scope__; });
-			}
+            catch (exc)
+            {
+            }
+            try 
+            {
+                 iterateWindows(win, function(win) { delete win.__scope__; });
+            }
             catch (exc)
             {
            }   
-			if (threw) 
-			{
-				throw result;
-			}
+            if (threw) 
+            {
+                throw result;
+            }
                     
         }
 

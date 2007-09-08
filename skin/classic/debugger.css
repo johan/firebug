@@ -78,7 +78,6 @@
     color: #000000;
 }
 
-
 .sourceRow[breakpoint="true"] > .sourceLine {
     background-image: url(chrome://firebug/skin/breakpoint.png);
 }
@@ -280,11 +279,11 @@
 }
  
 .panelNode-callstack  .objectLink-sourceLink {
-	display: none;
+    display: none;
 }
 
 .panelNode-callstack {
-	margin-left: 4px;
-	overflow: auto;
+    margin-left: 4px;
+    overflow: auto;
 }
 

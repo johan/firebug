@@ -115,20 +115,15 @@ top.TabWatcher =
             return;
         }
 
-        if (Firebug.disabledAlways)
+        var context = this.getContextByWindow(win);
+        if (!context)
         {
-            // Check if the whitelist makes an exception
-            if (!this.owner.isURIAllowed(uri))
+            if (!this.owner.enableContext(win,uri))
+            { 
                 return this.watchContext(win, null);
-        }
-        else
-        {
-            // Check if the blacklist says no
-            if (this.owner.isURIDenied(uri))
-                return this.watchContext(win, null);
+            }
         }
         
-        var context = this.getContextByWindow(win);
         if (!context)
         {
             var browser = this.getBrowserByWindow(win);            
@@ -144,19 +139,19 @@ top.TabWatcher =
             
             context = this.owner.createTabContext(win, browser, browser.chrome, persistedState);
             contexts.push(context);
-			
-           	this.dispatch("initContext", [context]);
-            
-			win.addEventListener("pagehide", onUnloadTopWindow, true);
-           	win.addEventListener("pageshow", onLoadWindowContent, true);
-           	win.addEventListener("DOMContentLoaded", onLoadWindowContent, true);
+
+            this.dispatch("initContext", [context]);
+
+            win.addEventListener("pagehide", onUnloadTopWindow, true);
+            win.addEventListener("pageshow", onLoadWindowContent, true);
+            win.addEventListener("DOMContentLoaded", onLoadWindowContent, true);
         }
-		// XXXjjb at this point we either have context or we just pushed null into contexts and sent it to init...
-        
-		// This is one of two places that loaded is set. The other is in watchLoadedTopWindow
+        // XXXjjb at this point we either have context or we just pushed null into contexts and sent it to init...         
+
+        // This is one of two places that loaded is set. The other is in watchLoadedTopWindow
         if (context)
             context.loaded = !context.browser.webProgress.isLoadingDocument;
-			
+
         this.watchContext(win, context);
     },
 
@@ -174,7 +169,7 @@ top.TabWatcher =
             this.watchContext(win, null, isSystem);
             return;
         }
-		
+
         if (context && !context.loaded)
         {
             context.loaded = true;
@@ -194,11 +189,10 @@ top.TabWatcher =
         // are called several times, so we have to avoid dispatching watchWindow
         // more than once
         var href = win.location.href;
-		
         if (context && context.windows.indexOf(win) == -1 && href != aboutBlank)
         {
             context.windows.push(win);
-			
+
             var eventType = (win.parent == win) ? "pagehide" : "unload";
             win.addEventListener(eventType, onUnloadWindow, false);
             this.dispatch("watchWindow", [context, win]);
@@ -222,11 +216,11 @@ top.TabWatcher =
         var context = this.getContextByWindow(win);
 
         var index = context ? context.windows.indexOf(win) : -1;
-
-        if (index != -1) {
+        if (index != -1)
+        {
             context.windows.splice(index, 1);
-			this.dispatch("unwatchWindow", [context, win]);  // XXXjjb Joe check
-		}
+            this.dispatch("unwatchWindow", [context, win]);  // XXXjjb Joe check
+        }
     },
     
     /**
@@ -290,10 +284,8 @@ top.TabWatcher =
         context.destroy(persistedState);    
         
         remove(contexts, context);
-		for (var p in context)
-		{
-			delete context[p];
-		}
+        for (var p in context)
+            delete context[p];
     },
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
@@ -303,10 +295,10 @@ top.TabWatcher =
         while (win && win.parent != win)
             win = win.parent;
         
-		if (!win) // eg search bar, and sometimes win.parent is null??
-			return;
-		
-		for (var i = 0; i < contexts.length; ++i)
+        if (!win) // eg search bar, and sometimes win.parent is null??
+            return;
+        
+        for (var i = 0; i < contexts.length; ++i)
         {
             var context = contexts[i];
             if (context.window == win)
@@ -329,7 +321,7 @@ top.TabWatcher =
                 return browser;
             }
         }
-		
+
         return null;
     },
 
@@ -351,7 +343,7 @@ top.TabWatcher =
         remove(listeners, listener);
     },
 
-    dispatch: function(name, args)   
+    dispatch: function(name, args)
     {
         for (var i = 0; i < listeners.length; ++i)
         {
@@ -364,6 +356,7 @@ top.TabWatcher =
                 }
                 catch (exc)
                 {
+                    ERROR(exc);
                 }
             }
         }
@@ -403,9 +396,9 @@ var TabProgressListener = extend(BaseProgressListener,
     {
         // Only watch windows that are their own parent - e.g. not frames
         if (progress.DOMWindow.parent == progress.DOMWindow)
-		{
-			TabWatcher.watchTopWindow(progress.DOMWindow, location);
-		}
+        {
+            TabWatcher.watchTopWindow(progress.DOMWindow, location);
+        }
     },
 
     onStateChange: function(progress, request, flag, status)
@@ -425,25 +418,24 @@ var FrameProgressListener = extend(BaseProgressListener,
 {
     onStateChange: function(progress, request, flag, status)
     {
-								
         if (flag & STATE_IS_REQUEST && flag & STATE_START)
         {
-        	// We need to get the hook in as soon as the new DOMWindow is created, but before
-        	// it starts executing any scripts in the page.  After lengthy analysis, it seems
-        	// that the start of these "dummy" requests is the only state that works.
-				
-			var safeURI = safeGetName(request);
+            // We need to get the hook in as soon as the new DOMWindow is created, but before
+            // it starts executing any scripts in the page.  After lengthy analysis, it seems
+            // that the start of these "dummy" requests is the only state that works.
+                
+            var safeURI = safeGetName(request);
             if (safeURI && ((safeURI == dummyURI) || safeURI == "about:document-onload-blocker") )
             {
-				var win = progress.DOMWindow;
+                var win = progress.DOMWindow;
                 // Another weird edge case here - when opening a new tab with about:blank,
                 // "unload" is dispatched to the document, but onLocationChange is not called
                 // again, so we have to call watchTopWindow here
-               
+                //if (win.parent == win && win.location.href == "about:blank")
+                //    TabWatcher.watchTopWindow(win, null);
+				// XXXms check this
                 if (win.parent == win && (win.location.href == "about:blank" ))//  || safeURI == "about:document-onload-blocker"))
-                    TabWatcher.watchTopWindow(win, null);
-				
-                TabWatcher.watchWindow(win);
+                    TabWatcher.watchWindow(win);
             }
 			return; // XXXjjb Joe, seems like this should not fall thru but maybe its ok.
         }
@@ -470,8 +462,7 @@ var FrameProgressListener = extend(BaseProgressListener,
 		//			onLoadWindowContent(fakeEvent);
 		//		}
 		//			
-		//	}
-            	
+		//	}            	
 		//}
     }
 });
@@ -507,12 +498,12 @@ function isSystemPage(win)
 }
 
 function onUnloadTopWindow(event)
-{ 
+{
     TabWatcher.unwatchTopWindow(event.currentTarget);
 }
 
 function onLoadWindowContent(event)
-{ 
+{
     var win = event.currentTarget;
     try
     {
@@ -523,7 +514,7 @@ function onLoadWindowContent(event)
     try
     {
         win.removeEventListener("DOMContentLoaded", onLoadWindowContent, true);
-   }
+    }
     catch (exc) {}
     
 	// Signal that we got the onLoadWindowContent event. This prevents the FrameProgressListener from sending it.
@@ -576,8 +567,6 @@ function safeGetURI(browser)
     }
 }
 
-
-
 function getStateDescription(flag) {
 	var state = "";
 	if (flag & nsIWebProgressListener.STATE_START) state += "STATE_START ";
@@ -600,6 +589,7 @@ function getStateDescription(flag) {
 	
 	return state;
 }
+
 // ************************************************************************************************
     
 }});

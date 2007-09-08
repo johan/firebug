@@ -10,9 +10,13 @@ const nsIPrefBranch2 = CI("nsIPrefBranch2");
 const nsIPermissionManager = CI("nsIPermissionManager");
 const nsIFireBugClient = CI("nsIFireBugClient");
 const nsISupports = CI("nsISupports");
+const nsIFile = CI("nsIFile");
+const nsILocalFile = CI("nsILocalFile");
+const nsISafeOutputStream = CI("nsISafeOutputStream");
 
 const PrefService = CC("@mozilla.org/preferences-service;1");
 const PermManager = CC("@mozilla.org/permissionmanager;1");
+const DirService =  CCSV("@mozilla.org/file/directory_service;1", "nsIDirectoryServiceProvider");
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
 
@@ -29,6 +33,7 @@ const pm = PermManager.getService(nsIPermissionManager);
 
 const DENY_ACTION = nsIPermissionManager.DENY_ACTION;
 const ALLOW_ACTION = nsIPermissionManager.ALLOW_ACTION;
+const NS_OS_TEMP_DIR = "TmpD"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
 
@@ -38,7 +43,7 @@ const firebugURLs =
     docs: "http://www.getfirebug.com/docs.html",
     keyboard: "http://www.getfirebug.com/keyboard.html",
     discuss: "http://groups.google.com/group/firebug",
-	issues: "http://code.google.com/p/fbug/issues/list",
+    issues: "http://code.google.com/p/fbug/issues/list",
     donate: "http://www.getfirebug.com/contribute.html?product"
 };
 
@@ -63,13 +68,13 @@ const prefNames =
     "showComputedStyle",
     
     // Script
-    "breakOnErrors",
-	"breakOnTopLevel",
-	"useDebugAdapter",
-	"showEvalSources",
-	"showAllSourceFiles",
-	"useLastLineForEvalName",
-	"useFirstLineForEvalName",
+    "breakOnErrors",    
+    "breakOnTopLevel",
+    "useDebugAdapter",
+    "showEvalSources",
+    "showAllSourceFiles",
+    "useLastLineForEvalName",
+    "useFirstLineForEvalName",
     
     // DOM
     "showUserProps", "showUserFuncs", "showDOMProps", "showDOMFuncs", "showDOMConstants",
@@ -79,18 +84,23 @@ const prefNames =
     
     // Net
     "netFilterCategory", "disableNetMonitor", "collectHttpHeaders",
-	
-	// Stack
-	"omitObjectPathStack"
+    
+    // Stack
+    "omitObjectPathStack"
 ];
+
+const scriptBlockSize = 20;
 
 // ************************************************************************************************
 // Globals
 
 var modules = [];
+var extensions = [];
 var panelTypes = [];
 var reps = [];
 var defaultRep = null;
+var editors = [];
+var externalEditors = [];
 
 var panelTypeMap = {};
 var optionUpdateMap = {};
@@ -98,12 +108,14 @@ var optionUpdateMap = {};
 var deadWindows = [];
 var deadWindowTimeout = 0;
 var clearContextTimeout = 0;
+var temporaryFiles = [];
+var temporaryDirectory = null;
 
 // ************************************************************************************************
 
 top.Firebug =
 {
-    version: "1.1",
+    version: "1.1a.dev",
     
     module: modules,
     panelTypes: panelTypes,
@@ -119,14 +131,15 @@ top.Firebug =
         for (var i = 0; i < prefNames.length; ++i)
             this[prefNames[i]] = this.getPref(prefNames[i]);
 
+        this.loadExternalEditors();
         prefs.addObserver(prefDomain, this, false);
 
-		var basePrefNames = prefNames.length;
-		
-		dispatch(modules, "initialize", [prefDomain, prefNames]); 
-
-		for (var i = basePrefNames; i < prefNames.length; ++i)
+        var basePrefNames = prefNames.length;       
+        dispatch(modules, "initialize", [prefDomain, prefNames]); 
+ 
+        for (var i = basePrefNames; i < prefNames.length; ++i)
             this[prefNames[i]] = this.getPref(prefNames[i]);
+
 
         // If another window is opened, then the creation of our first context won't
         // result in calling of enable, so we have to enable our modules ourself
@@ -148,8 +161,8 @@ top.Firebug =
             this.disableAlways();
         else
             this.enableAlways();
-			
-		dispatch(modules, "initializeUI", [detachArgs]);
+
+        dispatch(modules, "initializeUI", [detachArgs]);
     },
         
     shutdown: function()
@@ -168,6 +181,7 @@ top.Firebug =
         dispatch(modules, "shutdown");
 
         this.closeDeadWindows();
+        this.deleteTemporaryFiles();
     },
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
@@ -211,6 +225,14 @@ top.Firebug =
             TabWatcher.addListener(arguments[i]);
     },
 
+    registerExtension: function()
+    {
+        extensions.push.apply(extensions, arguments);
+        
+        for (var i = 0; i < arguments.length; ++i)
+            TabWatcher.addListener(arguments[i]);
+    },
+
     registerPanel: function()
     {
         panelTypes.push.apply(panelTypes, arguments);
@@ -227,6 +249,11 @@ top.Firebug =
     setDefaultRep: function(rep)
     {
         defaultRep = rep;
+    },
+
+    registerEditor: function()
+    {
+        editors.push.apply(editors, arguments);
     },
     
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
@@ -253,16 +280,16 @@ top.Firebug =
     disableSite: function(disable)
     {
         var ioService = CCSV("@mozilla.org/network/io-service;1", "nsIIOService");
-		
-		try 
-		{
-			var host = tabBrowser.currentURI.host;
-		}
-		catch (exc)
-		{
-			var host = null;  // XXXjjb eg about:neterror and friends.
-		}
-        
+
+        var host;
+        try
+        {
+            host = tabBrowser.currentURI.host;
+        }
+        catch (exc)
+        {
+            // XXXjjb eg about:neterror and friends.
+        }
         if (!host)
             this.setPref("disabledFile", disable);
         else
@@ -279,9 +306,9 @@ top.Firebug =
             }
         }
 
-		if (!tabBrowser)
-			return;  // externalBrowser
-			
+        if (!tabBrowser)
+            return; // externalBrowser
+
         if (disable)
         {
             TabWatcher.unwatchBrowser(tabBrowser.selectedBrowser);
@@ -327,7 +354,6 @@ top.Firebug =
             prefs.setIntPref(prefName, value);
         else if (type == nsIPrefBranch.PREF_BOOL)
             prefs.setBoolPref(prefName, value);
-			
     },
 
     increaseTextSize: function(amt)
@@ -370,10 +396,60 @@ top.Firebug =
             else
                 this.enableAlways();
         }
+        if (name.substr(0, 15) == "externalEditors")
+        {
+            this.loadExternalEditors();
+        }
 
         delete optionUpdateMap[name];
     },
     
+    loadExternalEditors: function()
+    {
+        const prefName = "externalEditors";
+        const editorPrefNames = ["label", "executable", "cmdline", "image"];
+
+        externalEditors = [];
+        var list = this.getPref(prefName).split(",");
+        for (var i = 0; i < list.length; ++i)
+        {
+            var editorId = list[i];
+            if ( !editorId || editorId == "")
+                continue;
+            var item = { id: editorId };
+            for( var j = 0; j < editorPrefNames.length; ++j )
+            {
+                try {
+                    item[editorPrefNames[j]] = this.getPref(prefName+"."+editorId+"."+editorPrefNames[j]);
+                }
+                catch(exc)
+                {
+                }
+            }
+            if ( item.label && item.executable )
+            {
+                if (!item.image)
+                    item.image = getIconURLForFile(item.executable);
+                externalEditors.push(item);
+            }
+        }
+    },
+
+    get registeredEditors()
+    {
+        var newArray = [];
+        if ( editors.length > 0 )
+        {
+            newArray.push.apply(newArray, editors);
+            if ( externalEditors.length > 0 )
+                newArray.push("-");
+        }
+        if ( externalEditors.length > 0 )
+            newArray.push.apply(newArray, externalEditors);
+            
+        return newArray;
+    },
+   
     openPermissions: function()
     {
         var params = {
@@ -385,6 +461,167 @@ top.Firebug =
 
         openWindow("Browser:Permissions", "chrome://browser/content/preferences/permissions.xul",
             "", params);
+    },
+
+    openEditors: function()
+    {
+        var args = {
+            FBL: FBL,
+            prefName: prefDomain + ".externalEditors"
+        };
+        openWindow("Firebug:ExternalEditors", "chrome://firebug/content/editors.xul", "", args);
+    },
+    
+    openInEditor: function(context, editorId)
+    {
+        try {
+        if (!editorId)
+            return;
+            
+        var location;
+        if (context)
+        {
+            var panel = context.chrome.getSelectedPanel();
+            if (panel)
+            {
+                location = panel.location;
+                if (!location && panel.name == "html")
+                    location = context.window.document.location;
+                if ( location instanceof SourceFile || location instanceof CSSStyleSheet )
+                    location = location.href;
+            }
+        }
+        if (!location)
+        {
+            if (tabBrowser.currentURI)
+                location = tabBrowser.currentURI.asciiSpec;
+        }
+        if (!location)
+            return;
+        location = location.toString();
+        if (isSystemURL(location))
+            return;
+        
+        var list = extendArray(editors, externalEditors);
+        var editor = null;
+        for( var i = 0; i < list.length; ++i )
+        {
+            if (editorId == list[i].id)
+            {
+                editor = list[i];
+                break;
+            }
+        }
+        if (editor)
+        {
+            if (editor.handler)
+            {
+                editor.handler(location);
+                return;
+            }
+            var args = [];
+            var localFile = null;
+            var targetAdded = false;
+            if (editor.cmdline)
+            {
+                args = editor.cmdline.split(" ");
+                for( var i = 0; i < args.length; ++i )
+                {
+                    if ( args[i] == "%url" )
+                    {
+                        args[i] = location;
+                        targetAdded = true;
+                    }
+                    else if ( args[i] == "%file" )
+                    {
+                        if (!localFile)
+                            localFile = this.getLocalSourceFile(context, location);
+                        args[i] = localFile;
+                        targetAdded = true;
+                    }
+                }
+            }
+            if (!targetAdded)
+            {
+                localFile = this.getLocalSourceFile(context, location);
+                if (!localFile)
+                    return;
+                args.push(localFile);
+            }
+            FBL.launchProgram(editor.executable, args);
+        }
+        }catch(exc) { ERROR(exc); }
+    },
+    
+    getLocalSourceFile: function(context, href)
+    {
+        if ( isLocalURL(href) )
+            return href;
+        var data;
+        if (context)
+        {
+            data = context.sourceCache.loadText(href);
+        } else
+        {
+            var ctx = { browser: tabBrowser.selectedBrowser, window: tabBrowser.selectedBrowser.contentWindow };
+            data = new SourceCache(ctx).loadText(href);
+        }
+        if (!data)
+            return;
+        if (!temporaryDirectory)
+        {
+            var tmpDir = DirService.getFile(NS_OS_TEMP_DIR, {});
+            tmpDir.append("fbtmp");
+            tmpDir.createUnique(nsIFile.DIRECTORY_TYPE, 0775);
+            temporaryDirectory = tmpDir;
+        }
+        
+        var lpath = href.replace(/^[^:]+:\/*/g, "").replace(/\?.*$/g, "").replace(/[^0-9a-zA-Z\/.]/g, "_");
+        if ( !/\.[\w]{1,5}$/.test(lpath) )
+        {
+            if ( lpath.charAt(lpath.length-1) == '/' )
+                lpath += "index";
+            lpath += ".html";
+        }
+        if ( getPlatformName() == "WINNT" )
+            lpath = lpath.replace(/\//g, "\\");
+        var file = QI(temporaryDirectory.clone(), nsILocalFile);
+        file.appendRelativePath(lpath);
+        if (!file.exists())
+            file.create(nsIFile.NORMAL_FILE_TYPE, 664);
+        temporaryFiles.push(file.path);
+
+        var stream = CCIN("@mozilla.org/network/safe-file-output-stream;1", "nsIFileOutputStream");
+        stream.init(file, 0x04 | 0x08 | 0x20, 664, 0); // write, create, truncate
+        stream.write(data, data.length);
+        if (stream instanceof nsISafeOutputStream)
+            stream.finish();
+        else
+            stream.close();
+        
+        return file.path;
+    },
+    
+    deleteTemporaryFiles: function()
+    {
+        try {
+            var file = CCIN("@mozilla.org/file/local;1", "nsILocalFile");
+            for( var i = 0; i < temporaryFiles.length; ++i)
+            {
+                file.initWithPath(temporaryFiles[i]);
+                if (file.exists())
+                    file.remove(false);
+            }
+        }
+        catch(exc)
+        {
+        }
+        try {
+            if (temporaryDirectory && temporaryDirectory.exists())
+                temporaryDirectory.remove(true);
+        } catch(exc)
+        {
+        }
     },
                 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
@@ -475,7 +712,8 @@ top.Firebug =
     
     syncBar: function()
     {
-		var browser = FirebugChrome.getCurrentBrowser(); // XXXjjb Joe check tabBrowser.selectedBrowser;
+        this.showBar(tabBrowser.selectedBrowser && tabBrowser.selectedBrowser.showFirebug);
+        var browser = FirebugChrome.getCurrentBrowser(); // XXXjjb Joe check tabBrowser.selectedBrowser;
         this.showBar(browser && browser.showFirebug);
     },
 
@@ -716,11 +954,33 @@ top.Firebug =
     
     isURIDenied: function(uri)
     {
-		if (!uri)  // null or undefined is denied
-			return true;
+        if (!uri)  // null or undefined is denied
+            return true;
         return uri &&
             (pm.testPermission(uri, "firebug") == DENY_ACTION
                 || (uri.scheme == "file" && this.disabledFile));
+    },
+    
+    enableContext: function(win, uri)
+    {
+        if ( dispatch2(extensions, "acceptContext", [win, uri]) )
+            return true;
+        if ( dispatch2(extensions, "declineContext", [win, uri]) )
+            return false;
+            
+        if (this.disabledAlways)
+        {
+            // Check if the whitelist makes an exception
+            if (!this.isURIAllowed(uri))
+                return false;
+        }
+        else
+        {
+            // Check if the blacklist says no
+            if (this.isURIDenied(uri))
+                return false;
+        }
+        return true;
     },
     
     createTabContext: function(win, browser, chrome, state)
@@ -791,7 +1051,7 @@ top.Firebug =
         // XXXjoe Move this to Firebug.Console
         if (!win.console)
             win.console = new FirebugConsole(context, win);
- 
+
         for (var panelName in context.panelMap)
         {
             var panel = context.panelMap[panelName];
@@ -828,7 +1088,7 @@ Firebug.Module =
     {
     },
     
-	/**
+    /**
      * Called when the UI is ready for context creation. 
      * Used by chromebug; normally FrameProgressListener events trigger UI synchronization, 
      * this event allows sync without progress events.
@@ -883,8 +1143,8 @@ Firebug.Module =
     showContext: function(browser, context)
     {
     },
-	
- 	/**
+
+    /**
      * Called after a context's page is loaded
      */
     loadedContext: function(context)
@@ -907,6 +1167,21 @@ Firebug.Module =
     
     getObjectByURL: function(context, url)
     {
+    }
+};
+
+// ************************************************************************************************
+
+Firebug.Extension = 
+{
+    acceptContext: function(win,uri)
+    {
+        return false;
+    },
+
+    declineContext: function(win,uri)
+    {
+        return false;
     }
 };
 
@@ -956,14 +1231,14 @@ Firebug.Panel =
             this.panelNode.scrollTop = this.lastScrollTop;
             delete this.lastScrollTop;
         }
-    }, 
-	   
-	// Called after module.initialize; addEventListener-s here 
+    },    
+
+    // Called after module.initialize; addEventListener-s here 
     initializeNode: function(myPanelNode)
     {
     },
     
-	// removeEventListener-s here.
+    // removeEventListener-s here.
     destroyNode: function()
     {
     },
@@ -1079,14 +1354,16 @@ Firebug.Panel =
     },
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
-	// An array of objects that answer to getObjectLocation.
-	// Only shown if panel.location defined and supportsObject true
+
+    // An array of objects that answer to getObjectLocation.
+    // Only shown if panel.location defined and supportsObject true
     getLocationList: function()
     {
         return null;
     },
     
-	// Called when "Options" clicked. Return array of {label: 'name', nol10n: true,  type: "checkbox", checked: <value>, command:function to set <value>}
+    // Called when "Options" clicked. Return array of
+    // {label: 'name', nol10n: true,  type: "checkbox", checked: <value>, command:function to set <value>}
     getOptionsMenuItems: function()
     {
         return null;
@@ -1144,17 +1421,17 @@ Firebug.Panel =
 };
 
 // ************************************************************************************************
-const scriptBlockSize = 20;
+
 Firebug.SourceBoxPanel = function() {} // XXjjb attach Firebug so this panel can be extended.
 
 Firebug.SourceBoxPanel = extend(Firebug.Panel,
 {    
-	initializeSourceBoxes: function()
-	{
-		this.sourceBoxes = {};
+    initializeSourceBoxes: function()
+    {
+        this.sourceBoxes = {};
         this.anonSourceBoxes = [];
-	},
-	
+    },
+    
     showSourceBox: function(sourceBox)
     {
         if (this.selectedSourceBox)
@@ -1165,18 +1442,18 @@ Firebug.SourceBoxPanel = extend(Firebug.Panel,
         
         if (sourceBox)
         {
-			this.updateSourceBox(sourceBox); 
-			collapse(sourceBox, false);
+            this.updateSourceBox(sourceBox); 
+            collapse(sourceBox, false);
         }
     },
-	
-	updateSourceBox: function(sourceBox) 
-	{
-		// called just before box is shown
-		this.panelNode.appendChild(sourceBox); 	
-	},
-	
-	createSourceBox: function(sourceFile, sourceBoxDecorator)  // decorator(sourceFile, sourceBox)
+    
+    updateSourceBox: function(sourceBox) 
+    {
+        // called just before box is shown
+        this.panelNode.appendChild(sourceBox);  
+    },
+    
+    createSourceBox: function(sourceFile, sourceBoxDecorator)  // decorator(sourceFile, sourceBox)
     {
         var lines = loadScriptLines(sourceFile, this.context);
         if (!lines)
@@ -1230,11 +1507,11 @@ Firebug.SourceBoxPanel = extend(Firebug.Panel,
 
     getSourceBoxByURL: function(url)
     {
-		// if this.sourceBoxes is undefined, you need to call initializeSourceBoxes in your panel.initialize()
+        // if this.sourceBoxes is undefined, you need to call initializeSourceBoxes in your panel.initialize()
         return url ? this.sourceBoxes[url] : null;
     },
-	
-	showSourceFile: function(sourceFile, sourceBoxDecorator)
+    
+    showSourceFile: function(sourceFile, sourceBoxDecorator)
     {
         var sourceBox = this.getSourceBoxBySourceFile(sourceFile);
         if (!sourceBox)

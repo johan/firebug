@@ -191,7 +191,8 @@ this.Func = domplate(Firebug.Rep,
 
     getContextMenuItems: function(fn, target, context, script)
     {
-        var script = script ? script : findScriptForFunction(fn);
+        if (!script)
+            script = findScriptForFunction(fn);
         if (!script)
             return;
 
@@ -219,7 +220,7 @@ this.jsdScript = domplate(Firebug.Rep,
     
     monitor: function(fn, script, monitored)
     {
-        var fn = script.functionObject.getWrappedValue();
+        fn = script.functionObject.getWrappedValue();
         return FirebugReps.Func.monitor(fn, script, monitored);
     },
     
@@ -350,12 +351,12 @@ this.Arr = domplate(Firebug.Rep,
     supportsObject: function(object)
     {
         // return "length" in object && typeof(object.length) == "number";
-		// XXXjjb Joe review (revision 39) Maybe only a url for the license...
-		return this.isArray(object);
+        // XXXjjb Joe review (revision 39) Maybe only a url for the license...
+        return this.isArray(object);
     },
     
-	// BEGIN Yahoo BSD Source (modified here)  YAHOO.lang.isArray, YUI 2.2.2 June 2007
-	isArray: function(obj) { // frames lose type, so test constructor string
+    // BEGIN Yahoo BSD Source (modified here)  YAHOO.lang.isArray, YUI 2.2.2 June 2007
+    isArray: function(obj) { // frames lose type, so test constructor string
         if (obj && obj.constructor && 
                    obj.constructor.toString().indexOf('Array') > -1) {
             return true;
@@ -363,8 +364,8 @@ this.Arr = domplate(Firebug.Rep,
             return ((typeof obj == 'object') || (typeof obj == 'function')) && obj.constructor == Array;
         }
     },
-	// END Yahoo BSD SOURCE See license below.
-	
+    // END Yahoo BSD SOURCE See license below.
+    
     getTitle: function(object, context)
     {
         return "[" + object.length + "]";
@@ -989,10 +990,10 @@ this.SourceLink = domplate(Firebug.Rep,
                 var ownerNode = stylesheet.ownerNode;
                 if (ownerNode)
                 {
-                 	context.chrome.select(sourceLink, "html");
-                 	return;
-				}
-	
+                    context.chrome.select(sourceLink, "html");
+                    return;
+                }
+    
                 var panel = context.getPanel("stylesheet");
                 if (panel && panel.getRuleByLine(stylesheet, sourceLink.line))
                     return context.chrome.select(sourceLink);
@@ -1159,13 +1160,13 @@ this.jsdStackFrame = domplate(Firebug.Rep,
         
     getTitle: function(frame, context)
     { 
-    	if (!frame.isValid) return "(invalid frame)"; // XXXjjb avoid frame.script == null
+        if (!frame.isValid) return "(invalid frame)"; // XXXjjb avoid frame.script == null
         return getFunctionName(frame.script, context);
     },
 
     getTooltip: function(frame, context)
     {
-    	if (!frame.isValid) return "(invalid frame)";  // XXXjjb avoid frame.script == null
+        if (!frame.isValid) return "(invalid frame)";  // XXXjjb avoid frame.script == null
         return $STRF("Line", [frame.script.fileName, frame.line]);
     },
 
@@ -1203,7 +1204,7 @@ this.ErrorMessage = domplate(Firebug.Rep,
     getLastErrorStackTrace: function()
     {
         var trace = Firebug.errorStackTrace;
-		Firebug.errorStackTrace = null;
+        Firebug.errorStackTrace = null;
         return trace;
     },
 

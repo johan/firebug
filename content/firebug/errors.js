@@ -20,7 +20,7 @@ const pointlessErrors =
 {
     "uncaught exception: Permission denied to call method Location.toString": 1,
     "uncaught exception: Permission denied to get property Window.writeDebug": 1,
-	"uncaught exception: Permission denied to get property XULElement.accessKey": 1,
+    "uncaught exception: Permission denied to get property XULElement.accessKey": 1,
     "this.docShell has no properties": 1,
     "aDocShell.QueryInterface(Components.interfaces.nsIWebNavigation).currentURI has no properties": 1
 };
@@ -51,15 +51,15 @@ var Errors = Firebug.Errors = extend(Firebug.Module,
         if (context == FirebugContext)
             this.showCount(context.errorCount);
     },
-	
-	showMessageOnStatusBar: function(errorLabel)
-	{
-		if (statusBar)
-			statusBar.setAttribute("errors", "true");
-		if (statusText)  // sometimes this is undefined..how?
-			statusText.setAttribute("value", errorLabel);
-	},
-	
+    
+    showMessageOnStatusBar: function(errorLabel)
+    {
+        if (statusBar)
+            statusBar.setAttribute("errors", "true");
+        if (statusText)  // sometimes this is undefined..how?
+            statusText.setAttribute("value", errorLabel);
+    },
+    
     showCount: function(errorCount)
     {
         if (!statusBar)
@@ -90,6 +90,7 @@ var Errors = Firebug.Errors = extend(Firebug.Module,
     
     observe: function(object)
     {
+		if(typeof(FBTrace) == "undefined") return;
         try
         {
             if (object instanceof nsIScriptError)
@@ -135,28 +136,28 @@ var Errors = Firebug.Errors = extend(Firebug.Module,
 
                 if (!isWarning)    
                     this.increaseCount(context);
-					
-    			var sourceName = object.sourceName;
-    			var lineNumber = object.lineNumber;
-				
-    			var trace = Firebug.errorStackTrace;
-    			if (trace) 
-    			{ 
-    				var stack_frame = trace.frames[0];
-    				if (stack_frame) 
-    				{
-						sourceName = stack_frame.href;
-						lineNumber = stack_frame.lineNo;
-					}
-					var correctedError = object.init(object.errorMessage, sourceName, object.sourceLine,lineNumber, object.columnNumber, object.flags, object.category); 
-    			} 
-				else 
-				{
-					// There was no trace, but one was requested. Therefore fbs never called 
-					// debuggr.onError() because the error was for a different window.
-					if (Firebug.showStackTrace && isJSError)
-						return; 
-				}
+                    
+                var sourceName = object.sourceName;
+                var lineNumber = object.lineNumber;
+                
+                var trace = Firebug.errorStackTrace;
+                if (trace) 
+                { 
+                    var stack_frame = trace.frames[0];
+                    if (stack_frame) 
+                    {
+                        sourceName = stack_frame.href;
+                        lineNumber = stack_frame.lineNo;
+                    }
+                    var correctedError = object.init(object.errorMessage, sourceName, object.sourceLine,lineNumber, object.columnNumber, object.flags, object.category); 
+                } 
+                else 
+                {
+                    // There was no trace, but one was requested. Therefore fbs never called 
+                    // debuggr.onError() because the error was for a different window.
+                    if (Firebug.showStackTrace && isJSError)
+                        return; 
+                }
                 var error = new ErrorMessage(object.errorMessage, sourceName,
                         lineNumber, object.sourceLine, category, context);
                 
@@ -171,7 +172,7 @@ var Errors = Firebug.Errors = extend(Firebug.Module,
         }
         catch (exc)
         {
-        	// Errors prior to console init will come out here, eg error message from Firefox startup jjb.
+            // Errors prior to console init will come out here, eg error message from Firefox startup jjb.
             // ERROR("Error while reporting error: " + exc);
         }
     },

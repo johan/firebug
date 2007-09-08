@@ -32,7 +32,7 @@ Firebug.TabContext = function(win, browser, chrome, persistedState)
     this.panelMap = {};
     this.sidePanelNames = {};
     this.sourceCache = new SourceCache(this);
-	this.sourceFileMap = {};
+    this.sourceFileMap = {};
 };
 
 Firebug.TabContext.prototype =
@@ -141,8 +141,8 @@ Firebug.TabContext.prototype =
         var panelType = Firebug.getPanelType(panelName);
         if (!panelType && this.panelTypeMap)
             panelType = this.panelTypeMap[panelName];
-		if (FBTrace.DBG_WINDOWS)           /*@expore*/
-			FBTrace.sysout("tabContext.getPanel name="+panelName+" noCreate="+noCreate+" panelType="+panelType+"\n");     /*@expore*/
+        if (FBTrace.DBG_WINDOWS)                                                                                       /*@expore*/
+            FBTrace.sysout("tabContext.getPanel name="+panelName+" noCreate="+noCreate+" panelType="+panelType+"\n");  /*@expore*/
         if (panelType)
             return this.getPanelByType(panelType, noCreate);
     },

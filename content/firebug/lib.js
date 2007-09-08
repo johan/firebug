@@ -6,32 +6,30 @@ var FirebugLib = FBL = XPCOMUtils;
 
 // ************************************************************************************************
 // Constants
-try 
-{
-	this.fbs = this.CCSV("@joehewitt.com/firebug;1", "nsIFireBug");
-}
-catch (exc)
-{
-	// Ok this is drastic
-	throw "Failed to load service @joehewitt.com/firebug;1, (components/firebug-service.js) caused: "+exc;
-}
+
+this.fbs = this.CCSV("@joehewitt.com/firebug;1", "nsIFireBug");
 this.jsd = this.CCSV("@mozilla.org/js/jsd/debugger-service;1", "jsdIDebuggerService");
 
-var finder = this.finder = this.CCIN("@mozilla.org/embedcomp/rangefind;1", "nsIFind");
+const finder = this.finder = this.CCIN("@mozilla.org/embedcomp/rangefind;1", "nsIFind");
+
+const PCMAP_SOURCETEXT = this.CI("jsdIScript").PCMAP_SOURCETEXT;
+const PCMAP_PRETTYPRINT = this.CI("jsdIScript").PCMAP_PRETTYPRINT;
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
 
-var reNotWhitespace = /[^\s]/;
-var reSplitFile = /:\/{1,3}(.*?)\/([^\/]*?)\/?($|\?.*)/;
-var reURL = /(([^:]+:)\/{1,2}[^\/]*)(.*?)$/;  // This RE and the previous one should changed to be consistent
+const reNotWhitespace = /[^\s]/;
+const reSplitFile = /:\/{1,3}(.*?)\/([^\/]*?)\/?($|\?.*)/;
+const reURL = /(([^:]+:)\/{1,2}[^\/]*)(.*?)$/;  // This RE and the previous one should changed to be consistent
+// Globals
 this.reDataURL = /data:text\/javascript;fileName=([^;]*);baseLineNumber=(\d*?),((?:.*?%0A)|(?:.*))/g;
 this.reJavascript = /\s*javascript:\s*(.*)/;
 this.reChrome = /chrome:\/\/([^\/]*)\//;
 this.reCSS = /\.css$/;
-var reSplitLines = /\r\n|\r|\n/;
-var reFunctionArgNames = /function ([^(]*)\(([^)]*)\)/;
-var reGuessFunction = /['"]?([0-9A-Za-z_]+)['"]?\s*[:=]\s*(function|eval|new Function)/;
-var reWord = /([A-Za-z_][A-Za-z_0-9]*)(\.([A-Za-z_][A-Za-z_0-9]*))*/;
+
+const reSplitLines = /\r\n|\r|\n/;
+const reFunctionArgNames = /function ([^(]*)\(([^)]*)\)/;
+const reGuessFunction = /['"]?([0-9A-Za-z_]+)['"]?\s*[:=]\s*(function|eval|new Function)/;
+const reWord = /([A-Za-z_][A-Za-z_0-9]*)(\.([A-Za-z_][A-Za-z_0-9]*))*/;
 
 const restoreRetryTimeout = 500;
 
@@ -220,6 +218,14 @@ this.beep = function()
     sounder.beep();    
 };
 
+this.getUniqueId = function() {
+    return this.getRandomInt(0,65536);
+}
+
+this.getRandomInt = function(min, max) {
+  return Math.floor(Math.random() * (max - min + 1) + min);
+}
+
 this.createStyleSheet = function(doc, url)
 {
     var link = doc.createElementNS("http://www.w3.org/1999/xhtml", "link");
@@ -303,8 +309,8 @@ this.iterateWindows = function(win, handler)
 
     handler(win);
     
-	if (win == top) return; // XXXjjb hack for chromeBug
-	
+    if (win == top) return; // XXXjjb hack for chromeBug
+    
     for (var i = 0; i < win.frames.length; ++i)
     {
         var subWin = win.frames[i];
@@ -813,7 +819,7 @@ this.getElementsBySelector = function(doc, css)
 this.getElementsByXPath = function(doc, xpath)
 {
     var nodes = [];
-    
+
     try {
         var result = doc.evaluate(xpath, doc, null, XPathResult.ANY_TYPE, null);
         for (var item = result.iterateNext(); item; item = result.iterateNext())
@@ -1320,10 +1326,10 @@ this.createMenu = function(popup, label)
     return menuPopup;
 };
 
-this.createMenuItem = function(popup, item)
+this.createMenuItem = function(popup, item, before)
 {
     if (typeof(item) == "string" && item.indexOf("-") == 0)
-        return this.createMenuSeparator(popup);
+        return this.createMenuSeparator(popup, before);
     
     var menuitem = popup.ownerDocument.createElement("menuitem");
 
@@ -1344,7 +1350,10 @@ this.createMenuItem = function(popup, item)
     if (item.command)
         menuitem.addEventListener("command", item.command, false);
 
-    popup.appendChild(menuitem);
+    if (before)
+        popup.insertBefore(menuitem, before);
+    else
+        popup.appendChild(menuitem);
     return menuitem;
 };
 
@@ -1361,13 +1370,16 @@ this.createMenuHeader = function(popup, item)
     return header;
 };
 
-this.createMenuSeparator = function(popup)
+this.createMenuSeparator = function(popup, before)
 {
     if (!popup.firstChild)
         return;
 
     var menuitem = popup.ownerDocument.createElement("menuseparator");
-    popup.appendChild(menuitem);
+    if (before)
+        popup.insertBefore(menuitem, before);
+    else
+        popup.appendChild(menuitem);
     return menuitem;
 };
 
@@ -1411,47 +1423,47 @@ this.getStackTrace = function(frame, context)
 
 this.getStackFrame = function(frame, context)
 {
-	if (frame.isNative || frame.isDebugger)   // XXXjjb
-	{
-		var excuse = (frame.isNative) ?  "(native)" : "(debugger)"; 
-		return new this.StackFrame(context, excuse, null, excuse, 0, []);
-	}
+    if (frame.isNative || frame.isDebugger)   // XXXjjb
+    {
+        var excuse = (frame.isNative) ?  "(native)" : "(debugger)"; 
+        return new this.StackFrame(context, excuse, null, excuse, 0, []);
+    }
     try
     {
-    	if (frame.script.functionName) // normal js
-    	{		
-	        // This causes leak of script objects ?? 
-			//var fn = frame.script.functionObject.getWrappedValue();
-    	    //var args = this.getFunctionArgValues(fn, frame); 
-			var fn = null;
-			var args = null;
-    	    if (context.evalSourceURLByTag && frame.script.tag in context.evalSourceURLByTag) 
-    	    {
-    	    	var url = context.evalSourceURLByTag[frame.script.tag];
-    	    	var lineNo = FBL.getLineAtPCForEvaled(frame, context);
-    	    	return new this.StackFrame(context, fn, frame.script, url, lineNo, args);
-    	    } 
-    	    else if (context.eventSourceURLByTag && frame.script.tag in context.eventSourceURLByTag) 
-    	    {
-    	    	var url = context.eventSourceURLByTag[frame.script.tag];
-    	    	var lineNo = FBL.getLineAtPCForEvent(frame, context);
-    	    	return new this.StackFrame(context, fn, frame.script, url, lineNo, args);
-    	    }
-        	return new this.StackFrame(context, fn, frame.script, frame.script.fileName, frame.line, args);
+        if (frame.script.functionName) // normal js
+        {       
+            // This causes leak of script objects ?? 
+            //var fn = frame.script.functionObject.getWrappedValue();
+            //var args = this.getFunctionArgValues(fn, frame); 
+            var fn = null;
+            var args = null;
+            if (context.evalSourceURLByTag && frame.script.tag in context.evalSourceURLByTag) 
+            {
+                var url = context.evalSourceURLByTag[frame.script.tag];
+                var lineNo = FBL.getLineAtPCForEvaled(frame, context);
+                return new this.StackFrame(context, fn, frame.script, url, lineNo, args);
+            } 
+            else if (context.eventSourceURLByTag && frame.script.tag in context.eventSourceURLByTag) 
+            {
+                var url = context.eventSourceURLByTag[frame.script.tag];
+                var lineNo = FBL.getLineAtPCForEvent(frame, context);
+                return new this.StackFrame(context, fn, frame.script, url, lineNo, args);
+            }
+            return new this.StackFrame(context, fn, frame.script, frame.script.fileName, frame.line, args);
         } 
         else 
         { 
-        	if (frame.callingFrame) // eval-level
-        	{ 			
-        		var sourceFile = this.getSourceFileForEval(frame.script, context);
-        		var lineNo = FBL.getLineAtPCForEvaled(frame, context);
-        		var eval_frame = new this.StackFrame(context, sourceFile.evalExpression, frame.script, sourceFile.href, lineNo, [sourceFile.evalExpression]);
-         		return eval_frame;
-        	} 
-        	else // __top_level__
-        	{		
-        		return new this.StackFrame(context, "__top_level__", frame.script, frame.script.fileName, frame.line, []);
-        	}
+            if (frame.callingFrame) // eval-level
+            {           
+                var sourceFile = this.getSourceFileForEval(frame.script, context);
+                var lineNo = FBL.getLineAtPCForEvaled(frame, context);
+                var eval_frame = new this.StackFrame(context, sourceFile.evalExpression, frame.script, sourceFile.href, lineNo, [sourceFile.evalExpression]);
+                return eval_frame;
+            } 
+            else // __top_level__
+            {       
+                return new this.StackFrame(context, "__top_level__", frame.script, frame.script.fileName, frame.line, []);
+            }
         }
     }
     catch (exc)
@@ -1462,29 +1474,29 @@ this.getStackFrame = function(frame, context)
 
 this.getLineAtPCForEvaled = function(frame, context) 
 {
-	var lineNo = context.evalBaseLineNumberByTag[frame.script.tag];
+    var lineNo = context.evalBaseLineNumberByTag[frame.script.tag];
     var offset = frame.line - frame.script.baseLineNumber;
     return lineNo + offset;
 }
 
 this.getSourceLinkAtPCForEvaled = function(frame, context) 
 {
-   	var url = context.evalSourceURLByTag[frame.script.tag];
-   	var lineNo = FBL.getLineAtPCForEvaled(frame, context);
-   	return new this.SourceLink(url, lineNo, "js");
+    var url = context.evalSourceURLByTag[frame.script.tag];
+    var lineNo = FBL.getLineAtPCForEvaled(frame, context);
+    return new this.SourceLink(url, lineNo, "js");
 }
 
 this.getLineAtPCForEvent = function(frame, context) 
 {
-	var lineNo = frame.script.pcToLine(frame.pc, FBL.PCMAP_PRETTYPRINT);
+    var lineNo = frame.script.pcToLine(frame.pc, PCMAP_PRETTYPRINT);
     return lineNo;
 }
 
 this.getSourceLinkAtPCForEvent = function(frame, context) 
 {
-   	var url = context.eventSourceURLByTag[frame.script.tag];
-   	var lineNo = FBL.getLineAtPCForEvent(frame, context);
-   	return new this.SourceLink(url, lineNo, "js");
+    var url = context.eventSourceURLByTag[frame.script.tag];
+    var lineNo = FBL.getLineAtPCForEvent(frame, context);
+    return new this.SourceLink(url, lineNo, "js");
 }
 
 this.getStackDump = function()
@@ -1530,14 +1542,6 @@ this.getStackFrameId = function()
     }
     return null;
 };
-
-this.getUniqueId = function() {
-	return this.getRandomInt(0,65536);
-}
-
-this.getRandomInt = function(min, max) {
-  return Math.floor(Math.random() * (max - min + 1) + min);
-}
 
 // ************************************************************************************************
 // Event Monitoring
@@ -1609,8 +1613,8 @@ this.areEventsMonitored = function(object, type, context)
 this.findScript = function(url, line)
 {    
     url = this.denormalizeURL(url);
-
-	var context = this.context;
+    
+    var context = this.context;
     var foundScript = null;
     this.jsd.enumerateScripts({enumerateScript: function(script)
     {
@@ -1625,16 +1629,16 @@ this.findScript = function(url, line)
         }
         else 
         {
-        	if (context && context.evalSourceURLByTag && context.evalSourceURLByTag[script.tag] == url)
-        	{
-        		var offsetToScript = context.evalSourceLinesByTag[script.tag];
-        		if (line >= offsetToScript && line <= offsetToScript + script.lineExtent) 
-        			foundScript = script;  // debugger.onEvalScript deals with functions in functions.
-        	} 
-        	else if (context && context.eventSourceURLByTag && context.eventSourceURLByTag[script.tag] == url)
-        	{
-        		foundScript = script;
-        	}
+            if (context && context.evalSourceURLByTag && context.evalSourceURLByTag[script.tag] == url)
+            {
+                var offsetToScript = context.evalSourceLinesByTag[script.tag];
+                if (line >= offsetToScript && line <= offsetToScript + script.lineExtent) 
+                    foundScript = script;  // debugger.onEvalScript deals with functions in functions.
+            } 
+            else if (context && context.eventSourceURLByTag && context.eventSourceURLByTag[script.tag] == url)
+            {
+                foundScript = script;
+            }
         }
     }});
     
@@ -1658,23 +1662,23 @@ this.findScriptForFunction = function(fn)
 
 this.findSourceForFunction = function(fn, context)
 {
-	var script = this.findScriptForFunction(fn);
+    var script = this.findScriptForFunction(fn);
     return (script)? this.getSourceForScript(script, context) : null;
 };
 
 this.getSourceForScript = function(script, context)
 {
-	if (context.evalSourceURLByTag && script.tag in context.evalSourceURLByTag) 
-	{
-		var url = context.evalSourceURLByTag[script.tag];
-		var line = context.evalBaseLineNumberByTag[script.tag];
-		return new this.SourceLink(url, line, "js");
-	} 
-	else if (context.eventSourceURLByTag && script.tag in context.eventSourceURLByTag) 
-	{
-		var url = context.eventSourceURLByTag[script.tag];
-		return new this.SourceLink(url, 1, "js");
-	}
+    if (context.evalSourceURLByTag && script.tag in context.evalSourceURLByTag) 
+    {
+        var url = context.evalSourceURLByTag[script.tag];
+        var line = context.evalBaseLineNumberByTag[script.tag];
+        return new this.SourceLink(url, line, "js");
+    } 
+    else if (context.eventSourceURLByTag && script.tag in context.eventSourceURLByTag) 
+    {
+        var url = context.eventSourceURLByTag[script.tag];
+        return new this.SourceLink(url, 1, "js");
+    }
     return script
         ? new this.SourceLink(this.normalizeURL(script.fileName), script.baseLineNumber, "js")
         : null;
@@ -1682,31 +1686,31 @@ this.getSourceForScript = function(script, context)
 
 this.getFunctionName = function(script, context, frame)  // XXXjjb need frame to avoid analyzing top level 
 {
-	if (!script) 
-	{
-		return "(no script)";
-	}
+    if (!script) 
+    {
+        return "(no script)";
+    }
     var name = script.functionName;
     
     if (!name) // XXXjjb eval frames have blank names, !name == true
     { 
-    	if (context.evalSourceURLByTag) {
-    		var url = context.evalSourceURLByTag[script.tag];    	
-	    	if (url)
-    	    	return "__eval_level__";
+        if (context.evalSourceURLByTag) {
+            var url = context.evalSourceURLByTag[script.tag];       
+            if (url)
+                return "__eval_level__";
         } 
         return "__top_level__";
     }
     else if (name == "anonymous") 
     {
    
-    	if (context.evalSourceURLByTag)
-    	{
-    		var url =  context.evalSourceURLByTag[script.tag];
- 	
- 		   	if (url) 
-    			return this.guessFunctionName(url, context.evalBaseLineNumberByTag[script.tag], context);
-    	}
+        if (context.evalSourceURLByTag)
+        {
+            var url =  context.evalSourceURLByTag[script.tag];
+    
+            if (url) 
+                return this.guessFunctionName(url, context.evalBaseLineNumberByTag[script.tag], context);
+        }
         return this.guessFunctionName(script.fileName, script.baseLineNumber, context);
     }
     
@@ -1717,15 +1721,15 @@ this.guessFunctionName = function(url, lineNo, context)
 {
     if (context) 
     {
-    	if (context.sourceCache) 
-    		return this.guessFunctionNameFromLines(url, lineNo, context.sourceCache);
-    	return "(no cache)";
+        if (context.sourceCache) 
+            return this.guessFunctionNameFromLines(url, lineNo, context.sourceCache);
+        return "(no cache)";
     }
     return "(no context)";
 };
 
 this.guessFunctionNameFromLines = function(url, lineNo, source) {
-		// Walk backwards from the first line in the function until we find the line which
+        // Walk backwards from the first line in the function until we find the line which
         // matches the pattern above, which is the function definition
         var line = "";
         for (var i = 0; i < 4; ++i)
@@ -1743,7 +1747,7 @@ this.guessFunctionNameFromLines = function(url, lineNo, source) {
             }
         }
         return "(?)";
-}
+};
 
 this.getFunctionArgNames = function(fn)
 {
@@ -1791,29 +1795,29 @@ this.getScriptFileByHref = function(url, context)
 
 this.initSourceFileForEval = function(context) 
 {
-	if (!context.evalSourceURLByTag)
-	{
-		context.evalSourceURLByTag = {};  // script.tag -> source url
-		context.evalSourceFilesByURL = {}; // source url -> sourceFile obj
-		context.evalBaseLineNumberByTag = {};       // script.tag -> source line offset in sourceFile.text
-	}
+    if (!context.evalSourceURLByTag)
+    {
+        context.evalSourceURLByTag = {};  // script.tag -> source url
+        context.evalSourceFilesByURL = {}; // source url -> sourceFile obj
+        context.evalBaseLineNumberByTag = {};       // script.tag -> source line offset in sourceFile.text
+    }
 }
 
 this.getSourceFileForEval = function(script, context) 
 {
-	this.initSourceFileForEval(context);
+    this.initSourceFileForEval(context);
 
-	var sourceURL = context.evalSourceURLByTag[script.tag];
-	if (sourceURL) 
-		return context.evalSourceFilesByURL[sourceURL];
+    var sourceURL = context.evalSourceURLByTag[script.tag];
+    if (sourceURL) 
+        return context.evalSourceFilesByURL[sourceURL];
 };
 
 this.setSourceFileForEvalIntoContext = function(context, tag, sourceFile) 
 { 
-	this.initSourceFileForEval(context);
-	context.evalSourceFilesByURL[sourceFile.href] = sourceFile;
-	context.evalSourceURLByTag[tag] = sourceFile.href;
-	context.evalBaseLineNumberByTag[tag] = 1;
+    this.initSourceFileForEval(context);
+    context.evalSourceFilesByURL[sourceFile.href] = sourceFile;
+    context.evalSourceURLByTag[tag] = sourceFile.href;
+    context.evalBaseLineNumberByTag[tag] = 1;
 };
 
 this.getStyleSheetByHref = function(url, context)
@@ -1846,9 +1850,9 @@ this.getStyleSheetByHref = function(url, context)
 
 this.updateScriptFiles = function(context, reload)
 {
-	if (!context.sourceFiles || reload)
-		context.sourceFiles = [];    // list of all SourceFiles, built here only and cached
-	
+    if (!context.sourceFiles || reload)
+        context.sourceFiles = [];    // list of all SourceFiles, built here only and cached
+    
     if (!context.sourceFileMap)
     {
         context.sourceFileMap = {};  // url->FBL.SourceFile built here and elsewhere
@@ -1856,7 +1860,7 @@ this.updateScriptFiles = function(context, reload)
     
     if (!context.loaded || !context.sourceFiles.length) // XXXjjb: TODO dynamics may also need a new list
     {
-		var oldMap = reload ? context.sourceFileMap : null;
+        var oldMap = reload ? context.sourceFileMap : null;
         var sourceFileMap = context.sourceFileMap;
 
         function addFile(url)
@@ -1875,7 +1879,7 @@ this.updateScriptFiles = function(context, reload)
             }
         }
 
-		// iff script tag mutation
+        // iff script tag mutation
         this.iterateWindows(context.window, this.bind(function(win)
         {
             if (!win.document.documentElement)
@@ -1885,13 +1889,13 @@ this.updateScriptFiles = function(context, reload)
             for (var i = 0; i < scripts.length; ++i)
             {
                 var scriptSrc = scripts[i].getAttribute('src'); // for XUL use attribute 
-				var url = scriptSrc ? this.absoluteURL(scriptSrc, win.location.href) : win.location.href;
+                var url = scriptSrc ? this.absoluteURL(scriptSrc, win.location.href) : win.location.href;
                 url = this.normalizeURL(url ? url : win.location.href);
                 addFile(url);
             }
         }, this));
 
-		this.addSourceFilesByURL(context.sourceFiles, sourceFileMap);
+        this.addSourceFilesByURL(context.sourceFiles, sourceFileMap);
 
         //addFile(context.window.location.href); // ?? This should be handled by the first iteration of iterateWindows 
     }
@@ -1901,22 +1905,22 @@ this.updateScriptFiles = function(context, reload)
 
 this.addSourceFilesByURL = function(sourceFiles, sourceFilesByURL) 
 {
-	for (url in sourceFilesByURL)
-	{
-		if (Firebug.showAllSourceFiles || this.showThisSourceFile(url)) 
-		{
-			var sourceFile = sourceFilesByURL[url];   
-			sourceFiles.push(sourceFile);     // will append, whether or not the map was overwritten
-		}
-	}
+    for (url in sourceFilesByURL)
+    {
+        if (Firebug.showAllSourceFiles || this.showThisSourceFile(url)) 
+        {
+            var sourceFile = sourceFilesByURL[url];   
+            sourceFiles.push(sourceFile);     // will append, whether or not the map was overwritten
+        }
+    }
 };
 
 this.showThisSourceFile = function(url)
 {
-	//-----------------------123456789
-	if (url.substr(0, 9) == "chrome://")
-		return false;
-	return true;
+    //-----------------------123456789
+    if (url.substr(0, 9) == "chrome://")
+        return false;
+    return true;
 }
 
 // ************************************************************************************************
@@ -2076,19 +2080,32 @@ this.isShift = function(event)
 
 this.dispatch = function(listeners, name, args)
 {
-	try {
-	    for (var i = 0; i < listeners.length; ++i)
-	    {
-	        var listener = listeners[i];
-	        if (name in listener)
-	            listener[name].apply(listener, args);
-	    }		
-	}
-	catch (exc)
+    try {
+        for (var i = 0; i < listeners.length; ++i)
+        {
+            var listener = listeners[i];
+            if (name in listener)
+                listener[name].apply(listener, args);
+        }       
+    }
+    catch (exc)
     {
             FBTrace.dumpProperties(" Exception in lib.dispatch "+ name, exc); // XXXjjb
-    }	
+    }   
+};
 
+this.dispatch2 = function(listeners, name, args)
+{
+    for (var i = 0; i < listeners.length; ++i)
+    {
+        var listener = listeners[i];
+        if (name in listener)
+        {
+            var result = listener[name].apply(listener, args);
+            if ( result )
+                return result;
+        }
+    }
 };
 
 // ************************************************************************************************
@@ -2228,16 +2245,16 @@ this.getFileName = function(url)
 
 this.splitFileName = function(url)
 { // Dead code
-	var d = this.reDataURL.exec(url);
-	if (d) 
-	{ 
-		var path = decodeURIComponent(d[1]);
-		if (!d[2])
-			return { path: path, name: 'eval' };
-		else 
-			return { path: path, name: 'eval', line: d[2] };
-	}
-	
+    var d = this.reDataURL.exec(url);
+    if (d) 
+    { 
+        var path = decodeURIComponent(d[1]);
+        if (!d[2])
+            return { path: path, name: 'eval' };
+        else 
+            return { path: path, name: 'eval', line: d[2] };
+    }
+    
     var m = reSplitFile.exec(url);
     if (!m)
         return {name: url, path: url};
@@ -2249,25 +2266,25 @@ this.splitFileName = function(url)
 
 this.splitURLBase = function(url)
 {
-	this.reDataURL.lastIndex = 0;
-	var d = this.reDataURL.exec(url); // 1: fileName, 2: baseLineNumber, 3: first line
-	if (d) 
-	{ 
-		var src_starts = this.reDataURL.lastIndex;
-		var caller_URL = decodeURIComponent(d[1]);
-		var caller_split = this.splitURLTrue(caller_URL);
-		
-		if (!d[3]) 
-			var hint = url.substr(src_starts);
-		else 
-			var hint = decodeURIComponent(d[3]).replace(/\s*$/, "");
-			
-		if (!d[2])
-			return { path: caller_split.path, name: 'eval->'+hint };
-		else 
-			return { path: caller_split.path, name: 'eval->'+hint, line: d[2] };
-	}
-	return this.splitURLTrue(url);
+    this.reDataURL.lastIndex = 0;
+    var d = this.reDataURL.exec(url); // 1: fileName, 2: baseLineNumber, 3: first line
+    if (d) 
+    { 
+        var src_starts = this.reDataURL.lastIndex;
+        var caller_URL = decodeURIComponent(d[1]);
+        var caller_split = this.splitURLTrue(caller_URL);
+        
+        if (!d[3]) 
+            var hint = url.substr(src_starts);
+        else 
+            var hint = decodeURIComponent(d[3]).replace(/\s*$/, "");
+            
+        if (!d[2])
+            return { path: caller_split.path, name: 'eval->'+hint };
+        else 
+            return { path: caller_split.path, name: 'eval->'+hint, line: d[2] };
+    }
+    return this.splitURLTrue(url);
 };
 
 this.splitURLTrue = function(url)
@@ -2296,6 +2313,14 @@ this.isSystemURL = function(url)
     else if (url.substr(0, 6) == "about:")
         return true;
     else if (url.indexOf("firebug-service.js") != -1)
+        return true;
+    else
+        return false;
+};
+
+this.isLocalURL = function(url)
+{
+    if (url.substr(0, 5) == "file:")
         return true;
     else
         return false;
@@ -2447,6 +2472,49 @@ this.readPostText = function(url, context)
          }
      }
 };
+
+// ************************************************************************************************
+// Programs
+
+this.launchProgram = function(exePath, args)
+{
+    try {
+        var file = this.CCIN("@mozilla.org/file/local;1", "nsILocalFile");
+        if (this.getPlatformName() == "Darwin")
+        {
+            args = this.extendArray(["-a", exePath], args);
+            exePath = "/usr/bin/open";
+        }
+        file.initWithPath(exePath);
+        if (!file.exists())
+            return false;
+        var process = this.CCIN("@mozilla.org/process/util;1", "nsIProcess");
+        process.init(file);
+        process.run(false, args, args.length, {});
+        return true;
+    }
+    catch(exc)
+    {
+        this.ERROR(exc);
+    }
+    return false;
+};
+
+this.getIconURLForFile = function(path)
+{
+    const ios = this.CCSV("@mozilla.org/network/io-service;1", "nsIIOService");
+    const fph = ios.getProtocolHandler("file").QueryInterface(this.CI("nsIFileProtocolHandler"));
+    try {
+        var file = this.CCIN("@mozilla.org/file/local;1", "nsILocalFile");
+        file.initWithPath(path);
+        return "moz-icon://" + fph.getURLSpecFromFile(file) + "?size=16";  
+    }
+    catch(exc)
+    {
+        this.ERROR(exc);
+    }
+    return null;
+}
 
 // ************************************************************************************************
 
@@ -2660,56 +2728,53 @@ this.SourceFile = function(url, context)
 {
     this.href = url;
     this.lineMap = {};
-	this.pcMapTypeByScriptTag = {}; 
-	context.sourceFileMap[url] = this;
+    this.pcMapTypeByScriptTag = {}; 
+    context.sourceFileMap[url] = this;
 };
-
-this.PCMAP_SOURCETEXT = this.CI("jsdIScript").PCMAP_SOURCETEXT;  // XXXjjb not the normal way constant are defined
-this.PCMAP_PRETTYPRINT = this.CI("jsdIScript").PCMAP_PRETTYPRINT;
 
 this.SourceFile.prototype = 
 {
-	toString: function()
-	{
-		var str = this.href + " ( ";
-		for (tag in this.pcMapTypeByScriptTag)
-			str += tag+" ";
-		str += ")";
-		return str;
-	},
-	
+    toString: function()
+    {
+        var str = this.href + " ( ";
+        for (tag in this.pcMapTypeByScriptTag)
+            str += tag+" ";
+        str += ")";
+        return str;
+    },
+    
     dumpLineMap: function()
     {
         var str = "SourceFile " + this.href+"; lineMap: ";
-		for (line in this.lineMap) str += "["+line+"]="+this.lineMap[line];		
-		return str;
+        for (line in this.lineMap) str += "["+line+"]="+this.lineMap[line];     
+        return str;
     },
     
-	hasLineTableForScript: function(tag)
-	{
-		return this.pcMapTypeByScriptTag[tag];
-	},
-	
+    hasLineTableForScript: function(tag)
+    {
+        return this.pcMapTypeByScriptTag[tag];
+    },
+    
     addToLineTable: function(script, trueBaseLineNumber, sourceLines) 
-    {	
-    	var pcmap_type = (sourceLines) ? FBL.PCMAP_PRETTYPRINT : FBL.PCMAP_SOURCETEXT;
-    	var lineCount = (sourceLines) ? sourceLines.length : script.lineExtent;
-    	
-		this.pcMapTypeByScriptTag[script.tag] = pcmap_type;
-    	
-    	for (var i = 0; i <= lineCount; i++) 
-    	{
-    		var scriptLineNo = i + script.baseLineNumber;
-    		var mapLineNo = i + trueBaseLineNumber;
+    {   
+        var pcmap_type = (sourceLines) ? PCMAP_PRETTYPRINT : PCMAP_SOURCETEXT;
+        var lineCount = (sourceLines) ? sourceLines.length : script.lineExtent;
+        
+        this.pcMapTypeByScriptTag[script.tag] = pcmap_type;
+        
+        for (var i = 0; i <= lineCount; i++) 
+        {
+            var scriptLineNo = i + script.baseLineNumber;
+            var mapLineNo = i + trueBaseLineNumber;
 
-    		if (script.isLineExecutable(scriptLineNo, pcmap_type))     			
-    			this.lineMap[mapLineNo] = script.tag;
-	    }
+            if (script.isLineExecutable(scriptLineNo, pcmap_type))              
+                this.lineMap[mapLineNo] = script.tag;
+        }
     },
     
     isLineExecutable: function(lineNo) 
     {
-    	return this.lineMap[lineNo];
+        return this.lineMap[lineNo];
     }
 };
 
@@ -2732,34 +2797,34 @@ this.StackTrace.prototype =
 {
     toString: function()
     {
-    	var trace = "<top>\n";
-    	for (var i = 0; i < this.frames.length; i++) 
-    	{
-	    	trace += "[" + i + "]"+ this.frames[i]+"\n";
-    	}
-    	trace += "<bottom>\n";
+        var trace = "<top>\n";
+        for (var i = 0; i < this.frames.length; i++) 
+        {
+            trace += "[" + i + "]"+ this.frames[i]+"\n";
+        }
+        trace += "<bottom>\n";
         return trace;
     },
-	reverse: function() 
-	{
-		this.frames.reverse();
-		return this;		
-	},
-	
-	destroy: function()
-	{
-		for (var i = 0; i < this.frames.length; i++)
-		{
-			this.frames[i].destroy();
-		}
-	}
+    reverse: function() 
+    {
+        this.frames.reverse();
+        return this;        
+    },
+    
+    destroy: function()
+    {
+        for (var i = 0; i < this.frames.length; i++)
+        {
+            this.frames[i].destroy();
+        }
+    }
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
 
 this.StackFrame = function(context, fn, script, href, lineNo, args)
 {
-	this.context = context;
+    this.context = context;
     this.fn = fn;  
     this.script = script; 
     this.href = href;
@@ -2771,14 +2836,16 @@ this.StackFrame = function(context, fn, script, href, lineNo, args)
 this.StackFrame.prototype = 
 {
     toString: function()
-    {// XXXjjb analyze args and fn?
-        return "("+this.flags+")"+this.href+":"+this.script.baseLineNumber+"-"+(this.script.baseLineNumber+this.script.lineExtent)+"@"+this.lineNo;
+    {
+        // XXXjjb analyze args and fn?
+        return "("+this.flags+")"+this.href+":"+this.script.baseLineNumber+"-"
+                  +(this.script.baseLineNumber+this.script.lineExtent)+"@"+this.lineNo;
     },
-	destroy: function() 
-	{
-		this.script = null;
-		this.fn = null;
-	}
+    destroy: function() 
+    {
+        this.script = null;
+        this.fn = null;
+    }
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
@@ -4638,10 +4705,10 @@ const invisibleTags = this.invisibleTags =
     "style": 1,
     "script": 1,
     "noscript": 1,
-    "br": 1,   
+    "br": 1   
 };
 
-// ************************************************************************************************
+ // ************************************************************************************************
 // Script injection
 
 this.evalInTo = function(win, text)
@@ -4666,6 +4733,7 @@ this.evalInTo = function(win, text)
 		}
 	}
 }
+
 // ************************************************************************************************
 // Debug Logging
 
@@ -4678,11 +4746,3 @@ this.ERROR = function(exc)
 // ************************************************************************************************
 
 }).apply(FirebugLib);
-
-function ddd(text)
-{
-    const consoleService = Components.classes["@mozilla.org/consoleservice;1"].
-        getService(Components.interfaces["nsIConsoleService"]);
-    consoleService.logStringMessage(text + "");
-}
-
