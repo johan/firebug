@@ -1,7 +1,7 @@
 /* See license.txt for terms of usage */
 
 FBL.ns(function() { with (FBL) {
- 
+
 /**
  * Creates a tree based on objects provided by a separate "view" object.
  *
@@ -23,7 +23,7 @@ top.InsideOutBox = function(view, box)
     box.addEventListener("mousedown", this.onMouseDown, false);
 };
 
-InsideOutBox.prototype = 
+InsideOutBox.prototype =
 {
     destroy: function()
     {
@@ -42,7 +42,7 @@ InsideOutBox.prototype =
         var firstChild = this.view.getChildObject(object, 0);
         if (firstChild)
             object = firstChild;
-    
+
         var objectBox = this.createObjectBox(object);
         this.openObjectBox(objectBox);
         return objectBox;
@@ -87,12 +87,12 @@ InsideOutBox.prototype =
         if (this.highlightedObjectBox)
         {
             removeClass(this.highlightedObjectBox, "highlighted");
-    
+
             var highlightedBox = this.getParentObjectBox(this.highlightedObjectBox);
             for (; highlightedBox; highlightedBox = this.getParentObjectBox(highlightedBox))
                 removeClass(highlightedBox, "highlightOpen");
         }
-    
+
         this.highlightedObjectBox = objectBox;
 
         if (objectBox)
@@ -109,17 +109,17 @@ InsideOutBox.prototype =
 
     selectObjectBox: function(objectBox, forceOpen)
     {
-        var isSelected = this.selectedObjectBox && objectBox == this.selectedObjectBox;    
+        var isSelected = this.selectedObjectBox && objectBox == this.selectedObjectBox;
         if (!isSelected)
         {
             removeClass(this.selectedObjectBox, "selected");
-    
+
             this.selectedObjectBox = objectBox;
-        
+
             if (objectBox)
             {
                 setClass(objectBox, "selected");
-            
+
                 // Force it open the first time it is selected
                 if (forceOpen)
                     this.toggleObjectBox(objectBox, true);
@@ -143,7 +143,7 @@ InsideOutBox.prototype =
         var nodeChildBox = this.getChildObjectBox(objectBox);
         if (!nodeChildBox)
             return;
-        
+
         if (!objectBox.populated)
         {
             var firstChild = this.view.getChildObject(objectBox.repObject, 0);
@@ -152,12 +152,12 @@ InsideOutBox.prototype =
 
         setClass(objectBox, "open");
     },
-    
+
     contractObjectBox: function(objectBox)
     {
         removeClass(objectBox, "open");
     },
-    
+
     toggleObjectBox: function(objectBox, forceOpen)
     {
         var isOpen = hasClass(objectBox, "open");
@@ -172,12 +172,12 @@ InsideOutBox.prototype =
     {
         return findNext(objectBox, isVisibleTarget, false, this.box);
     },
-    
+
     getPreviousObjectBox: function(objectBox)
     {
         return findPrevious(objectBox, isVisibleTarget, true, this.box);
     },
-    
+
     /**
      * Creates all of the boxes for an object, its ancestors, and siblings.
      */
@@ -192,7 +192,7 @@ InsideOutBox.prototype =
 
         // Get or create all of the boxes for the target and its ancestors
         var objectBox = this.createObjectBoxes(object, this.rootObject);
-        
+
         if (!objectBox)
             return null;
         else if (object == this.rootObject)
@@ -208,7 +208,7 @@ InsideOutBox.prototype =
     {
         if (!object)
             return null;
-    
+
         if (object == rootObject)
         {
             if (!this.rootObjectBox || this.rootObjectBox.repObject != rootObject)
@@ -231,11 +231,11 @@ InsideOutBox.prototype =
             var parentObjectBox = this.createObjectBoxes(parentNode, rootObject);
             if (!parentObjectBox)
                 return null;
-        
+
             var parentChildBox = this.getChildObjectBox(parentObjectBox);
             if (!parentChildBox)
                 return null;
-        
+
             var childObjectBox = this.findChildObjectBox(parentChildBox, object);
             return childObjectBox
                 ? childObjectBox
@@ -247,7 +247,7 @@ InsideOutBox.prototype =
     {
         if (!object)
             return null;
-    
+
         if (object == this.rootObject)
             return this.rootObjectBox;
         else
@@ -256,22 +256,22 @@ InsideOutBox.prototype =
             var parentObjectBox = this.findObjectBox(parentNode);
             if (!parentObjectBox)
                 return null;
-        
+
             var parentChildBox = this.getChildObjectBox(parentObjectBox);
             if (!parentChildBox)
                 return null;
-        
+
             return this.findChildObjectBox(parentChildBox, object);
         }
     },
 
     appendChildBox: function(parentNodeBox, repObject)
     {
-        var childBox = this.getChildObjectBox(parentNodeBox);    
+        var childBox = this.getChildObjectBox(parentNodeBox);
         var objectBox = this.findChildObjectBox(childBox, repObject);
         if (objectBox)
             return objectBox;
-    
+
         objectBox = this.view.createObjectBox(repObject);
         if (objectBox)
         {
@@ -283,11 +283,11 @@ InsideOutBox.prototype =
 
     insertChildBoxBefore: function(parentNodeBox, repObject, nextSibling)
     {
-        var childBox = this.getChildObjectBox(parentNodeBox);    
+        var childBox = this.getChildObjectBox(parentNodeBox);
         var objectBox = this.findChildObjectBox(childBox, repObject);
         if (objectBox)
             return objectBox;
-    
+
         objectBox = this.view.createObjectBox(repObject);
         if (objectBox)
         {
@@ -306,20 +306,20 @@ InsideOutBox.prototype =
     },
 
     populateChildBox: function(repObject, nodeChildBox)
-    {    
+    {
         if (!repObject)
             return null;
 
         var parentObjectBox = nodeChildBox.parentNode;
         if (parentObjectBox.populated)
             return this.findChildObjectBox(nodeChildBox, repObject);
-        
+
         var lastSiblingBox = this.getChildObjectBox(nodeChildBox);
         var siblingBox = nodeChildBox.firstChild;
         var targetBox = null;
 
         var view = this.view;
-    
+
         var targetSibling = null;
         var parentNode = view.getParentObject(repObject);
         for (var i = 0; 1; ++i)
@@ -327,11 +327,11 @@ InsideOutBox.prototype =
             targetSibling = view.getChildObject(parentNode, i, targetSibling);
             if (!targetSibling)
                 break;
-        
+
             // Check if we need to start appending, or continue to insert before
             if (lastSiblingBox && lastSiblingBox.repObject == targetSibling)
                 lastSiblingBox = null;
-        
+
             if (!siblingBox || siblingBox.repObject != targetSibling)
             {
                 var newBox = view.createObjectBox(targetSibling);
@@ -342,7 +342,7 @@ InsideOutBox.prototype =
                     else
                         nodeChildBox.appendChild(newBox);
                 }
-            
+
                 siblingBox = newBox;
             }
 
@@ -352,7 +352,7 @@ InsideOutBox.prototype =
             if (siblingBox && siblingBox.repObject == targetSibling)
                 siblingBox = siblingBox.nextSibling;
         }
-    
+
         if (targetBox)
             parentObjectBox.populated = true;
 
@@ -376,7 +376,7 @@ InsideOutBox.prototype =
         {
             if (childBox.repObject == repObject)
                 return childBox;
-        }    
+        }
     },
 
     getRootNode: function(node)

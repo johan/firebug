@@ -21,7 +21,7 @@ Firebug.Console = extend(Firebug.Module,
         dispatch(listeners,"logFormatted",[context, objects, className, sourceLink]);
         return this.logRow(appendFormatted, objects, context, className, null, sourceLink, noThrottle);
     },
-    
+
     openGroup: function(objects, context, className, rep, noThrottle, sourceLink, noPush)
     {
         return this.logRow(appendOpenGroup, objects, context, className, rep, sourceLink, noThrottle);
@@ -31,7 +31,7 @@ Firebug.Console = extend(Firebug.Module,
     {
         return this.logRow(appendCloseGroup, null, context, null, null, null, noThrottle, true);
     },
-    
+
     logRow: function(appender, objects, context, className, rep, sourceLink, noThrottle, noRow)
     {
         if (!context)
@@ -58,7 +58,7 @@ Firebug.Console = extend(Firebug.Module,
         var panel = this.getPanel(context);
         panel.appendFormatted(args, row);
     },
-    
+
     clear: function(context)
     {
         if (!context)
@@ -70,8 +70,8 @@ Firebug.Console = extend(Firebug.Module,
         if (panel)
             panel.clear();
     },
-    
-    // Override to direct output to your panel 
+
+    // Override to direct output to your panel
     getPanel: function(context, noCreate)
     {
         return context.getPanel("console", noCreate);
@@ -81,13 +81,13 @@ Firebug.Console = extend(Firebug.Module,
     {
         listeners.push(listener);
     },
-    
+
     removeListener: function(listener)
     {
         remove(listeners, listener);
     },
 
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
     // extends Module
 
     showContext: function(browser, context)
@@ -113,12 +113,12 @@ Firebug.Console = extend(Firebug.Module,
     }
 });
 
-Firebug.ConsoleListener = 
+Firebug.ConsoleListener =
 {
     log: function(context, object, className, sourceLink)
     {
     },
-    
+
     logFormatted: function(context, objects, className, sourceLink)
     {
     }
@@ -134,7 +134,7 @@ Firebug.ConsolePanel.prototype = extend(Firebug.Panel,
     messageCount: 0,
     lastLogTime: 0,
     groups: null,
-    
+
     append: function(appender, objects, className, rep, sourceLink, noRow)
     {
         var container = this.getTopContainer();
@@ -170,8 +170,8 @@ Firebug.ConsolePanel.prototype = extend(Firebug.Panel,
             clearNode(this.panelNode);
     },
 
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
-    
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
     appendObject: function(object, row, rep)
     {
         if (!rep)
@@ -259,16 +259,16 @@ Firebug.ConsolePanel.prototype = extend(Firebug.Panel,
     appendCloseGroup: function(object, row, rep)
     {
         if (this.groups)
-            this.groups.pop();    
+            this.groups.pop();
     },
-    
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *    
+
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
     // extends Panel
-    
+
     name: "console",
     searchable: true,
     editable: false,
-    
+
     show: function(state)
     {
         var consoleButtons = this.context.browser.chrome.$("fbConsoleButtons");
@@ -276,7 +276,7 @@ Firebug.ConsolePanel.prototype = extend(Firebug.Panel,
         if (this.wasScrolledToBottom)
             scrollToBottom(this.panelNode);
     },
-    
+
     hide: function()
     {
         var consoleButtons = this.context.browser.chrome.$("fbConsoleButtons");
@@ -292,7 +292,6 @@ Firebug.ConsolePanel.prototype = extend(Firebug.Panel,
             optionMenu("ShowCSSErrors", "showCSSErrors"),
             optionMenu("ShowXMLErrors", "showXMLErrors"),
             optionMenu("ShowXMLHttpRequests", "showXMLHttpRequests"),
-            optionMenu("ShowWebErrors", "showWebErrors"),
             optionMenu("ShowChromeErrors", "showChromeErrors"),
             optionMenu("ShowChromeMessages", "showChromeMessages"),
             optionMenu("ShowExternalErrors", "showExternalErrors"),
@@ -322,19 +321,19 @@ Firebug.ConsolePanel.prototype = extend(Firebug.Panel,
         var logRow = search.find(text);
         if (!logRow)
             return false;
-        
+
         for (; logRow; logRow = search.findNext())
         {
             setClass(logRow, "matched");
             this.matchSet.push(logRow);
         }
-        
+
         return true;
     },
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
     // private
-    
+
     createRow: function(rowName, className)
     {
         var elt = this.document.createElement("div");
@@ -388,7 +387,7 @@ Firebug.ConsolePanel.prototype = extend(Firebug.Panel,
         endPt.setStartAfter(logRow);
 
         return finder.Find(text, searchRange, startPt, endPt) != null;
-    }    
+    }
 });
 
 // ************************************************************************************************
@@ -396,8 +395,8 @@ Firebug.ConsolePanel.prototype = extend(Firebug.Panel,
 function parseFormat(format)
 {
     var parts = [];
-    
-    var reg = /((^%|.%)(\d+)?(\.)([a-zA-Z]))|((^%|.%)([a-zA-Z]))/;    
+
+    var reg = /((^%|.%)(\d+)?(\.)([a-zA-Z]))|((^%|.%)([a-zA-Z]))/;
     for (var m = reg.exec(format); m; m = reg.exec(format))
     {
         if (m[0].substr(0, 2) == "%%")
@@ -429,12 +428,12 @@ function parseFormat(format)
             parts.push(format.substr(0, m[0][0] == "%" ? m.index : m.index+1));
             parts.push({rep: rep, precision: precision});
         }
-        
+
         format = format.substr(m.index+m[0].length);
     }
-    
+
     parts.push(format);
-    
+
     return parts;
 }
 

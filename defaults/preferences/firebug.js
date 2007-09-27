@@ -17,7 +17,6 @@ pref("extensions.firebug.showJSErrors", true);
 pref("extensions.firebug.showJSWarnings", false);
 pref("extensions.firebug.showCSSErrors", false);
 pref("extensions.firebug.showXMLErrors", false);
-pref("extensions.firebug.showWebErrors", true);
 pref("extensions.firebug.showChromeErrors", false);
 pref("extensions.firebug.showChromeMessages", false);
 pref("extensions.firebug.showExternalErrors", false);
