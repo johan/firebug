@@ -703,14 +703,14 @@ FirebugService.prototype =
         }                                                                                                              /*@explore*/
         catch(exc)                                                                                                     /*@explore*/
         {                                                                                                              /*@explore*/
-            dumpProperties("fbs.enableDebugger: failed to set tracing preferences:"+exc);	                           /*@explore*/
+            dumpProperties("fbs.enableDebugger: failed to set tracing preferences:"+exc);                              /*@explore*/
         }                                                                                                              /*@explore*/
         if (this.DBG_CREATION || this.DBG_BP || this.DBG_ERRORS || this.DBG_STEP)                                      /*@explore*/
         {                                                                                                              /*@explore*/
             ddd("\nstart fbs debug log "+Date()+"\n");                                                                 /*@explore*/
             ddd("fbs.DBG_CREATION: "+fbs.DBG_CREATION+" fbs.DBG_BP:"+fbs.DBG_BP+" fbs.DBG_ERRORS:"+fbs.DBG_ERRORS      /*@explore*/
                 +" fbs.DBG_STEP:"+fbs.DBG_STEP+"\n");                                                                  /*@explore*/
-        }	                                                                                                           /*@explore*/
+        }                                                                                                              /*@explore*/
 
         if (enabledDebugger)
             return;
@@ -1121,18 +1121,18 @@ FirebugService.prototype =
             if (!fileName || isSystemURL(fileName))
                 return;
 
-            /* Wait 1.2 if (!fbs.showEvalSources)
-            {
-                dispatch(scriptListeners,"onScriptCreated",[script, fileName, script.baseLineNumber]);
-                return;  // some stuff will not work, incl. eval buffers will not show.
-            }
-            */
-               if (fbs.DBG_CREATION) {                                                                                    /*@explore*/
-                   ddd("onScriptCreated: "+script.tag+"@("+script.baseLineNumber+"-"                                      /*@explore*/
+            if (fbs.DBG_CREATION) {                                                                                    /*@explore*/
+                ddd("onScriptCreated: "+script.tag+"@("+script.baseLineNumber+"-"                                      /*@explore*/
                         +(script.baseLineNumber+script.lineExtent)+")"+script.fileName+"\n");                          /*@explore*/
                 ddd("onScriptCreated name: \'"+script.functionName+"\'\n"+script.functionSource+"\n");                 /*@explore*/
-               }                                                                                                          /*@explore*/
+            }                                                                                                          /*@explore*/
 
+            if (!fbs.showEvalSources)
+            {
+                this.registerTopLevelScript(script, fileName, !script.functionName ? "top-level" : "nested in top-level");
+                return;
+            }
+            
             if (!script.functionName)
             {
                 // top or eval-level
@@ -2054,15 +2054,15 @@ function ERROR(text)
 
 function ddd(text)
 {
-    if (true)      /* in the traced version we dump to file */														/*@explore*/
-        dumpToFile(text);     																						/*@explore*/
-    else      		/* but in the untraced version 'else' will be removed and we dump to log */						/*@explore*/
+    if (true)      /* in the traced version we dump to file */                                                      /*@explore*/
+        dumpToFile(text);                                                                                           /*@explore*/
+    else            /* but in the untraced version 'else' will be removed and we dump to log */                     /*@explore*/
         ERROR(text);
 }
 
 function dumpit(text)
 {
-    const DirService = 	CC("@mozilla.org/file/directory_service;1")
+    const DirService =  CC("@mozilla.org/file/directory_service;1")
         .getService(CI("nsIDirectoryServiceProvider"));
     var tmpDir = DirService.getFile(NS_OS_TEMP_DIR, {});
     var file = tmpDir.QueryInterface(CI("nsILocalFile"));
@@ -2093,7 +2093,7 @@ function getStackDump()                                                         
 function getPropertyName(object, value)                                                                                /*@explore*/
 {                                                                                                                      /*@explore*/
     for (p in object)                                                                                                  /*@explore*/
-        if (value == object[p]) return p;	                                                                           /*@explore*/
+        if (value == object[p]) return p;                                                                              /*@explore*/
 }                                                                                                                      /*@explore*/
 
 function dumpProperties(title, obj)                                                                                    /*@explore*/

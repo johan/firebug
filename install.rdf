@@ -5,7 +5,7 @@
 
   <Description about="urn:mozilla:install-manifest">
     <em:id>firebug@software.joehewitt.com</em:id>
-    <em:version>1.1.0b2X</em:version>
+    <em:version>1.1.0b3X</em:version>
     <em:type>2</em:type>
 
     <!-- Firefox -->
@@ -30,7 +30,7 @@
     <em:description>Web Development Evolved. (See http://fireclipse.xucia.com for updates)</em:description>
     <em:creator>Joe Hewitt</em:creator>
     <em:contributor>1.1 enhancements: John J. Barton (IBM Almaden)</em:contributor>
-    <em:contributor>Max Stepanov (Aptana Inc.)</em:contributor>
+    <em:contributor>Max Stepanov (Aptana, Inc.)</em:contributor>
     <em:iconURL>chrome://firebug/content/firebug.png</em:iconURL>
     <em:homepageURL>http://www.getfirebug.com/</em:homepageURL>
     <em:updateURL>http://fireclipse.xucia.com/files/fireclipse/update.rdf</em:updateURL>
