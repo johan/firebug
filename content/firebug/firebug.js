@@ -41,6 +41,7 @@ const firebugURLs =
 {
     main: "http://www.getfirebug.com",
     docs: "http://www.getfirebug.com/docs.html",
+    plugins: "http://www.getfirebug.com/plugins",
     keyboard: "http://www.getfirebug.com/keyboard.html",
     discuss: "http://groups.google.com/group/firebug",
     issues: "http://code.google.com/p/fbug/issues/list",
