@@ -479,6 +479,10 @@ Firebug.Debugger = extend(Firebug.Module,
 
                 this.syncCommands(context);
                 this.syncListeners(context);
+
+				if (FirebugContext && !FirebugContext.panelName) // XXXjjb all I know is that syncSidePanels() needs this set
+					FirebugContext.panelName = "script";
+
                 chrome.syncSidePanels();
 
                 var panel = context.getPanel("script", true);
@@ -702,7 +706,7 @@ Firebug.Debugger = extend(Firebug.Module,
 
     onToggleBreakpoint: function(url, lineNo, isSet, props)
     {
-        if (FBTrace.DBG_BP) FBTrace.sysout("debugger.onToggleBreakpoint: "+lineNo+"@"+url+"\n");                         /*@explore*/
+        if (FBTrace.DBG_BP) FBTrace.sysout("debugger.onToggleBreakpoint: "+lineNo+"@"+url+" contexts:"+TabWatcher.contexts.length+"\n");                         /*@explore*/
         for (var i = 0; i < TabWatcher.contexts.length; ++i)
         {
             var panel = TabWatcher.contexts[i].getPanel("script", true);
@@ -728,6 +732,9 @@ Firebug.Debugger = extend(Firebug.Module,
                         row.removeAttribute("disabledBreakpoint");
                     }
                 }
+                else
+                    if (FBTrace.DBG_BP) 										 													  /*@explore*/
+                        FBTrace.dumpProperties("debugger.onToggleBreakPoint no find sourcebox, sourceBoxes[url]", panel.sourceBoxes); /*@explore*/
             }
         }
     },
@@ -1352,7 +1359,7 @@ ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
         var lineNo = 1;
         while( lineNode = this.getLineNode(lineNo) )
         {
-            if (sourceFile.isLineExecutable(lineNo))
+            if (sourceFile.isInExecutableTable(lineNo))
                 lineNode.setAttribute("executable", "true");
             else
                 lineNode.removeAttribute("executable");

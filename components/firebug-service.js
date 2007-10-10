@@ -1132,7 +1132,7 @@ FirebugService.prototype =
                 this.registerTopLevelScript(script, fileName, !script.functionName ? "top-level" : "nested in top-level");
                 return;
             }
-            
+
             if (!script.functionName)
             {
                 // top or eval-level
@@ -2146,7 +2146,7 @@ function dumpToFile(text)
 {
     if (!dumpStream) dumpStream = getDumpStream();
     dumpStream.write(text, text.length);
-    //dumpStream.flush();  // If FF crashes you need to run with flush on every line
+    dumpStream.flush();  // If FF crashes you need to run with flush on every line
 }
 
 function flushDebugStream()

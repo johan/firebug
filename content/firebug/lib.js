@@ -2349,7 +2349,7 @@ this.isSystemURL = function(url)
         return false;
 };
 
-this.isSystemPage = function(win)  // TODO combine with isSystemURL
+this.isSystemPage = function(win)
 {
     try
     {
@@ -2357,19 +2357,14 @@ this.isSystemPage = function(win)  // TODO combine with isSystemURL
         if (!doc)
             return false;
 
-
-        if (doc.documentURI.indexOf("about:blank") == 0)
-            return true;
-
-        // Detect network error pages like 404
-        if (doc.documentURI.indexOf("about:neterror") == 0)
-            return true;
-
         // Detect pages for pretty printed XML
-        return (doc.styleSheets.length && doc.styleSheets[0].href
+        if ((doc.styleSheets.length && doc.styleSheets[0].href
                 == "chrome://global/content/xml/XMLPrettyPrint.css")
             || (doc.styleSheets.length > 1 && doc.styleSheets[1].href
-                == "chrome://browser/skin/feeds/subscribe.css");
+                == "chrome://browser/skin/feeds/subscribe.css"))
+            return true;
+
+        return FBL.isSystemURL(win.location.href);
     }
     catch (exc)
     {
@@ -2879,7 +2874,7 @@ this.SourceFile.prototype =
                 var pcFromLine = script.lineToPc(scriptLineNo, pcmap_type);                                            /*@explore*/
                 var lineFromPC = script.pcToLine(pcFromLine, pcmap_type);                                              /*@explore*/
                                                                                                                        /*@explore*/
-                if (this.isLineExecutable(mapLineNo))                                                                  /*@explore*/
+                if (this.isInExecutableTable(mapLineNo))                                                                  /*@explore*/
                     FBTrace.sysout("SourceFile.addToLineTable ["+mapLineNo+"]="+this.lineMap[mapLineNo]+" for scriptLineNo="+scriptLineNo+" vs "+lineFromPC+"=lineFromPC; lineToPc="+pcFromLine+" with map="+pcmap_type+"\n"); /*@explore*/
                 else                                                                                                   /*@explore*/
                     FBTrace.sysout("SourceFile.addToLineTable not executable scriptLineNo="+scriptLineNo+" vs "+lineFromPC+"=lineFromPC; lineToPc="+pcFromLine+"\n");     /*@explore*/
@@ -2888,7 +2883,7 @@ this.SourceFile.prototype =
         if (FBTrace.DBG_LINETABLE) FBTrace.sysout("SourceFile.addToLineTable: "+this.toString()+"\n");                 /*@explore*/
     },
 
-    isLineExecutable: function(lineNo)
+    isInExecutableTable: function(lineNo)
     {
         return this.lineMap[lineNo];
     }
@@ -4841,7 +4836,7 @@ const invisibleTags = this.invisibleTags =
 
 this.evalInTo = function(win, text)
 {
-    var sandbox = new Components.utils.Sandbox(win.location.href);
+    var sandbox = new Components.utils.Sandbox(win); // Use DOM Window
     try
     {
         sandbox.win = win;
