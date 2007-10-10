@@ -77,6 +77,7 @@ const prefNames =
     "showAllSourceFiles",
     "useLastLineForEvalName",
     "useFirstLineForEvalName",
+    "useFunctionSource",
 
     // DOM
     "showUserProps", "showUserFuncs", "showDOMProps", "showDOMFuncs", "showDOMConstants",

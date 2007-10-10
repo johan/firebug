@@ -809,10 +809,13 @@ Firebug.Debugger = extend(Firebug.Module,
             context.eventSourceURLByTag[script.tag] = url;
             context.eventSourceFilesByURL[url] = sourceFile;
 
-            var lines = context.sourceCache.store(url, script.functionSource);
-            if (FBTrace.DBG_EVENTS)                                                                                    /*@explore*/
-                 for (var i = 0; i < lines.length; i++) FBTrace.sysout("["+(i+2)+"]="+lines[i]+"\n");                  /*@explore*/
-            sourceFile.addToLineTable(script, 0, lines);    // trueBaselineNumber heursitic
+            if(script.fileName)
+            {
+                var lines = context.sourceCache.store(url, script.functionSource);
+                if (FBTrace.DBG_EVENTS)                                                                                /*@explore*/
+                     for (var i = 0; i < lines.length; i++) FBTrace.sysout("["+(i+2)+"]="+lines[i]+"\n");              /*@explore*/
+                sourceFile.addToLineTable(script, 0, lines);    // trueBaselineNumber heursitic
+            }
             if (FBTrace.DBG_SOURCEFILES)                                                                               /*@explore*/
                 FBTrace.sysout("debugger.onEventScript sourcefile="+sourceFile.toString()+"\n");                       /*@explore*/
 
@@ -1110,13 +1113,13 @@ Firebug.Debugger = extend(Firebug.Module,
                 if(evalExpr == "function(p,a,c,k,e,r")
                     source = "/packer/ JS compressor detected";
                 else
-                    source = frame.script.functionSource;
+                    source = Firebug.useFunctionSource ? frame.script.functionSource : "useFunctionSource option is off";
                 return source+" /* !eval("+evalThis+")) */";
             }
         }
         else
         {
-            return frame.script.functionSource; // XXXms - possible crash on OSX
+            return Firebug.useFunctionSource ? frame.script.functionSource : "useFunctionSource option is off";
         }
     },
 
@@ -1127,7 +1130,7 @@ Firebug.Debugger = extend(Firebug.Module,
 
         // data:text/javascript;fileName=x%2Cy.js;baseLineNumber=10,<the-url-encoded-data>
         var uri = "data:text/javascript;";
-        uri += "fileName="+encodeURIComponent(script.fileName) + ";";
+        uri += "fileName="+encodeURIComponent(!script.fileName?"":script.fileName) + ";";
         uri += "baseLineNumber="+encodeURIComponent(script.baseLineNumber) + ","
         uri += encodeURIComponent(eval_body);
 
@@ -1771,7 +1774,7 @@ ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
         return [
             optionMenu("BreakOnAllErrors", "breakOnErrors"),
             // wait 1.2 optionMenu("BreakOnTopLevel", "breakOnTopLevel"),
-            // wait 1.2 optionMenu("ShowEvalSources", "showEvalSources"),
+            optionMenu("ShowEvalSources", "showEvalSources"),
             optionMenu("ShowAllSourceFiles", "showAllSourceFiles"),
             optionMenu("UseLastLineForEvalName", "useLastLineForEvalName"),
             optionMenu("UseFirstLineForEvalName", "useFirstLineForEvalName")

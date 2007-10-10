@@ -39,10 +39,11 @@ pref("extensions.firebug.showComputedStyle", false);
 pref("extensions.firebug.breakOnErrors", false);
 pref("extensions.firebug.breakOnTopLevel", false);
 pref("extensions.firebug.useDebugAdapter", false);
-pref("extensions.firebug.showEvalSources", false);
+pref("extensions.firebug.showEvalSources", true);
 pref("extensions.firebug.showAllSourceFiles", false);
 pref("extensions.firebug.useLastLineForEvalName", false);
 pref("extensions.firebug.useFirstLineForEvalName", false);
+pref("extensions.firebug.useFunctionSource", false);
 
 // Stack
 pref("extensions.firebug.omitObjectPathStack", false);
