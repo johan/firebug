@@ -218,7 +218,6 @@ InsideOutBox.prototype =
 
                 this.highlightedObjectBox = null;
                 this.selectedObjectBox = null;
-
                 this.rootObjectBox = this.view.createObjectBox(object, true);
                 this.box.appendChild(this.rootObjectBox);
             }
@@ -305,7 +304,7 @@ InsideOutBox.prototype =
             childBox.removeChild(objectBox);
     },
 
-    populateChildBox: function(repObject, nodeChildBox)
+    populateChildBox: function(repObject, nodeChildBox)  // We want all children of the parent of repObject.
     {
         if (!repObject)
             return null;
@@ -384,6 +383,7 @@ InsideOutBox.prototype =
         while (1)
         {
             var parentNode = this.view.getParentObject(node);
+
             if (!parentNode)
                 return node;
             else
@@ -427,6 +427,14 @@ function isVisibleTarget(node)
         }
         return true;
     }
+}
+
+function formatNode(object)
+{
+	if (object)
+		return (object.localName ? object.localName : object);
+	else
+		return "(null object)";
 }
 
 }});

@@ -471,6 +471,10 @@ Firebug.Debugger = extend(Firebug.Module,
 
                 this.syncCommands(context);
                 this.syncListeners(context);
+
+                if (FirebugContext && !FirebugContext.panelName) // XXXjjb all I know is that syncSidePanels() needs this set
+                    FirebugContext.panelName = "script";
+
                 chrome.syncSidePanels();
 
                 var panel = context.getPanel("script", true);
@@ -707,6 +711,9 @@ Firebug.Debugger = extend(Firebug.Module,
                         row.removeAttribute("disabledBreakpoint");
                     }
                 }
+                else // trace on else
+                {
+                }
             }
         }
     },
@@ -777,8 +784,11 @@ Firebug.Debugger = extend(Firebug.Module,
             context.eventSourceURLByTag[script.tag] = url;
             context.eventSourceFilesByURL[url] = sourceFile;
 
-            var lines = context.sourceCache.store(url, script.functionSource);
-            sourceFile.addToLineTable(script, 0, lines);    // trueBaselineNumber heursitic
+            if(script.fileName)
+            {
+                var lines = context.sourceCache.store(url, script.functionSource);
+                sourceFile.addToLineTable(script, 0, lines);    // trueBaselineNumber heursitic
+            }
 
             dispatch(listeners,"onEventScript",[context, frame, url]);
             return url;
@@ -1047,13 +1057,13 @@ Firebug.Debugger = extend(Firebug.Module,
                 if(evalExpr == "function(p,a,c,k,e,r")
                     source = "/packer/ JS compressor detected";
                 else
-                    source = frame.script.functionSource;
+                    source = Firebug.useFunctionSource ? frame.script.functionSource : "useFunctionSource option is off";
                 return source+" /* !eval("+evalThis+")) */";
             }
         }
         else
         {
-            return frame.script.functionSource; // XXXms - possible crash on OSX
+            return Firebug.useFunctionSource ? frame.script.functionSource : "useFunctionSource option is off";
         }
     },
 
@@ -1064,7 +1074,7 @@ Firebug.Debugger = extend(Firebug.Module,
 
         // data:text/javascript;fileName=x%2Cy.js;baseLineNumber=10,<the-url-encoded-data>
         var uri = "data:text/javascript;";
-        uri += "fileName="+encodeURIComponent(script.fileName) + ";";
+        uri += "fileName="+encodeURIComponent(!script.fileName?"":script.fileName) + ";";
         uri += "baseLineNumber="+encodeURIComponent(script.baseLineNumber) + ","
         uri += encodeURIComponent(eval_body);
 
@@ -1286,7 +1296,7 @@ ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
         var lineNo = 1;
         while( lineNode = this.getLineNode(lineNo) )
         {
-            if (sourceFile.isLineExecutable(lineNo))
+            if (sourceFile.isInExecutableTable(lineNo))
                 lineNode.setAttribute("executable", "true");
             else
                 lineNode.removeAttribute("executable");
@@ -1697,10 +1707,11 @@ ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
         return [
             optionMenu("BreakOnAllErrors", "breakOnErrors"),
             // wait 1.2 optionMenu("BreakOnTopLevel", "breakOnTopLevel"),
-            // wait 1.2 optionMenu("ShowEvalSources", "showEvalSources"),
+            optionMenu("ShowEvalSources", "showEvalSources"),
             optionMenu("ShowAllSourceFiles", "showAllSourceFiles"),
             optionMenu("UseLastLineForEvalName", "useLastLineForEvalName"),
-            optionMenu("UseFirstLineForEvalName", "useFirstLineForEvalName")
+            optionMenu("UseFirstLineForEvalName", "useFirstLineForEvalName"),
+            optionMenu("UseFunctionSource", "useFunctionSource")
         ];
     },
 

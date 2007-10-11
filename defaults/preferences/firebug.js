@@ -43,6 +43,7 @@ pref("extensions.firebug.showEvalSources", true);
 pref("extensions.firebug.showAllSourceFiles", false);
 pref("extensions.firebug.useLastLineForEvalName", false);
 pref("extensions.firebug.useFirstLineForEvalName", false);
+pref("extensions.firebug.useFunctionSource", false);
 
 // Stack
 pref("extensions.firebug.omitObjectPathStack", false);

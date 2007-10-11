@@ -150,9 +150,11 @@
                     <menuitem label="&firebug.KeyShortcuts;" oncommand="Firebug.visitWebsite('keyboard')"/>
                     <menuitem label="&firebug.Forums;" oncommand="Firebug.visitWebsite('discuss')"/>
                     <menuitem label="&firebug.Issues;" oncommand="Firebug.visitWebsite('issues')"/>
-                    <menuseparator/>
-
                     <menuitem label="&firebug.Donate;" oncommand="Firebug.visitWebsite('donate')"/>
+                    <menuseparator/>
+                    <menuitem label="&firebug.Plugins;" oncommand="Firebug.visitWebsite('plugins')"/>
+                    <menuseparator/>
+                    <menuitem label="&firebug.About;" oncommand="FirebugChrome.openAboutDialog()"/>
                 </menupopup>
             </menu>
         </menubar>

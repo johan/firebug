@@ -13,6 +13,7 @@ const nsISupports = CI("nsISupports");
 const nsIFile = CI("nsIFile");
 const nsILocalFile = CI("nsILocalFile");
 const nsISafeOutputStream = CI("nsISafeOutputStream");
+const nsIURI = CI("nsIURI");
 
 const PrefService = CC("@mozilla.org/preferences-service;1");
 const PermManager = CC("@mozilla.org/permissionmanager;1");
@@ -41,6 +42,7 @@ const firebugURLs =
 {
     main: "http://www.getfirebug.com",
     docs: "http://www.getfirebug.com/docs.html",
+    plugins: "http://www.getfirebug.com/plugins",
     keyboard: "http://www.getfirebug.com/keyboard.html",
     discuss: "http://groups.google.com/group/firebug",
     issues: "http://code.google.com/p/fbug/issues/list",
@@ -75,6 +77,7 @@ const prefNames =
     "showAllSourceFiles",
     "useLastLineForEvalName",
     "useFirstLineForEvalName",
+    "useFunctionSource",
 
     // DOM
     "showUserProps", "showUserFuncs", "showDOMProps", "showDOMFuncs", "showDOMConstants",
@@ -296,7 +299,9 @@ top.Firebug =
         {
             // XXXjjb eg about:neterror and friends.
         }
-        if (!host)
+        if (isSystemURL(tabBrowser.currentURI.spec))
+            this.setPref("allowSystemPages", !disable);
+        else if (!host)
             this.setPref("disabledFile", disable);
         else
         {
@@ -330,7 +335,7 @@ top.Firebug =
         }
         else
         {
-            TabWatcher.activate();
+            TabWatcher.activate();  // These statement are redundant
             TabWatcher.watchBrowser(tabBrowser.selectedBrowser);
         }
 
@@ -961,23 +966,39 @@ top.Firebug =
 
     isURIAllowed: function(uri)
     {
-        return uri &&
-            (pm.testPermission(uri, "firebug") == ALLOW_ACTION
-                || (uri.scheme == "file" && !this.disabledFile));
+        if (!uri)  // null or undefined is denied
+            return false;
+        var url  =  uri.spec ? uri.spec : uri;
+        if (FBL.isLocalURL(url) && !this.disabledFile)
+            return true;
+        if (isSystemURL(url) && Firebug.allowSystemPages)
+            return true;
+        if (uri.spec)
+        {
+               if (pm.testPermission(uri, "firebug") == ALLOW_ACTION)
+                return true;
+        }
+        return false;
     },
 
     isURIDenied: function(uri)
     {
         if (!uri)  // null or undefined is denied
             return true;
-        if (isSystemURL(uri.spec) && !Firebug.allowSystemPages)
+        var url  =  uri.spec ? uri.spec : uri;
+        if (isSystemURL(url) && !Firebug.allowSystemPages)
             return true;
-        return uri &&
-            (pm.testPermission(uri, "firebug") == DENY_ACTION
-                || (uri.scheme == "file" && this.disabledFile));
+        if (uri.spec)
+        {
+            if (pm.testPermission(uri, "firebug") == DENY_ACTION)
+                return true;
+        } // else we cannot test! TODO
+        if (FBL.isLocalURL(url) && this.disabledFile)
+            return true;
+        return false;
     },
 
-    enableContext: function(win, uri)
+    enableContext: function(win, uri)  // currently this can be called with nsIURI or a string URL.
     {
         if ( dispatch2(extensions, "acceptContext", [win, uri]) )
             return true;

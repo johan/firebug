@@ -1036,12 +1036,12 @@ FirebugService.prototype =
             if (!fileName || isSystemURL(fileName))
                 return;
 
-            /* Wait 1.2 if (!fbs.showEvalSources)
+
+            if (!fbs.showEvalSources)
             {
-                dispatch(scriptListeners,"onScriptCreated",[script, fileName, script.baseLineNumber]);
-                return;  // some stuff will not work, incl. eval buffers will not show.
+                this.registerTopLevelScript(script, fileName, !script.functionName ? "top-level" : "nested in top-level");
+                return;
             }
-            */
 
             if (!script.functionName)
             {
@@ -1930,7 +1930,7 @@ function ddd(text)
 
 function dumpit(text)
 {
-    const DirService = 	CC("@mozilla.org/file/directory_service;1")
+    const DirService =  CC("@mozilla.org/file/directory_service;1")
         .getService(CI("nsIDirectoryServiceProvider"));
     var tmpDir = DirService.getFile(NS_OS_TEMP_DIR, {});
     var file = tmpDir.QueryInterface(CI("nsILocalFile"));
@@ -1983,7 +1983,7 @@ function dumpToFile(text)
 {
     if (!dumpStream) dumpStream = getDumpStream();
     dumpStream.write(text, text.length);
-    //dumpStream.flush();  // If FF crashes you need to run with flush on every line
+    dumpStream.flush();  // If FF crashes you need to run with flush on every line
 }
 
 function flushDebugStream()

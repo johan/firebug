@@ -54,12 +54,11 @@ var Errors = Firebug.Errors = extend(Firebug.Module,
 
     showMessageOnStatusBar: function(error)
     {
-        if (statusBar)
-            statusBar.setAttribute("errors", "true");
-        if (statusText && Firebug.breakOnErrors &&  !(error.flags & nsIScriptError.WARNING_FLAG))  // sometimes this is undefined..how?
+        if (statusText && statusBar && Firebug.breakOnErrors && error.message &&  !(error.flags & nsIScriptError.WARNING_FLAG))  // sometimes statusText is undefined..how?
+        {
             statusText.setAttribute("value", error.message);
-        else
-            statusText.setAttribute("value", "");
+            statusBar.setAttribute("errors", "true");
+        }
     },
 
     showCount: function(errorCount)
@@ -269,7 +268,7 @@ function categoryFilter(url, category, isWarning)
     return true;
 }
 
-function domainFilter(url)
+function domainFilter(url)  // never called?
 {
     if (Firebug.showExternalErrors)
         return true;

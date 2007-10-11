@@ -10,6 +10,7 @@ const nsIWebProgressListener = CI("nsIWebProgressListener");
 const nsIWebProgress = CI("nsIWebProgress");
 const nsISupportsWeakReference = CI("nsISupportsWeakReference");
 const nsISupports = CI("nsISupports");
+const nsIURI = CI("nsIURI");
 
 const NOTIFY_STATE_DOCUMENT = nsIWebProgress.NOTIFY_STATE_DOCUMENT;
 
@@ -392,12 +393,12 @@ var BaseProgressListener =
 
 var TabProgressListener = extend(BaseProgressListener,
 {
-    onLocationChange: function(progress, request, location)
+    onLocationChange: function(progress, request, uri)
     {
         // Only watch windows that are their own parent - e.g. not frames
         if (progress.DOMWindow.parent == progress.DOMWindow)
         {
-            TabWatcher.watchTopWindow(progress.DOMWindow, location);
+            TabWatcher.watchTopWindow(progress.DOMWindow, uri);
         }
     },
 
@@ -424,19 +425,19 @@ var FrameProgressListener = extend(BaseProgressListener,
             // it starts executing any scripts in the page.  After lengthy analysis, it seems
             // that the start of these "dummy" requests is the only state that works.
 
-            var safeURI = safeGetName(request);
-            if (safeURI && ((safeURI == dummyURI) || safeURI == "about:document-onload-blocker") )
+            var safeName = safeGetName(request);
+            if (safeName && ((safeName == dummyURI) || safeName == "about:document-onload-blocker") )
             {
                 var win = progress.DOMWindow;
                 // Another weird edge case here - when opening a new tab with about:blank,
                 // "unload" is dispatched to the document, but onLocationChange is not called
                 // again, so we have to call watchTopWindow here
                 //if (win.parent == win && win.location.href == "about:blank")
-                //    TabWatcher.watchTopWindow(win, null);
+                //    TabWatcher.watchTopWindow(win, win.location);
                 // XXXms check this
-                if (win.parent == win && (win.location.href == "about:blank" ))//  || safeURI == "about:document-onload-blocker"))
+                if (win.parent == win && (win.location.href == "about:blank" ))//  || safeName == "about:document-onload-blocker"))
                 {
-                    TabWatcher.watchWindow(win);
+                    TabWatcher.watchTopWindow(win, win.location.href);
                     return;  // new one under our thumb
                 }
             }
@@ -486,7 +487,15 @@ function onLoadWindowContent(event)
     // it here causes freezeup when this results in loading a script file. This fixes that.
     setTimeout(function()
     {
-        TabWatcher.watchLoadedTopWindow(win);
+        try
+        {
+            TabWatcher.watchLoadedTopWindow(win);
+        }
+        catch(exc)
+        {
+            ERROR(exc);
+        }
+
     });
 }
 

@@ -2322,7 +2322,7 @@ this.isSystemURL = function(url)
         return false;
 };
 
-this.isSystemPage = function(win)  // TODO combine with isSystemURL
+this.isSystemPage = function(win)
 {
     try
     {
@@ -2330,19 +2330,14 @@ this.isSystemPage = function(win)  // TODO combine with isSystemURL
         if (!doc)
             return false;
 
-
-        if (doc.documentURI.indexOf("about:blank") == 0)
-            return true;
-
-        // Detect network error pages like 404
-        if (doc.documentURI.indexOf("about:neterror") == 0)
-            return true;
-
         // Detect pages for pretty printed XML
-        return (doc.styleSheets.length && doc.styleSheets[0].href
+        if ((doc.styleSheets.length && doc.styleSheets[0].href
                 == "chrome://global/content/xml/XMLPrettyPrint.css")
             || (doc.styleSheets.length > 1 && doc.styleSheets[1].href
-                == "chrome://browser/skin/feeds/subscribe.css");
+                == "chrome://browser/skin/feeds/subscribe.css"))
+            return true;
+
+        return FBL.isSystemURL(win.location.href);
     }
     catch (exc)
     {
@@ -2499,22 +2494,22 @@ this.readFromScriptableStream = function(stream, charset)
 
 this.readFromStream = function(stream, charset)
 {
-	try
+    try
     {
-    	var sis = this.CCSV("@mozilla.org/binaryinputstream;1", "nsIBinaryInputStream");
+        var sis = this.CCSV("@mozilla.org/binaryinputstream;1", "nsIBinaryInputStream");
         sis.setInputStream(stream);
 
         var segments = [];
         for (var count = stream.available(); count; count = stream.available())
-        	segments.push(sis.readBytes(count));
+            segments.push(sis.readBytes(count));
 
         sis.close();
-		var text = segments.join("");
+        var text = segments.join("");
         return this.convertToUnicode(text, charset);
      }
      catch(exc)
- 	 {
- 	 }
+     {
+     }
 };
 
 this.readPostText = function(url, context)
@@ -2546,12 +2541,12 @@ this.launchProgram = function(exePath, args)
 {
     try {
         var file = this.CCIN("@mozilla.org/file/local;1", "nsILocalFile");
-        if (this.getPlatformName() == "Darwin")
+        file.initWithPath(exePath);
+        if (this.getPlatformName() == "Darwin" && file.isDirectory())
         {
             args = this.extendArray(["-a", exePath], args);
-            exePath = "/usr/bin/open";
+            file.initWithPath("/usr/bin/open");
         }
-        file.initWithPath(exePath);
         if (!file.exists())
             return false;
         var process = this.CCIN("@mozilla.org/process/util;1", "nsIProcess");
@@ -2573,6 +2568,11 @@ this.getIconURLForFile = function(path)
     try {
         var file = this.CCIN("@mozilla.org/file/local;1", "nsILocalFile");
         file.initWithPath(path);
+        if ((this.getPlatformName() == "Darwin") && !file.isDirectory() && (path.indexOf(".app/") != -1))
+        {
+            path = path.substr(0,path.lastIndexOf(".app/")+4);
+            file.initWithPath(path);
+        }
         return "moz-icon://" + fileHandler.getURLSpecFromFile(file) + "?size=16";
     }
     catch(exc)
@@ -2839,7 +2839,7 @@ this.SourceFile.prototype =
         }
     },
 
-    isLineExecutable: function(lineNo)
+    isInExecutableTable: function(lineNo)
     {
         return this.lineMap[lineNo];
     }
@@ -4780,7 +4780,7 @@ const invisibleTags = this.invisibleTags =
 
 this.evalInTo = function(win, text)
 {
-    var sandbox = new Components.utils.Sandbox(win.location.href);
+    var sandbox = new Components.utils.Sandbox(win); // Use DOM Window
     try
     {
         sandbox.win = win;

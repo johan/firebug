@@ -68,7 +68,7 @@
             <menupopup id="menu_firebugOpenWith" onpopupshowing="return FirebugChrome.onEditorsShowing(this);">
                 <menuitem label="&firebug.ConfigureEditors;" command="cmd_openFirebugEditors"/>
             </menupopup>
-	</menu>
+    </menu>
         <menuseparator/>
         <menuitem id="menu_firebugInspect" label="&firebug.InspectElement;"
                     oncommand="Firebug.showBar(true); FirebugChrome.select(document.popupNode);"/>
@@ -143,8 +143,6 @@
                             <menuitem type="checkbox"
                                       oncommand="FirebugChrome.onToggleOption(this)" option="disabledForSite"/>
                             <menuitem label="&firebug.AllowedSites;" command="cmd_openFirebugPermissions"/>
-                            <menuitem label="&firebug.AllowSystemPages;" type="checkbox"
-                                      oncommand="FirebugChrome.onToggleOption(this)"  option="allowSystemPages"/>
                             <menuseparator/>
 
                             <menu label="&firebug.OpenWith;">
@@ -181,12 +179,19 @@
                             </menu>
                             <menuseparator/>
 
-                            <menuitem label="&firebug.Website;" oncommand="Firebug.visitWebsite('main')"/>
-                            <menuitem label="&firebug.Documentation;" oncommand="Firebug.visitWebsite('docs')"/>
-                            <menuitem label="&firebug.Forums;" oncommand="Firebug.visitWebsite('discuss')"/>
-                            <menuitem label="&firebug.Issues;" oncommand="Firebug.visitWebsite('issues')"/>
+                            <menu label="&firebug.Support;">
+                                <menupopup>
+                                    <menuitem label="&firebug.Website;" oncommand="Firebug.visitWebsite('main')"/>
+                                    <menuitem label="&firebug.Documentation;" oncommand="Firebug.visitWebsite('docs')"/>
+                                    <menuitem label="&firebug.Forums;" oncommand="Firebug.visitWebsite('discuss')"/>
+                                    <menuitem label="&firebug.Issues;" oncommand="Firebug.visitWebsite('issues')"/>
+                                    <menuseparator/>
+                                    <menuitem label="&firebug.Donate;" oncommand="Firebug.visitWebsite('donate')"/>
+                                </menupopup>
+                            </menu>
+                            <menuitem label="&firebug.Plugins;" oncommand="Firebug.visitWebsite('plugins')"/>
                             <menuseparator/>
-                            <menuitem label="&firebug.Donate;" oncommand="Firebug.visitWebsite('donate')"/>
+                            <menuitem label="&firebug.About;" oncommand="FirebugChrome.openAboutDialog()"/>
                         </menupopup>
                     </toolbarbutton>
 
