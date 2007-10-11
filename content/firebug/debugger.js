@@ -1779,7 +1779,8 @@ ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
             optionMenu("ShowEvalSources", "showEvalSources"),
             optionMenu("ShowAllSourceFiles", "showAllSourceFiles"),
             optionMenu("UseLastLineForEvalName", "useLastLineForEvalName"),
-            optionMenu("UseFirstLineForEvalName", "useFirstLineForEvalName")
+            optionMenu("UseFirstLineForEvalName", "useFirstLineForEvalName"),
+            optionMenu("UseFunctionSource", "useFunctionSource")
         ];
     },
 
