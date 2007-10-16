@@ -65,18 +65,28 @@
     </target>
 
     <!-- Expand templates -->
-    <target name="template-dependency" description="test tpl files">
+    <target name="install-dependency" description="test tpl files">
         <uptodate property="install.expansion.notRequired" targetfile="install.rdf">
-            <srcfiles dir="${src_dir}" includes="install.rdf.tpl.xml, branch.properties"/>
-        </uptodate>
-        <uptodate property="update.expansion.notRequired" targetfile="update.rdf">
             <srcfiles dir="${src_dir}" includes="install.rdf.tpl.xml, branch.properties"/>
         </uptodate>
     </target>
 
-    <target name="expand-templates" depends="expand-install-template, expand-update-template" description="Fill in version info">
+    <target name="update-dependency" description="test update files">
+        <condition property="update.expansion.notRequired">
+            <or>
+                <not>
+                    <available file="update.rdf.tpl.xml"/>
+                </not>
+                <uptodate targetfile="update.rdf">
+                    <srcfiles dir="${src_dir}" includes="update.rdf.tpl.xml, branch.properties"/>
+                </uptodate>
+            </or>
+        </condition>
     </target>
-    <target name="expand-install-template" depends="template-dependency, version" unless="install.expansion.notRequired" >
+
+    <target name="expand-templates" depends="expand-install-template, expand-update-template, verify-update-template-expansion" description="Fill in version info">
+    </target>
+    <target name="expand-install-template" depends="install-dependency, version" unless="install.expansion.notRequired" >
         <copy file="${src_dir}/install.rdf.tpl.xml"
                tofile="install.rdf"
                overwrite="true">
@@ -90,7 +100,7 @@
         </copy>
     </target>
 
-    <target name="expand-update-template" depends="template-dependency, version" unless="update.expansion.notRequired" >
+    <target name="expand-update-template" depends="update-dependency, version" unless="update.expansion.notRequired" >
         <copy file="${src_dir}/update.rdf.tpl.xml"
                tofile="update.rdf"
                overwrite="true">
@@ -102,6 +112,10 @@
                        </replacetokens>
                </filterchain>
         </copy>
+        <echo message="expanded ${src_dir}/update.rdf.tpl.xml"/>
+    </target>
+    <target name="verify-update-template-expansion" depends="update-dependency" if="update.expansion.notRequired">
+        <echo message="update.expansion.notRequired true"/>
     </target>
 
     <!-- Incremental Build Targets -->
@@ -200,12 +214,6 @@
             <zipfileset dir="${build_dir}" includes="*.jar" prefix="chrome" />
             <zipfileset dir="${src_dir}" includes="icons/**" prefix="chrome" excludes="${excludes}" />
             <zipfileset dir="${src_dir}/platform" includes="**" prefix="platform" excludes="${excludes}, **/skin/**" />
-            <!--
-            <zipfileset dir="${build_dir}/Darwin" includes="${ant.project.name}.jar" prefix="platform/Darwin/chrome" />
-            <zipfileset dir="${build_dir}/Linux" includes="${ant.project.name}.jar" prefix="platform/Linux/chrome" />
-            <zipfileset dir="${build_dir}/linux-gnu" includes="${ant.project.name}.jar" prefix="platform/linux-gnu/chrome" />
-            <zipfileset dir="${build_dir}/WINNT" includes="${ant.project.name}.jar" prefix="platform/WINNT/chrome" />
-            -->
             <zipfileset dir="${src_dir}/components" includes="*.js" prefix="components" />
             <zipfileset dir="${src_dir}/components" includes="*.xpt" prefix="components" />
             <zipfileset dir="${src_dir}/defaults" includes="**" prefix="defaults" excludes="${excludes}" />
@@ -260,7 +268,12 @@
             <fileset dir="${unexplore.dir}" includes="**/*.js"/>
             <fileset dir="${unexplore.dir}" includes="**/*.xul"/>
         </replaceregexp>
-        <echo message="update VERSION in ${unexplore.dir}/branch.properties, build, then sign update.rdf"/>
+        <echo message="Removing X for explore from RELEASE in ${unexplore.dir}/branch.properties"/>
+        <replaceregexp match="(RELEASE=[^X]*)X" replace="\1" file="${unexplore.dir}/branch.properties"/>
+        <echo message="Build Distribution XPI in ${unexplore.dir}"/>
+        <ant target="createBranchXPI" dir="${unexplore.dir}" inheritAll="false"/>
+        <delete file="${unexplore.dir}/update.rdf.tpl.xml"/> <!-- Freeze update.rdf in future builds -->
+        <echo message="** Now use McCoy to sign update.rdf **"/>
     </target>
 
     <target name="createAptanaJAR" if="aptanadebugger">
