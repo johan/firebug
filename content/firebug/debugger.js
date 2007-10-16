@@ -2102,7 +2102,7 @@ CallstackPanel.prototype = extend(Firebug.Panel,
         if (panel && frame)
         {
             FBL.setClass(this.panelNode, "objectBox-stackTrace");
-            trace = FBL.getStackTrace(frame, this.context).reverse();
+            trace = FBL.getStackTrace(frame, this.context);
             FirebugReps.StackTrace.tag.append({object: trace}, this.panelNode);
         }
     },

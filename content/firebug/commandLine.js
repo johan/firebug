@@ -13,15 +13,15 @@ const reCloseBracket = /[\]\)\}]/;
 
 // XXXjjb FF3  needs win.__scope__ because we eval in sandbox
 
-const evalScript = "with (win.__scope__.vars) { with (win.__scope__.api) { with (win.__scope__.userVars) { with (win) {" +
+const evalScript = "with (__win__.__scope__.vars) { with (__win__.__scope__.api) { with (__win__.__scope__.userVars) { with (__win__) {" +
     "try {" +
-        "win.__scope__.callback(eval(win.__scope__.expr));" +
+        "__win__.__scope__.callback(eval(__win__.__scope__.expr));" +
     "} catch (exc) {" +
-        "win.__scope__.callback(exc, true);" +
+        "__win__.__scope__.callback(exc, true);" +
     "}" +
 "}}}}";
 
-const evalScriptWithThis =  "(function() { " + evalScript + " }).apply(win.__scope__.thisValue);";
+const evalScriptWithThis =  "(function() { " + evalScript + " }).apply(__win__.__scope__.thisValue);";
 
 // ************************************************************************************************
 // GLobals
@@ -73,11 +73,17 @@ Firebug.CommandLine = extend(Firebug.Module,
                 callback: function(value, hadException) { result = value; threw = hadException; }
             });
 
-            iterateWindows(win, function(win) { win.__scope__ = fullScope; });
+            iterateWindows(win, function(subwin) { subwin.__scope__ = fullScope; });
 
             try
             {
-                FBL.evalInTo(win, scriptToEval);
+                if (!context.sandbox)
+                {
+                    var sandbox = new Components.utils.Sandbox(win); // Use DOM Window
+                    sandbox.__win__ = win;
+                    context.sandbox = sandbox;
+                }
+                Components.utils.evalInSandbox(scriptToEval, context.sandbox);
             }
             catch (exc)
             {
@@ -85,7 +91,7 @@ Firebug.CommandLine = extend(Firebug.Module,
             }
             try
             {
-                 iterateWindows(win, function(win) { delete win.__scope__; });
+                 iterateWindows(win, function(subwin) { delete subwin.__scope__; });
             }
             catch (exc)
             {

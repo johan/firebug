@@ -162,6 +162,7 @@ function FirebugService()
     this.showStackTrace = prefs.getBoolPref("extensions.firebug.showStackTrace");
     this.breakOnErrors = prefs.getBoolPref("extensions.firebug.breakOnErrors");
     this.showEvalSources = prefs.getBoolPref("extensions.firebug.showEvalSources");
+    this.useFunctionSource = prefs.getBoolPref("extensions.firebug.useFunctionSource");
 
     this.topLevelScriptTag = {};  // top- or eval-level
     this.eventLevelScriptTag = {};// event scripts like onclick
@@ -1053,8 +1054,11 @@ FirebugService.prototype =
             }
             else if (script.baseLineNumber == 1 && (fileName in this.scriptInfoArrayByURL))
             {
-                fbs.eventLevelScriptTag[script.tag]= true;
-                script.setBreakpoint(0);  // XXXjjb possible conflict with bp set by user
+                if (fbs.useFunctionSource) // event scripts require script.functionSource
+                {
+                    fbs.eventLevelScriptTag[script.tag]= true;
+                    script.setBreakpoint(0);  // XXXjjb possible conflict with bp set by user
+                }
             }
             else
             {
@@ -1867,7 +1871,7 @@ function unshiftOne(lineNo)
     return lineNo - 1;
 }
 
-function countLines(script) {
+function countLines(script) {  // only called for events currently
     var lines = script.functionSource.split(/\r\n|\r|\n/);
     return lines.length;
 }
@@ -1884,6 +1888,8 @@ var FirebugPrefsObserver =
             fbs.breakOnErrors =  prefs.getBoolPref("extensions.firebug.breakOnErrors");
         else if (data == "extensions.firebug.showEvalSources")
             fbs.showEvalSources =  prefs.getBoolPref("extensions.firebug.showEvalSources");
+        else if (data == "extensions.firebug.useFunctionSource")
+            fbs.showEvalSources =  prefs.getBoolPref("extensions.firebug.useFunctionSource");
         else if (data == "extensions.firebug.DBG_FBS_CREATION")
             fbs.DBG_CREATION = prefs.getBoolPref("extensions.firebug.DBG_FBS_CREATION");
         else if (data == "extensions.firebug.DBG_FBS_BP")

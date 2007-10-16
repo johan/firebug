@@ -1433,11 +1433,9 @@ this.getStackFrame = function(frame, context)
     {
         if (frame.script.functionName) // normal js
         {
-            // This causes leak of script objects ??
-            //var fn = frame.script.functionObject.getWrappedValue();
-            //var args = this.getFunctionArgValues(fn, frame);
-            var fn = null;
-            var args = null;
+            // XXXjjb At one time I thought this causes leak of script objects, but small test case is ok now.
+            var fn = frame.script.functionObject.getWrappedValue();
+            var args = this.getFunctionArgValues(fn, frame);
             if (context.evalSourceURLByTag && frame.script.tag in context.evalSourceURLByTag)
             {
                 var url = context.evalSourceURLByTag[frame.script.tag];
@@ -1463,7 +1461,9 @@ this.getStackFrame = function(frame, context)
             }
             else // __top_level__
             {
-                return new this.StackFrame(context, "__top_level__", frame.script, frame.script.fileName, frame.line, []);
+                var file_name = this.getFileName(frame.script.fileName);
+                file_name = file_name ? file_name: "__top_level__";
+                return new this.StackFrame(context, file_name, frame.script, frame.script.fileName, frame.line, []);
             }
         }
     }
@@ -1700,7 +1700,9 @@ this.getFunctionName = function(script, context, frame)  // XXXjjb need frame to
             if (url)
                 return "__eval_level__";
         }
-        return "__top_level__";
+        var file_name = this.getFileName(script.fileName);
+        file_name = file_name ? file_name: "__top_level__";
+        return file_name;
     }
     else if (name == "anonymous")
     {
@@ -4778,13 +4780,18 @@ const invisibleTags = this.invisibleTags =
  // ************************************************************************************************
 // Script injection
 
-this.evalInTo = function(win, text)
+this.evalInTo = function(win, text, context)
 {
-    var sandbox = new Components.utils.Sandbox(win); // Use DOM Window
+    if (!context.sandbox)
+    {
+        var sandbox = new Components.utils.Sandbox(win); // Use DOM Window principle
+        context.sandbox = sandbox;
+        sandbox.win = win;
+    }
+
     try
     {
-        sandbox.win = win;
-        Components.utils.evalInSandbox(text, sandbox);
+        Components.utils.evalInSandbox(text, context.sandbox);
     }
     catch(exc)
     {
