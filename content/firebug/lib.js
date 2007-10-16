@@ -1473,8 +1473,10 @@ this.getStackFrame = function(frame, context)
             }
             else // __top_level__
             {
+                var file_name = this.getFileName(frame.script.fileName);
+                file_name = file_name ? file_name: "__top_level__";
                 if (FBTrace.DBG_STACK) FBTrace.sysout("lib.getStackFrame top-level\n");                                /*@explore*/
-                return new this.StackFrame(context, "__top_level__", frame.script, frame.script.fileName, frame.line, []);
+                return new this.StackFrame(context, file_name, frame.script, frame.script.fileName, frame.line, []);
             }
         }
     }
@@ -1714,7 +1716,9 @@ this.getFunctionName = function(script, context, frame)  // XXXjjb need frame to
             if (url)
                 return "__eval_level__";
         }
-        return "__top_level__";
+        var file_name = this.getFileName(script.fileName);
+        file_name = file_name ? file_name: "__top_level__";
+        return file_name;
     }
     else if (name == "anonymous")
     {
@@ -2335,11 +2339,6 @@ this.isSystemURL = function(url)
     if (FBTrace.DBG_SHOW_SYSTEM) return false;                                                                         /*@explore*/
     if (!url) return true;
     if (url.length == 0) return true; // spec for about:blank
-    if (!url.substr)
-    {
-        FBTrace.dumpStack("isSystemURL not a string url:"+url);  // need to find why /*@explore*/
-        return ture;
-    }
     if (url.substr(0, 9) == "resource:")
         return true;
     else if (url.substr(0, 17) == "chrome://firebug/")
