@@ -4833,29 +4833,6 @@ const invisibleTags = this.invisibleTags =
     "br": 1
 };
 
- // ************************************************************************************************
-// Script injection
-
-this.evalInTo = function(win, text, context)
-{
-    if (!context.sandbox)
-    {
-        var sandbox = new Components.utils.Sandbox(win); // Use DOM Window principle
-        context.sandbox = sandbox;
-        sandbox.win = win;
-    }
-
-    try
-    {
-        Components.utils.evalInSandbox(text, context.sandbox);
-    }
-    catch(exc)
-    {
-        if (FBTrace.DBG_ERRORS) FBTrace.dumpProperties("evalInSandBox FAILS sandbox uri="+win.location.href+" and text=\n"+text+"\n", exc); /*@explore*/
-        throw "Components.utils.Sandbox evalInSandbox FAILS "+exc;
-    }
-}
-
 // ************************************************************************************************
 // Debug Logging
 
