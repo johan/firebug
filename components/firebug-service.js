@@ -882,14 +882,16 @@ FirebugService.prototype =
                     this.stopStepping();
                     return this.onBreak(frame, type, val);
                 }
+                else if (!(bp.type & BP_NORMAL) || bp.disabled & BP_NORMAL)
+                {
+                    return RETURN_CONTINUE;
+                }
                 else if (bp.type & BP_NORMAL)
                 {
                     var passed = testBreakpoint(frame, bp);
                     if (!passed)
                         return RETURN_CONTINUE;
                 }
-                else if (!(bp.type & BP_NORMAL) || bp.disabled & BP_NORMAL)
-                    return RETURN_CONTINUE;
             }
             else
                 return RETURN_CONTINUE;
