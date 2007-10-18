@@ -4777,28 +4777,6 @@ const invisibleTags = this.invisibleTags =
     "br": 1
 };
 
- // ************************************************************************************************
-// Script injection
-
-this.evalInTo = function(win, text, context)
-{
-    if (!context.sandbox)
-    {
-        var sandbox = new Components.utils.Sandbox(win); // Use DOM Window principle
-        context.sandbox = sandbox;
-        sandbox.win = win;
-    }
-
-    try
-    {
-        Components.utils.evalInSandbox(text, context.sandbox);
-    }
-    catch(exc)
-    {
-        throw "Components.utils.Sandbox evalInSandbox FAILS "+exc;
-    }
-}
-
 // ************************************************************************************************
 // Debug Logging
 

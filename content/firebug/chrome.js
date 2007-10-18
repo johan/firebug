@@ -755,7 +755,7 @@ top.FirebugChrome =
                         var uri = this.getCurrentURI();
                         if (uri)
                         {
-                            if (isSystemURL(uri.spec))
+                            if (FBL.isSystemURL(uri.spec))
                             {
                                 checked = !Firebug.allowSystemPages;
                                 child.setAttribute("label", FBL.$STR("DisableForSystemPages"));
@@ -1021,7 +1021,7 @@ function getBestPanelName(object, context, panelName)
         if (!panelType.prototype.parentPanel)
         {
             var level = panelSupportsObject(panelType, object);
-            if (!bestLevel || (level && (level < bestLevel) ))  // XXXjjb I do not understand why this works
+            if (!bestLevel || (level && (level > bestLevel) ))
             {
                 bestLevel = level;
                 bestPanel = panelType;

@@ -892,6 +892,9 @@ FirebugService.prototype =
             if (bp == undefined)
                 script.clearBreakpoint(0);
 
+            if (!fbs.useFunctionSource)
+                return RETURN_CONTINUE;
+
             var debuggr = this.findDebugger(frame);  // sets debuggr.breakContext
 
             if (debuggr)

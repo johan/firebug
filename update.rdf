@@ -2,22 +2,22 @@
 <RDF:RDF xmlns:NS1="http://www.mozilla.org/2004/em-rdf#"
          xmlns:NC="http://home.netscape.com/NC-rdf#"
          xmlns:RDF="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-  <RDF:Description RDF:about="rdf:#$66Euf2"
-                   NS1:version="1.1.0b4">
-    <NS1:targetApplication RDF:resource="rdf:#$96Euf2"/>
+  <RDF:Description RDF:about="rdf:#$u6Euf2"
+                   NS1:version="1.1.0b5">
+    <NS1:targetApplication RDF:resource="rdf:#$x6Euf2"/>
   </RDF:Description>
-  <RDF:Seq RDF:about="rdf:#$56Euf2">
-    <RDF:li RDF:resource="rdf:#$66Euf2"/>
-  </RDF:Seq>
-  <RDF:Description RDF:about="rdf:#$96Euf2"
+  <RDF:Description RDF:about="rdf:#$x6Euf2"
                    NS1:id="{ec8030f7-c20a-464f-9b0e-13a3a9e97384}"
                    NS1:minVersion="1.5"
                    NS1:maxVersion="3.9"
-                   NS1:updateLink="http://fireclipse.xucia.com/files/fireclipse/firebug-1.1.0b4.xpi" />
+                   NS1:updateLink="http://fireclipse.xucia.com/files/fireclipse/firebug-1.1.0b5.xpi" />
   <RDF:Description RDF:about="urn:mozilla:extension:firebug@software.joehewitt.com"
-                   NS1:version="1.1.0b4"
-                   NS1:updateLink="http://fireclipse.xucia.com/files/fireclipse/firebug-1.1.0b4.xpi"
-                   NS1:signature="MIGTMA0GCSqGSIb3DQEBDQUAA4GBADUFG/EqP7T8HqmStiK5O6+UjCXiegVuZ6wa1tRgA3jdghdJVcALkKrcK/LRC6Uzpohb2KXuqDCvtbE897MurJvLwDOGsT7Z2JcXbxjkJk+E9NJ/TaMptPbsC4Y88FGclB2rKwlBb1oinKe3v3pPpVTsTaD2wKEuvRmmrSYfbCpj">
-    <NS1:updates RDF:resource="rdf:#$56Euf2"/>
+                   NS1:version="1.1.0b5"
+                   NS1:updateLink="http://fireclipse.xucia.com/files/fireclipse/firebug-1.1.0b5.xpi"
+                   NS1:signature="MIGTMA0GCSqGSIb3DQEBDQUAA4GBALW+KWwWN0zBz8gvtuQuUHEMmsQJXMycGNMrahAugXzf1vd69tAEvd/U3XTXx9xr1KRkj6i2Jt3ZxMAB7Ont5s8tYNs4h8pM8VM2Ywl4RK+5bSO7zwDHWWGSYFggHCDHPphcC/uCR9Snnq64zeMlI6xhvaoaxTX5BuyGDtc83cQq">
+    <NS1:updates RDF:resource="rdf:#$t6Euf2"/>
   </RDF:Description>
+  <RDF:Seq RDF:about="rdf:#$t6Euf2">
+    <RDF:li RDF:resource="rdf:#$u6Euf2"/>
+  </RDF:Seq>
 </RDF:RDF>

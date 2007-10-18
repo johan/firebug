@@ -77,13 +77,27 @@ Firebug.CommandLine = extend(Firebug.Module,
 
             try
             {
-                if (!context.sandbox)
+                if (!context.sandboxes)
+                    context.sandboxes = [];
+
+                var sandbox = null;
+                for (var why = 0; why < context.sandboxes.length; why++)
                 {
-                    var sandbox = new Components.utils.Sandbox(win); // Use DOM Window
-                    sandbox.__win__ = win;
-                    context.sandbox = sandbox;
+                    if (context.sandboxes[why].__win__ == win)
+                    {
+                        sandbox = context.sandboxes[why];
+                        break;
+                    }
                 }
-                Components.utils.evalInSandbox(scriptToEval, context.sandbox);
+
+                if(!sandbox)
+                {
+                    sandbox = new Components.utils.Sandbox(win); // Use DOM Window
+                    sandbox.__win__ = win;
+                    context.sandboxes.push(sandbox);
+                }
+
+                Components.utils.evalInSandbox(scriptToEval, sandbox);
             }
             catch (exc)
             {
