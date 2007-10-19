@@ -2023,7 +2023,7 @@ var FirebugPrefsObserver =
         else if (data == "extensions.firebug.showEvalSources")
             fbs.showEvalSources =  prefs.getBoolPref("extensions.firebug.showEvalSources");
         else if (data == "extensions.firebug.useFunctionSource")
-            fbs.showEvalSources =  prefs.getBoolPref("extensions.firebug.useFunctionSource");
+            fbs.useFunctionSource =  prefs.getBoolPref("extensions.firebug.useFunctionSource");
         else if (data == "extensions.firebug.DBG_FBS_CREATION")
             fbs.DBG_CREATION = prefs.getBoolPref("extensions.firebug.DBG_FBS_CREATION");
         else if (data == "extensions.firebug.DBG_FBS_BP")
