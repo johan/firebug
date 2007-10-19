@@ -2887,7 +2887,6 @@ this.SourceFile.prototype =
 
     isInExecutableTable: function(lineNo)
     {
-        if (!this.lineMap)FBTrace.dumpStack("lib.isInExe");
         return this.lineMap[lineNo];
     }
 };
