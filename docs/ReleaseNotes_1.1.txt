@@ -80,6 +80,7 @@ Firebug 1.1 is Firebug 1.05 by Joe Hewitt with additions by John J. Barton and M
     ** Issue 314: console does not work: commandLine.evaluate FAILS
     ** Issue 218: disabled-firebug panel acts up
     ** Issue 302: throw in console
+    ** Issue 342: debugger breaks on disabled breakpoints
 
 === General ===
 * Supports Firefox 3

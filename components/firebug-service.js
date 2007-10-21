@@ -833,14 +833,16 @@ FirebugService.prototype =
                     this.stopStepping();
                     return this.onBreak(frame, type, val);
                 }
+                else if (!(bp.type & BP_NORMAL) || bp.disabled & BP_NORMAL)
+                {
+                    return RETURN_CONTINUE;
+                }
                 else if (bp.type & BP_NORMAL)
                 {
                     var passed = testBreakpoint(frame, bp);
                     if (!passed)
                         return RETURN_CONTINUE;
                 }
-                else if (!(bp.type & BP_NORMAL) || bp.disabled & BP_NORMAL)
-                    return RETURN_CONTINUE;
             }
             else
                 return RETURN_CONTINUE;
@@ -1892,7 +1894,7 @@ var FirebugPrefsObserver =
         else if (data == "extensions.firebug.showEvalSources")
             fbs.showEvalSources =  prefs.getBoolPref("extensions.firebug.showEvalSources");
         else if (data == "extensions.firebug.useFunctionSource")
-            fbs.showEvalSources =  prefs.getBoolPref("extensions.firebug.useFunctionSource");
+            fbs.useFunctionSource =  prefs.getBoolPref("extensions.firebug.useFunctionSource");
         else if (data == "extensions.firebug.DBG_FBS_CREATION")
             fbs.DBG_CREATION = prefs.getBoolPref("extensions.firebug.DBG_FBS_CREATION");
         else if (data == "extensions.firebug.DBG_FBS_BP")
@@ -1975,7 +1977,7 @@ function getDumpStream()
         if ( !file.exists() )
             file.create(CI("nsIFile").DIRECTORY_TYPE, 0776);
         file.append("firebug-service-dump.txt");
-        file.createUnique(CI("nsIFile").NORMAL_FILE_TYPE, 0666);
+       // file.createUnique(CI("nsIFile").NORMAL_FILE_TYPE, 0666);
         var stream = CC("@mozilla.org/network/file-output-stream;1").createInstance(CI("nsIFileOutputStream"));
         stream.init(file, 0x04 | 0x08 | 0x20, 664, 0); // write, create, truncate
         return stream;
