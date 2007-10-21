@@ -173,6 +173,8 @@ function FirebugService()
         this.DBG_STEP = prefs.getBoolPref("extensions.firebug.DBG_FBS_STEP");                                          /*@explore*/
         ddd("fbs.DBG_CREATION: "+fbs.DBG_CREATION+" fbs.DBG_BP:"+fbs.DBG_BP+" fbs.DBG_ERRORS:"+fbs.DBG_ERRORS          /*@explore*/
             +" fbs.DBG_STEP:"+fbs.DBG_STEP+"\n");                                                                      /*@explore*/
+        ddd("fbs.showStackTrace: "+fbs.showStackTrace+" fbs.breakOnErrors: "+fbs.breakOnErrors+						   /*@explore*/
+            " fbs.showEvalSources: "+fbs.showEvalSources+" fbs.useFunctionSource: "+fbs.useFunctionSource+"\n");	   /*@explore*/
     }                                                                                                                  /*@explore*/
     catch (exc)                                                                                                        /*@explore*/
     {                                                                                                                  /*@explore*/
@@ -1106,7 +1108,7 @@ FirebugService.prototype =
                 if (fbs.DBG_CREATION)                                                                                  /*@explore*/
                     ddd("Neg. offset for nestedScript.baseLineNumber - script.baseLineNumber + 1 @leveledScriptURL="   /*@explore*/
                         +nestedScript.baseLineNumber+" - "+script.baseLineNumber + "+1 @"+leveledScriptURL+" src="     /*@explore*/
-                        +nestedScript.functionSource+"\n"+script.fileName+ " vs nested "+nestedScript.fileName+"\n");  /*@explore*/
+                        +(fbs.useFunctionSource?nestedScript.functionSource:"")+"\n"+script.fileName+ " vs nested "+nestedScript.fileName+"\n");  /*@explore*/
             }
             debuggr = this.reFindDebugger(frame, debuggr);
             debuggr.onEvalScript(leveledScriptURL, baseLineNumberWithEvalBuffer, nestedScript);
@@ -1130,7 +1132,7 @@ FirebugService.prototype =
             if (fbs.DBG_CREATION) {                                                                                    /*@explore*/
                 ddd("onScriptCreated: "+script.tag+"@("+script.baseLineNumber+"-"                                      /*@explore*/
                         +(script.baseLineNumber+script.lineExtent)+")"+script.fileName+"\n");                          /*@explore*/
-                ddd("onScriptCreated name: \'"+script.functionName+"\'\n"+script.functionSource+"\n");                 /*@explore*/
+                ddd("onScriptCreated name: \'"+script.functionName+"\'\n"+(fbs.useFunctionSource?script.functionSource:"")+"\n");   /*@explore*/
             }                                                                                                          /*@explore*/
 
             if (!fbs.showEvalSources)
@@ -2140,7 +2142,7 @@ function getDumpStream()
         if ( !file.exists() )
             file.create(CI("nsIFile").DIRECTORY_TYPE, 0776);
         file.append("firebug-service-dump.txt");
-        file.createUnique(CI("nsIFile").NORMAL_FILE_TYPE, 0666);
+       // file.createUnique(CI("nsIFile").NORMAL_FILE_TYPE, 0666);
         var stream = CC("@mozilla.org/network/file-output-stream;1").createInstance(CI("nsIFileOutputStream"));
         stream.init(file, 0x04 | 0x08 | 0x20, 664, 0); // write, create, truncate
         return stream;
