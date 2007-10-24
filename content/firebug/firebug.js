@@ -635,11 +635,11 @@ top.Firebug =
         var file = QI(temporaryDirectory.clone(), nsILocalFile);
         file.appendRelativePath(lpath);
         if (!file.exists())
-            file.create(nsIFile.NORMAL_FILE_TYPE, 664);
+            file.create(nsIFile.NORMAL_FILE_TYPE, 0664);
         temporaryFiles.push(file.path);
 
         var stream = CCIN("@mozilla.org/network/safe-file-output-stream;1", "nsIFileOutputStream");
-        stream.init(file, 0x04 | 0x08 | 0x20, 664, 0); // write, create, truncate
+        stream.init(file, 0x04 | 0x08 | 0x20, -1, 0); // write, create, truncate
         stream.write(data, data.length);
         if (stream instanceof nsISafeOutputStream)
             stream.finish();
