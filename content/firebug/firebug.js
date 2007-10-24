@@ -170,6 +170,11 @@ top.Firebug =
 
         TabWatcher.initialize(this);
 
+        var strict = prefs.getBoolPref("javascript.options.strict");
+        var version = prefs.getCharPref("extensions.lastAppVersion");
+        if (strict && version.indexOf("2.") == 0)
+            Firebug.Console.needStrictWarning = true;
+
         if (this.disabledAlways)
             this.disableAlways();
         else
