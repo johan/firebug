@@ -2,22 +2,22 @@
 <RDF:RDF xmlns:NS1="http://www.mozilla.org/2004/em-rdf#"
          xmlns:NC="http://home.netscape.com/NC-rdf#"
          xmlns:RDF="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-  <RDF:Description RDF:about="rdf:#$27Euf2"
-                   NS1:version="1.1.0b6">
-    <NS1:targetApplication RDF:resource="rdf:#$57Euf2"/>
+  <RDF:Description RDF:about="rdf:#$TO7k6"
+                   NS1:version="1.1.0b7">
+    <NS1:targetApplication RDF:resource="rdf:#$WO7k6"/>
   </RDF:Description>
-  <RDF:Seq RDF:about="rdf:#$17Euf2">
-    <RDF:li RDF:resource="rdf:#$27Euf2"/>
-  </RDF:Seq>
-  <RDF:Description RDF:about="urn:mozilla:extension:firebug@software.joehewitt.com"
-                   NS1:version="1.1.0b6"
-                   NS1:updateLink="http://fireclipse.xucia.com/files/fireclipse/firebug-1.1.0b6.xpi"
-                   NS1:signature="MIGTMA0GCSqGSIb3DQEBDQUAA4GBAGZZOIjd2pZ0/izonoW8JpZF/o0CwPyxHdLu1xCLwmRir5XE4BwxSVuSBVNvxIb9FZpTDht4yFRQpOyhgQ4doZj1eHuKxQxtVjCvzy2lzSD+U5d/IOhugMKhA1BnFnZvvWbdAsY03KAPkpsKxuffCUk7HdGcHgWuWqiEMTOY4Q/7">
-    <NS1:updates RDF:resource="rdf:#$17Euf2"/>
-  </RDF:Description>
-  <RDF:Description RDF:about="rdf:#$57Euf2"
+  <RDF:Description RDF:about="rdf:#$WO7k6"
                    NS1:id="{ec8030f7-c20a-464f-9b0e-13a3a9e97384}"
                    NS1:minVersion="1.5"
                    NS1:maxVersion="3.9"
-                   NS1:updateLink="http://fireclipse.xucia.com/files/fireclipse/firebug-1.1.0b6.xpi" />
+                   NS1:updateLink="http://fireclipse.xucia.com/files/fireclipse/firebug-1.1.0b7.xpi" />
+  <RDF:Seq RDF:about="rdf:#$SO7k6">
+    <RDF:li RDF:resource="rdf:#$TO7k6"/>
+  </RDF:Seq>
+  <RDF:Description RDF:about="urn:mozilla:extension:firebug@software.joehewitt.com"
+                   NS1:version="1.1.0b7"
+                   NS1:updateLink="http://fireclipse.xucia.com/files/fireclipse/firebug-1.1.0b7.xpi"
+                   NS1:signature="MIGTMA0GCSqGSIb3DQEBDQUAA4GBAABKif93NTibKm/FK/pjeEA1jP+ybu9f+q95C2BNtBEo/Zbj5UWlEhP0yAECaNsJlWOPT5hb8tKXfYykq76r7L3+71hrZqQT/AV7h2OgPR1Sac/cubWuaUgK3PPVLEQd2VZYXgmBOJOiPXxmb4Un3wuhGfHkQluGEfR8yKxhRh6O">
+    <NS1:updates RDF:resource="rdf:#$SO7k6"/>
+  </RDF:Description>
 </RDF:RDF>

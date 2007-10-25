@@ -285,6 +285,16 @@ Firebug.ConsolePanel.prototype = extend(Firebug.Panel,
     searchable: true,
     editable: false,
 
+    initialize: function(context, doc)
+    {
+        Firebug.Panel.initialize.apply(this, arguments);
+        if (Firebug.Console.needStrictWarning)
+        {
+            delete 	Firebug.Console.needStrictWarning;
+            Firebug.Console.log("javascript.options.strict is true. Experience suggests that large Javascript evaluations may crash Firefox;  you can change this in \"about:config\"", context, "warn");
+        }
+    },
+
     show: function(state)
     {
         var consoleButtons = this.context.browser.chrome.$("fbConsoleButtons");

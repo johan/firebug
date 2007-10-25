@@ -966,7 +966,7 @@ Firebug.HTMLPanel.CompleteElement = domplate(FirebugReps.Element,
             var nodes = [];
             for (var child = node.firstChild; child; child = child.nextSibling)
             {
-                if (child.nodeType != 3 || !this.isWhitespaceText(child))
+                if (child.nodeType != 3 || !isWhitespaceText(child))
                     nodes.push(child);
             }
             return nodes;
