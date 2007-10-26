@@ -1,0 +1,78 @@
+<html>
+<head>
+<!-- MOZ_INSERT_CONTENT_HOOK -->
+<style type="text/css">
+td {
+    text-align: center
+}
+td.title {
+    text-align: left;
+}
+caption {
+    font-size: x-large;
+}
+</style>
+</head>
+<body>
+<table>
+<tbody id="resultTable"></tbody>
+</table>
+<pre>
+</pre>
+<p>This test is a modified version of core-eval test from John Resig. In this version the longest
+test time is discarded to reduce the influence of garbage collection, values are rounded to
+milliseconds, the display is simply a table of values.</p>
+<script src="runner.js"></script><script>
+
+
+// Try to force real results
+var ret, tmp;
+
+// The commands that we'll be evaling
+var cmd = 'function zz() {var str="";for(var i=0;i<10;i++){str += "a";}ret = str;}'+"\n";
+
+// TESTS: eval()
+startTest("core-eval "+cmd.length+" characters per function");
+
+for ( var num = 1; num <= 8; num *= 2 ) {
+
+    test( "No eval", num, function(){
+        for ( var n = 0; n < num; n++ ) {
+            var str = "";
+            for ( var i = 0; i < 100; i++ ) {
+                str += "a";
+            }
+            ret = str;
+        }
+    });
+
+    tmp = cmd;
+
+    for ( var n = 0; n < num; n++ )
+        tmp += tmp;
+
+    tmp += "\n//@ sourceURL=core-eval.js";
+
+    test( "Normal eval", num, function(){
+        eval(tmp);
+    });
+
+    test( "new Function", num, function(){
+        (new Function(tmp))();
+    });
+
+    var fn;
+    try {
+       fn = new Function(tmp);
+    } catch(e){}
+
+    test( "Pre-Compiled Function", num, function(){
+        fn();
+    });
+
+}
+
+endTest();
+</script>
+</body>
+</html>
