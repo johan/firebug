@@ -1314,7 +1314,6 @@ function getMembers(object, level)
 function expandMembers(members, toggles, offset, level)
 {
     var expanded = 0;
-
     for (var i = offset; i < members.length; ++i)
     {
         var member = members[i];
@@ -1323,16 +1322,28 @@ function expandMembers(members, toggles, offset, level)
 
         if (member.name in toggles)
         {
-            member.open = "opened";
+            member.open = "opened";  // member.level <= level && member.name in toggles.
 
-            var newMembers = getMembers(member.value, level+1);
+            var newMembers = getMembers(member.value, level+1);  // sets newMembers.level to level+1
 
             var args = [i+1, 0];
             args.push.apply(args, newMembers);
             members.splice.apply(members, args);
+            if (FBTrace.DBG_DOM)  																					/*@explore*/
+            { 																										/*@explore*/
+                FBTrace.dumpProperties("expandMembers member.name", member.name); 									/*@explore*/
+                FBTrace.dumpProperties("expandMembers toggles", toggles); 											/*@explore*/
+                                                                                                                    /*@explore*/
+                FBTrace.dumpProperties("expandMembers toggles[member.name]", toggles[member.name]); 				/*@explore*/
+                FBTrace.dumpProperties("dom.expandedMembers level: "+level+" member", member); 						/*@explore*/
+            } 																										/*@explore*/
 
             expanded += newMembers.length;
-            i += newMembers.length + expandMembers(members, toggles[member.name], i+1, level+1);
+            var memberToggles = toggles[member.name];
+            // if member.name == 'prototype', then toggles gets confused and we go into infinite loop XXXjjb
+            if (typeof(memberToggles) != 'object')
+                memberToggles = {};
+            i += newMembers.length + expandMembers(members, memberToggles, i+1, level+1);
         }
     }
 
