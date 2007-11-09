@@ -698,6 +698,11 @@ FirebugService.prototype =
             timer.cancel();
             waitingForTimer = false;
         }
+        if (enabledDebugger)
+            return;
+
+        enabledDebugger = true;
+
         try {                                                                                                          /*@explore*/
             this.DBG_CREATION = prefs.getBoolPref("extensions.firebug.DBG_FBS_CREATION");                              /*@explore*/
             this.DBG_BP = prefs.getBoolPref("extensions.firebug.DBG_FBS_BP");                                          /*@explore*/
@@ -715,11 +720,6 @@ FirebugService.prototype =
                 +" fbs.DBG_STEP:"+fbs.DBG_STEP+"\n");                                                                  /*@explore*/
         }                                                                                                              /*@explore*/
 
-        if (enabledDebugger)
-            return;
-
-        enabledDebugger = true;
-
         if (jsd)
         {
             jsd.unPause();
@@ -729,9 +729,8 @@ FirebugService.prototype =
         {
             jsd = DebuggerService.getService(jsdIDebuggerService);
 
-            jsd.flags |= DISABLE_OBJECT_TRACE;
-
             jsd.on();
+            jsd.flags |= DISABLE_OBJECT_TRACE;
             this.hookScripts();
 
             jsd.debuggerHook = { onExecute: hook(this.onDebugger, RETURN_CONTINUE) };
@@ -1794,15 +1793,6 @@ var FirebugModule =
     {
         compMgr = compMgr.QueryInterface(nsIComponentRegistrar);
         compMgr.registerFactoryLocation(CLASS_ID, CLASS_NAME, CONTRACT_ID, fileSpec, location, type);
-
-        try
-        {
-            var jsd = DebuggerService.getService(jsdIDebuggerService);
-            jsd.initAtStartup = true;
-        }
-        catch (exc)
-        {
-        }
     },
 
     unregisterSelf: function(compMgr, fileSpec, location)
