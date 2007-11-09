@@ -679,11 +679,11 @@ FirebugService.prototype =
             timer.cancel();
             waitingForTimer = false;
         }
-
         if (enabledDebugger)
             return;
 
         enabledDebugger = true;
+
 
         if (jsd)
         {
@@ -694,9 +694,8 @@ FirebugService.prototype =
         {
             jsd = DebuggerService.getService(jsdIDebuggerService);
 
-            jsd.flags |= DISABLE_OBJECT_TRACE;
-
             jsd.on();
+            jsd.flags |= DISABLE_OBJECT_TRACE;
             this.hookScripts();
 
             jsd.debuggerHook = { onExecute: hook(this.onDebugger, RETURN_CONTINUE) };
@@ -1663,15 +1662,6 @@ var FirebugModule =
     {
         compMgr = compMgr.QueryInterface(nsIComponentRegistrar);
         compMgr.registerFactoryLocation(CLASS_ID, CLASS_NAME, CONTRACT_ID, fileSpec, location, type);
-
-        try
-        {
-            var jsd = DebuggerService.getService(jsdIDebuggerService);
-            jsd.initAtStartup = true;
-        }
-        catch (exc)
-        {
-        }
     },
 
     unregisterSelf: function(compMgr, fileSpec, location)

@@ -2,22 +2,22 @@
 <RDF:RDF xmlns:NS1="http://www.mozilla.org/2004/em-rdf#"
          xmlns:NC="http://home.netscape.com/NC-rdf#"
          xmlns:RDF="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-  <RDF:Description RDF:about="rdf:#$iP7k6"
+  <RDF:Description RDF:about="rdf:#$ijHpv2"
                    NS1:id="{ec8030f7-c20a-464f-9b0e-13a3a9e97384}"
                    NS1:minVersion="1.5"
                    NS1:maxVersion="3.9"
-                   NS1:updateLink="http://fireclipse.xucia.com/files/fireclipse/firebug-1.1.0b8.xpi" />
-  <RDF:Seq RDF:about="rdf:#$eP7k6">
-    <RDF:li RDF:resource="rdf:#$fP7k6"/>
-  </RDF:Seq>
+                   NS1:updateLink="http://fireclipse.xucia.com/files/fireclipse/firebug-1.1.0b9.xpi" />
   <RDF:Description RDF:about="urn:mozilla:extension:firebug@software.joehewitt.com"
-                   NS1:version="1.1.0b8"
-                   NS1:updateLink="http://fireclipse.xucia.com/files/fireclipse/firebug-1.1.0b8.xpi"
-                   NS1:signature="MIGTMA0GCSqGSIb3DQEBDQUAA4GBAJG4rs9lP+hctG/VXYBF8oBkHtrOCv0AsIGx4GtQCUlSp9yC490ZAgyLj5FsBbj2vhO9UfnNBCcufgP/vl5aIWM5pHdt4tA2uZbre1ObTSvdLe2GPA6hI/5PNLbp4cnCQyMZDyFh1bXb861EklUtctgTFVQvPDqmbArc+sKckalf">
-    <NS1:updates RDF:resource="rdf:#$eP7k6"/>
+                   NS1:version="1.1.0b9"
+                   NS1:updateLink="http://fireclipse.xucia.com/files/fireclipse/firebug-1.1.0b9.xpi"
+                   NS1:signature="MIGTMA0GCSqGSIb3DQEBDQUAA4GBADMUOB7a4Kdhd/cK9xzr5HeWmrRMya90SWrFQyYB9ZzPvaSIoSrYVI8YUbWIJTXyYpMgU28UKfr05YY5EK7qcxQ/5kEbFonmK6V5ieMB8Of2X3xiVhG4YRi4Awz35H44efQXdSMwJHB/k+Z18vkWH5hmpY9MJpGYAM/+3wL0ZuC+">
+    <NS1:updates RDF:resource="rdf:#$ejHpv2"/>
   </RDF:Description>
-  <RDF:Description RDF:about="rdf:#$fP7k6"
-                   NS1:version="1.1.0b8">
-    <NS1:targetApplication RDF:resource="rdf:#$iP7k6"/>
+  <RDF:Description RDF:about="rdf:#$fjHpv2"
+                   NS1:version="1.1.0b9">
+    <NS1:targetApplication RDF:resource="rdf:#$ijHpv2"/>
   </RDF:Description>
+  <RDF:Seq RDF:about="rdf:#$ejHpv2">
+    <RDF:li RDF:resource="rdf:#$fjHpv2"/>
+  </RDF:Seq>
 </RDF:RDF>

@@ -871,8 +871,6 @@ Firebug.Debugger = extend(Firebug.Module,
             var sourceFile = this.getSourceFileFromDebugAdapter(context, frame, eval_body);
         else if (Firebug.useLastLineForEvalName)
             var sourceFile = this.getSourceFileFromLastLine(context, frame, eval_body)
-        else if (Firebug.useFirstLineForEvalName)
-            var sourceFile = this.getSourceFileFromFirstSourceLine(context, frame, eval_body)
 
         if (sourceFile == undefined)
         {
@@ -1710,7 +1708,6 @@ ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
             optionMenu("ShowEvalSources", "showEvalSources"),
             optionMenu("ShowAllSourceFiles", "showAllSourceFiles"),
             optionMenu("UseLastLineForEvalName", "useLastLineForEvalName"),
-            optionMenu("UseFirstLineForEvalName", "useFirstLineForEvalName"),
             optionMenu("UseFunctionSource", "useFunctionSource")
         ];
     },
