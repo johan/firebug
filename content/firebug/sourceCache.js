@@ -125,6 +125,9 @@ top.SourceCache.prototype =
         }
         catch (exc)
         {
+        }
+        finally
+        {
             stream.close();
         }
     },
