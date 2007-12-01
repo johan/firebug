@@ -758,8 +758,7 @@ top.Firebug =
 
     syncBar: function()
     {
-        this.showBar(tabBrowser.selectedBrowser && tabBrowser.selectedBrowser.showFirebug);
-        var browser = FirebugChrome.getCurrentBrowser(); // XXXjjb Joe check tabBrowser.selectedBrowser;
+        var browser = FirebugChrome.getCurrentBrowser();
         this.showBar(browser && browser.showFirebug);
     },
 
