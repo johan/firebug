@@ -51,8 +51,8 @@
     <property name="src_dir" location="." />
     <property name="build_dir" location="./build" />
     <property name="dist_dir" location="./dist" />
-    <property name="unexplore.dir" location="../eval" />
-    <!-- relative to branches/firebug1.1 should be branches/eval -->
+    <property name="unexplore.dir" location="../../trunk" />
+    <!-- relative to branches/firebug1.1 should be unexplore.dir -->
 
     <property name="excludes" value="**/.*, **/*.jar, **/*.db" />
     <property name="components_dir" location="${src_dir}/components" />
@@ -232,7 +232,7 @@
     </target>
 
 
-    <!-- Trace Removal Targets: copy this dir to ../eval, strip lines with /*@explore*/ -->
+    <!-- Trace Removal Targets: copy this dir to unexplore.dir, strip lines with /*@explore*/ -->
     <target name="clean-unexplore"
         description="Delete contents of unexplore directory" >
         <fail>
