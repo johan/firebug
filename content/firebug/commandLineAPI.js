@@ -1,32 +1,23 @@
 /* See license.txt for terms of usage */
- 
+
 function FirebugCommandLineAPI(context)
 {
     var baseWindow = context.window;
-    
+
     this.$ = function(id)
     {
         var doc = baseWindow.document;
         return baseWindow.document.getElementById(id);
     };
-    
+
     this.$$ = function(selector)
     {
         return FBL.getElementsBySelector(baseWindow.document, selector);
     };
-    
-    this.$x = function(xpath, contextNode)
-    {
-        var doc = baseWindow.document;
-        if (contextNode)
-            doc = contextNode.ownerDocument;
-        return FBL.getElementsByXPath(doc, xpath, contextNode);
-    };
 
-    this.$X = function(xpath, contextNode)
+    this.$x = function(xpath)
     {
-        var got = this.$x(xpath, contextNode);
-        return got instanceof Array ? got[0] : got;
+        return FBL.getElementsByXPath(baseWindow.document, xpath);
     };
 
     this.cd = function(object)
@@ -36,12 +27,12 @@ function FirebugCommandLineAPI(context)
         else
             throw "Object must be a window.";
     };
-    
+
     this.dir = function(o)
     {
         Firebug.Console.log(o, context, "dir", Firebug.DOMPanel.DirTable);
     };
-    
+
     this.dirxml = function(o)
     {
         if (o instanceof Window)
@@ -71,12 +62,12 @@ function FirebugCommandLineAPI(context)
     {
         return FBL.values(o);
     };
-    
+
     this.debug = function(fn)
     {
         Firebug.Debugger.trace(fn, null, "debug");
-    };    
-    
+    };
+
     this.undebug = function(fn)
     {
         Firebug.Debugger.untrace(fn, null, "debug");
@@ -86,12 +77,12 @@ function FirebugCommandLineAPI(context)
     {
         Firebug.Debugger.trace(fn, null, "monitor");
     };
-    
+
     this.unmonitor = function(fn)
     {
         Firebug.Debugger.untrace(fn, null, "monitor");
     };
-    
+
     this.monitorEvents = function(object, types)
     {
         monitorEvents(object, types, context);
@@ -101,12 +92,12 @@ function FirebugCommandLineAPI(context)
     {
         unmonitorEvents(object, types, context);
     };
-    
+
     this.profile = function(title)
     {
         Firebug.Profiler.startProfiling(context, title);
     };
-    
+
     this.profileEnd = function()
     {
         Firebug.Profiler.stopProfiling(context);

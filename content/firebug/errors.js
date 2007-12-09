@@ -1,5 +1,5 @@
 /* See license.txt for terms of usage */
- 
+
 FBL.ns(function() { with (FBL) {
 
 // ************************************************************************************************
@@ -9,7 +9,7 @@ const nsIScriptError = CI("nsIScriptError");
 
 const WARNING_FLAG = nsIScriptError.warningFlag;
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 const urlRe = new RegExp("([^:]*):(//)?([^/]*)");
 
@@ -25,7 +25,7 @@ const pointlessErrors =
     "aDocShell.QueryInterface(Components.interfaces.nsIWebNavigation).currentURI has no properties": 1
 };
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 const fbs = CCSV("@joehewitt.com/firebug;1", "nsIFireBug");
 const consoleService = CCSV("@mozilla.org/consoleservice;1", "nsIConsoleService");
@@ -43,20 +43,29 @@ var Errors = Firebug.Errors = extend(Firebug.Module,
     {
         this.setCount(context, context.errorCount + 1)
     },
-    
+
     setCount: function(context, count)
     {
         context.errorCount = count;
-        
+
         if (context == FirebugContext)
             this.showCount(context.errorCount);
     },
-    
+
+    showMessageOnStatusBar: function(error)
+    {
+        if (statusText && statusBar && Firebug.breakOnErrors && error.message &&  !(error.flags & nsIScriptError.WARNING_FLAG))  // sometimes statusText is undefined..how?
+        {
+            statusText.setAttribute("value", error.message);
+            statusBar.setAttribute("errors", "true");
+        }
+    },
+
     showCount: function(errorCount)
     {
         if (!statusBar)
             return;
-        
+
         if (errorCount)
         {
             if (Firebug.showErrorCount)
@@ -67,7 +76,7 @@ var Errors = Firebug.Errors = extend(Firebug.Module,
 
                 statusText.setAttribute("value", errorLabel);
             }
-            
+
             statusBar.setAttribute("errors", "true");
         }
         else
@@ -77,21 +86,20 @@ var Errors = Firebug.Errors = extend(Firebug.Module,
         }
     },
 
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
     // extends ConsoleObserver
-    
+
     observe: function(object)
     {
+        var context = FirebugContext;
         try
         {
             if (object instanceof nsIScriptError)
             {
-                var context = FirebugContext;
-
                 var category = getBaseCategory(object.category);
                 var isWarning = object.flags & WARNING_FLAG;
                 var isJSError = category == "js" && !isWarning;
-                
+
                 if (isJSError)
                 {
                     var isSyntaxError = object.sourceLine != null;
@@ -107,30 +115,51 @@ var Errors = Firebug.Errors = extend(Firebug.Module,
                     }
                 }
 
+
                 if (!context || !categoryFilter(object.sourceName, object.category, isWarning))
                     return;
 
                 if (object.errorMessage in pointlessErrors)
                     return;
-                
-                if (category == "css")
-                {
-                    var msgId = [object.errorMessage, object.sourceName, object.lineNumber].join("/");
-                    if (context.errorMap && msgId in context.errorMap)
-                        return;
 
-                    if (!context.errorMap)
-                        context.errorMap = {};
-                    
-                    context.errorMap[msgId] = 1;
+                var msgId = [object.errorMessage, object.sourceName, object.lineNumber].join("/");
+                if (context.errorMap && msgId in context.errorMap)
+                {
+                    context.errorMap[msgId] += 1;
+                    return;
                 }
 
-                if (!isWarning)    
+                if (!context.errorMap)
+                    context.errorMap = {};
+
+                context.errorMap[msgId] = 1;
+
+                if (!isWarning)
                     this.increaseCount(context);
-    
-                var error = new ErrorMessage(object.errorMessage, object.sourceName,
-                        object.lineNumber, object.sourceLine, category, context);
-                
+
+                var sourceName = object.sourceName;
+                var lineNumber = object.lineNumber;
+
+
+                if (Firebug.showStackTrace && isJSError)
+                {
+                    var trace = Firebug.errorStackTrace;
+                    if (trace)
+                    {
+                        var stack_frame = trace.frames[0];
+                        if (stack_frame)
+                        {
+                            sourceName = stack_frame.href;
+                            lineNumber = stack_frame.lineNo;
+                        }
+                        var correctedError = object.init(object.errorMessage, sourceName, object.sourceLine,lineNumber, object.columnNumber, object.flags, object.category);
+                    }
+                }
+                Firebug.errorStackTrace = null;  // clear global: either we copied it or we don't use it.
+
+                var error = new ErrorMessage(object.errorMessage, sourceName,
+                        lineNumber, object.sourceLine, category, context, trace);
+
                 var className = isWarning ? "warningMessage" : "errorMessage";
                 Firebug.Console.log(error, context,  className);
             }
@@ -139,14 +168,18 @@ var Errors = Firebug.Errors = extend(Firebug.Module,
                 // Must be an nsIConsoleMessage
                 Firebug.Console.log(object.message, context, "consoleMessage", FirebugReps.Text);
             }
+            else
+            {
+            }
         }
         catch (exc)
         {
-            ERROR("Error while reporting error: " + exc);
+            // Errors prior to console init will come out here, eg error message from Firefox startup jjb.
+            // ERROR("Error while reporting error: " + exc);
         }
     },
 
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
     // extends Module
 
     enable: function()
@@ -159,9 +192,9 @@ var Errors = Firebug.Errors = extend(Firebug.Module,
 
     disable: function()
     {
-        consoleService.unregisterListener(this);        
+        consoleService.unregisterListener(this);
     },
-    
+
     initContext: function(context)
     {
         context.errorCount = 0;
@@ -179,7 +212,7 @@ var Errors = Firebug.Errors = extend(Firebug.Module,
 // ************************************************************************************************
 // Local Helpers
 
-const categoryMap = 
+const categoryMap =
 {
     "javascript": "js",
     "JavaScript": "js",
@@ -209,7 +242,7 @@ function categoryFilter(url, category, isWarning)
         return true;
 
     var isChrome = false;
-    
+
     var categories = category.split(" ");
     for (var i = 0 ; i < categories.length; ++i)
     {
@@ -228,24 +261,24 @@ function categoryFilter(url, category, isWarning)
                 || category == "component")
             isChrome = true;
     }
-    
-    if ((isChrome && !Firebug.showChromeErrors) || (!isChrome && !Firebug.showWebErrors))
+
+    if ((isChrome && !Firebug.showChromeErrors))
         return false;
-    
+
     return true;
 }
 
-function domainFilter(url)
+function domainFilter(url)  // never called?
 {
     if (Firebug.showExternalErrors)
         return true;
-                
+
     var browserWin = document.getElementById("content").contentWindow;
 
     var m = urlRe.exec(browserWin.location.href);
     if (!m)
         return false;
-        
+
     var browserDomain = m[3];
 
     m = urlRe.exec(url);
@@ -254,7 +287,7 @@ function domainFilter(url)
 
     var errorScheme = m[1];
     var errorDomain = m[3];
-    
+
     return errorScheme == "javascript"
         || errorScheme == "chrome"
         || errorDomain == browserDomain;
@@ -265,5 +298,5 @@ function domainFilter(url)
 Firebug.registerModule(Errors);
 
 // ************************************************************************************************
-    
+
 }});

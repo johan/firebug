@@ -1,7 +1,7 @@
 /* See license.txt for terms of usage */
- 
+
 FBL.ns(function() { with (FBL) {
-    
+
 // ************************************************************************************************
 // Constants
 
@@ -10,6 +10,7 @@ const nsIWebProgressListener = CI("nsIWebProgressListener");
 const nsIWebProgress = CI("nsIWebProgress");
 const nsISupportsWeakReference = CI("nsISupportsWeakReference");
 const nsISupports = CI("nsISupports");
+const nsIURI = CI("nsIURI");
 
 const NOTIFY_STATE_DOCUMENT = nsIWebProgress.NOTIFY_STATE_DOCUMENT;
 
@@ -26,7 +27,7 @@ const STOP_ALL = nsIWebNavigation.STOP_ALL;
 const dummyURI = "about:layout-dummy-request";
 const aboutBlank = "about:blank";
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 const tabBrowser = $("content");
 
@@ -39,13 +40,13 @@ var listeners = [];
 // ************************************************************************************************
 
 top.TabWatcher =
-{    
+{
     initialize: function(owner)
     {
         // Store contexts where they can be accessed externally
         this.contexts = contexts;
 
-        this.owner = owner;
+        this.owner = owner;  // Firebug object
         this.addListener(owner);
 
         if (tabBrowser)
@@ -69,10 +70,10 @@ top.TabWatcher =
         this.owner = null;
     },
 
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
     activate: function()
-    {        
+    {
         if (tabBrowser)
             this.watchBrowser(tabBrowser.selectedBrowser);
     },
@@ -96,11 +97,11 @@ top.TabWatcher =
             return currentSelected;
         }
     },
-    
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
     /**
-     * Attaches to a top-level window.
+     * Attaches to a top-level window. Creates context unless we just re-activated on an existing context
      */
     watchTopWindow: function(win, uri)
     {
@@ -115,26 +116,18 @@ top.TabWatcher =
             return;
         }
 
-        if (uri)
-        {
-            if (Firebug.disabledAlways)
-            {
-                // Check if the whitelist makes an exception
-                if (!this.owner.isURIAllowed(uri))
-                    return this.watchContext(win, null);
-            }
-            else
-            {
-                // Check if the blacklist says no
-                if (this.owner.isURIDenied(uri))
-                    return this.watchContext(win, null);
-            }
-        }
-        
         var context = this.getContextByWindow(win);
         if (!context)
         {
-            var browser = this.getBrowserByWindow(win);            
+            if (!this.owner.enableContext(win,uri))
+            {
+                return this.watchContext(win, null);
+            }
+        }
+
+        if (!context)
+        {
+            var browser = this.getBrowserByWindow(win);
             if (!fbs.countContext(true))
                 return;
 
@@ -144,17 +137,19 @@ top.TabWatcher =
             delete browser.persistedState;
             if (!persistedState || persistedState.location != win.location.href)
                 persistedState = null;
-            
+
             context = this.owner.createTabContext(win, browser, browser.chrome, persistedState);
             contexts.push(context);
-            
+
             this.dispatch("initContext", [context]);
-            
+
             win.addEventListener("pagehide", onUnloadTopWindow, true);
             win.addEventListener("pageshow", onLoadWindowContent, true);
             win.addEventListener("DOMContentLoaded", onLoadWindowContent, true);
         }
-        
+        // XXXjjb at this point we either have context or we just pushed null into contexts and sent it to init...
+
+        // This is one of two places that loaded is set. The other is in watchLoadedTopWindow
         if (context)
             context.loaded = !context.browser.webProgress.isLoadingDocument;
 
@@ -167,9 +162,9 @@ top.TabWatcher =
     watchLoadedTopWindow: function(win)
     {
         var isSystem = isSystemPage(win);
-        
+
         var context = this.getContextByWindow(win);
-        if ((context && !context.window) || isSystem)
+        if ((context && !context.window) || (isSystem && !Firebug.allowSystemPages))
         {
             this.unwatchTopWindow(win);
             this.watchContext(win, null, isSystem);
@@ -206,48 +201,51 @@ top.TabWatcher =
     },
 
     /**
-     * Detaches from a top-level window.
+     * Detaches from a top-level window. Destroys context
      */
     unwatchTopWindow: function(win)
     {
         var context = this.getContextByWindow(win);
         this.unwatchContext(win, context);
     },
-    
+
     /**
      * Detaches from a window, top-level or not.
-     */ 
+     */
     unwatchWindow: function(win)
     {
         var context = this.getContextByWindow(win);
 
         var index = context ? context.windows.indexOf(win) : -1;
         if (index != -1)
+        {
             context.windows.splice(index, 1);
+            this.dispatch("unwatchWindow", [context, win]);  // XXXjjb Joe check
+        }
     },
-    
+
     /**
-     * Attaches to the window inside a browser.
+     * Attaches to the window inside a browser because of user-activation
      */
     watchBrowser: function(browser)
     {
         this.watchTopWindow(browser.contentWindow, safeGetURI(browser));
     },
-    
+
     unwatchBrowser: function(browser)
     {
         this.unwatchTopWindow(browser.contentWindow);
     },
-            
+
     watchContext: function(win, context, isSystem)
     {
         var browser = context ? context.browser : this.getBrowserByWindow(win);
         if (browser)
             browser.isSystemPage = isSystem;
-        
+
         this.dispatch("showContext", [browser, context]);
     },
-    
+
     unwatchContext: function(win, context)
     {
         if (!context)
@@ -256,7 +254,7 @@ top.TabWatcher =
             this.owner.destroyTabContext(browser, null);
             return;
         }
-        
+
         var persistedState = {location: context.window.location.href};
         context.browser.persistedState = persistedState;
 
@@ -284,26 +282,29 @@ top.TabWatcher =
         fbs.countContext(false);
 
         this.owner.destroyTabContext(context.browser, context);
-        context.destroy(persistedState);    
-        
+        context.destroy(persistedState);
+
         remove(contexts, context);
+        for (var p in context)
+            delete context[p];
     },
 
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
-    
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
     getContextByWindow: function(win)
     {
         while (win && win.parent != win)
             win = win.parent;
-        
+
+        if (!win) // eg search bar, and sometimes win.parent is null??
+            return;
+
         for (var i = 0; i < contexts.length; ++i)
         {
             var context = contexts[i];
             if (context.window == win)
                 return context;
         }
-
-        return null;    
     },
 
     getBrowserByWindow: function(win)
@@ -330,13 +331,13 @@ top.TabWatcher =
         for (var i = 0; i < contexts.length; ++i)
             fn(contexts[i]);
     },
-    
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
     addListener: function(listener)
     {
         listeners.push(listener);
-    },    
+    },
 
     removeListener: function(listener)
     {
@@ -360,7 +361,7 @@ top.TabWatcher =
                 }
             }
         }
-    }    
+    }
 };
 
 // ************************************************************************************************
@@ -385,18 +386,20 @@ var BaseProgressListener =
     onProgressChange : function() {},
     onStatusChange : function() {},
     onSecurityChange : function() {},
-    onLinkIconAvailable : function() {} 
+    onLinkIconAvailable : function() {}
 };
 
 // ************************************************************************************************
 
 var TabProgressListener = extend(BaseProgressListener,
 {
-    onLocationChange: function(progress, request, location)
+    onLocationChange: function(progress, request, uri)
     {
         // Only watch windows that are their own parent - e.g. not frames
         if (progress.DOMWindow.parent == progress.DOMWindow)
-            TabWatcher.watchTopWindow(progress.DOMWindow, location);
+        {
+            TabWatcher.watchTopWindow(progress.DOMWindow, uri);
+        }
     },
 
     onStateChange: function(progress, request, flag, status)
@@ -416,60 +419,44 @@ var FrameProgressListener = extend(BaseProgressListener,
 {
     onStateChange: function(progress, request, flag, status)
     {
-        // We need to get the hook in as soon as the new DOMWindow is created, but before
-        // it starts executing any scripts in the page.  After lengthy analysis, it seems
-        // that the start of these "dummy" requests is the only state that works.
         if (flag & STATE_IS_REQUEST && flag & STATE_START)
         {
-            if (safeGetName(request) == dummyURI)
+            // We need to get the hook in as soon as the new DOMWindow is created, but before
+            // it starts executing any scripts in the page.  After lengthy analysis, it seems
+            // that the start of these "dummy" requests is the only state that works.
+
+            var safeName = safeGetName(request);
+            if (safeName && ((safeName == dummyURI) || safeName == "about:document-onload-blocker") )
             {
+                var win = progress.DOMWindow;
                 // Another weird edge case here - when opening a new tab with about:blank,
                 // "unload" is dispatched to the document, but onLocationChange is not called
                 // again, so we have to call watchTopWindow here
-                var win = progress.DOMWindow;
-                if (win.parent == win && win.location.href == "about:blank")
-                    TabWatcher.watchTopWindow(win, null);
-
-                TabWatcher.watchWindow(win);
+                //if (win.parent == win && win.location.href == "about:blank")
+                //    TabWatcher.watchTopWindow(win, win.location);
+                // XXXms check this
+                if (win.parent == win && (win.location.href == "about:blank" ))//  || safeName == "about:document-onload-blocker"))
+                {
+                    TabWatcher.watchTopWindow(win, win.location.href);
+                    return;  // new one under our thumb
+                }
             }
         }
 
         // Later I discovered that XHTML documents don't dispatch the dummy requests, so this
-        // is our best shot here at hooking them.  
+        // is our best shot here at hooking them.
         if (flag & STATE_IS_DOCUMENT && flag & STATE_TRANSFERRING)
+        {
             TabWatcher.watchWindow(progress.DOMWindow);
+            return;
+        }
+
     }
 });
 
 // ************************************************************************************************
 // Local Helpers
 
-function isSystemPage(win)
-{
-    try
-    {
-        var doc = win.document;
-        if (!doc)
-            return false;
-
-        // Detect network error pages like 404
-        if (doc.documentURI.indexOf("about:neterror") == 0)
-            return true;
-        
-        // Detect pages for pretty printed XML
-        return (doc.styleSheets.length && doc.styleSheets[0].href
-                == "chrome://global/content/xml/XMLPrettyPrint.css")
-            || (doc.styleSheets.length > 1 && doc.styleSheets[1].href
-                == "chrome://browser/skin/feeds/subscribe.css");
-    }
-    catch (exc)
-    {
-        // Sometimes documents just aren't ready to be manipulated here, but don't let that
-        // gum up the works
-        ERROR(exc)
-        return false;
-    }
-}
 
 function onUnloadTopWindow(event)
 {
@@ -484,18 +471,31 @@ function onLoadWindowContent(event)
         win.removeEventListener("pageshow", onLoadWindowContent, true);
     }
     catch (exc) {}
-    
+
     try
     {
         win.removeEventListener("DOMContentLoaded", onLoadWindowContent, true);
     }
     catch (exc) {}
-    
+
+    // Signal that we got the onLoadWindowContent event. This prevents the FrameProgressListener from sending it.
+    var context = TabWatcher.getContextByWindow(win);
+    if (context)
+        context.onLoadWindowContent = true;
+
     // Calling this after a timeout because I'm finding some cases where calling
     // it here causes freezeup when this results in loading a script file. This fixes that.
     setTimeout(function()
     {
-        TabWatcher.watchLoadedTopWindow(win);
+        try
+        {
+            TabWatcher.watchLoadedTopWindow(win);
+        }
+        catch(exc)
+        {
+            ERROR(exc);
+        }
+
     });
 }
 
@@ -536,6 +536,29 @@ function safeGetURI(browser)
     }
 }
 
+function getStateDescription(flag) {
+    var state = "";
+    if (flag & nsIWebProgressListener.STATE_START) state += "STATE_START ";
+    else if (flag & nsIWebProgressListener.STATE_REDIRECTING) state += "STATE_REDIRECTING ";
+    else if (flag & nsIWebProgressListener.STATE_TRANSFERRING) state += "STATE_TRANSFERRING ";
+    else if (flag & nsIWebProgressListener.STATE_NEGOTIATING) state += "STATE_NEGOTIATING ";
+    else if (flag & nsIWebProgressListener.STATE_STOP) state += "STATE_STOP ";
+
+    if (flag & nsIWebProgressListener.STATE_IS_REQUEST) state += "STATE_IS_REQUEST ";
+    if (flag & nsIWebProgressListener.STATE_IS_DOCUMENT) state += "STATE_IS_DOCUMENT ";
+    if (flag & nsIWebProgressListener.STATE_IS_NETWORK) state += "STATE_IS_NETWORK ";
+    if (flag & nsIWebProgressListener.STATE_IS_WINDOW) state += "STATE_IS_WINDOW ";
+    if (flag & nsIWebProgressListener.STATE_RESTORING) state += "STATE_RESTORING ";
+    if (flag & nsIWebProgressListener.STATE_IS_INSECURE) state += "STATE_IS_INSECURE ";
+    if (flag & nsIWebProgressListener.STATE_IS_BROKEN) state += "STATE_IS_BROKEN ";
+    if (flag & nsIWebProgressListener.STATE_IS_SECURE) state += "STATE_IS_SECURE ";
+    if (flag & nsIWebProgressListener.STATE_SECURE_HIGH) state += "STATE_SECURE_HIGH ";
+    if (flag & nsIWebProgressListener.STATE_SECURE_MED) state += "STATE_SECURE_MED ";
+    if (flag & nsIWebProgressListener.STATE_SECURE_LOW) state += "STATE_SECURE_LOW ";
+
+    return state;
+}
+
 // ************************************************************************************************
-    
+
 }});

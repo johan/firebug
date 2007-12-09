@@ -1,6 +1,7 @@
 
 // Global
-pref("extensions.firebug.disabledAlways", true);
+pref("extensions.firebug.disabledAlways", false);
+pref("extensions.firebug.allowSystemPages", false);
 pref("extensions.firebug.disabledFile", true);
 pref("extensions.firebug.defaultPanelName", "html");
 pref("extensions.firebug.throttleMessages", true);
@@ -16,7 +17,6 @@ pref("extensions.firebug.showJSErrors", true);
 pref("extensions.firebug.showJSWarnings", false);
 pref("extensions.firebug.showCSSErrors", false);
 pref("extensions.firebug.showXMLErrors", false);
-pref("extensions.firebug.showWebErrors", true);
 pref("extensions.firebug.showChromeErrors", false);
 pref("extensions.firebug.showChromeMessages", false);
 pref("extensions.firebug.showExternalErrors", false);
@@ -37,6 +37,15 @@ pref("extensions.firebug.showComputedStyle", false);
 
 // Script
 pref("extensions.firebug.breakOnErrors", false);
+pref("extensions.firebug.breakOnTopLevel", false);
+pref("extensions.firebug.useDebugAdapter", false);
+pref("extensions.firebug.showEvalSources", false);
+pref("extensions.firebug.showAllSourceFiles", false);
+pref("extensions.firebug.useLastLineForEvalName", false);
+pref("extensions.firebug.useFunctionSource", false);
+
+// Stack
+pref("extensions.firebug.omitObjectPathStack", false);
 
 // DOM
 pref("extensions.firebug.showUserProps", true);
@@ -53,3 +62,7 @@ pref("extensions.firebug.showRulers", true);
 pref("extensions.firebug.netFilterCategory", "all");
 pref("extensions.firebug.disableNetMonitor", false);
 pref("extensions.firebug.collectHttpHeaders", true);
+
+// External Editors
+pref("extensions.firebug.externalEditors", "");
+

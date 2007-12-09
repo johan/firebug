@@ -1,5 +1,5 @@
-/* See license.txt for terms of usage */
- 
+8/29/2007/* See license.txt for terms of usage */
+
 FBL.ns(function() { with (FBL) {
 
 // ************************************************************************************************
@@ -25,12 +25,12 @@ var frameHighlighter = null;
 Firebug.Inspector = extend(Firebug.Module,
 {
     inspecting: false,
-    
+
     highlightObject: function(element, context, highlightType, boxFrame)
     {
         if (!element || !isElement(element) || !isVisible(element))
             element = null;
-        
+
         if (element && context && context.highlightTimeout)
         {
             context.clearTimeout(context.highlightTimeout);
@@ -45,11 +45,11 @@ Firebug.Inspector = extend(Firebug.Module,
             if (oldContext.window)
                 this.highlighter.unhighlight(oldContext);
         }
-        
+
         this.highlighter = highlighter;
         this.highlightedElement = element;
         this.highlightedContext = context;
-        
+
         if (element)
         {
             highlighter.highlight(context, element, boxFrame);
@@ -64,7 +64,7 @@ Firebug.Inspector = extend(Firebug.Module,
             }, inspectDelay);
         }
     },
-    
+
     toggleInspecting: function(context)
     {
         if (this.inspecting)
@@ -83,13 +83,13 @@ Firebug.Inspector = extend(Firebug.Module,
 
         context.chrome.setGlobalAttribute("cmd_toggleInspecting", "checked", "true");
         this.attachInspectListeners(context);
-        
+
         // Remember the previous panel and bar state so we can revert if the user cancels
         this.previousPanelName = context.panelName;
         this.previousSidePanelName = context.sidePanelName;
         this.previouslyCollapsed = $("fbContentBox").collapsed;
         this.previouslyFocused = context.detached && context.chrome.isFocused();
-        
+
         var htmlPanel = context.chrome.selectPanel("html");
         this.previousObject = htmlPanel.selection;
 
@@ -97,10 +97,10 @@ Firebug.Inspector = extend(Firebug.Module,
             FirebugChrome.focus();
         else
             Firebug.showBar(true);
-        
+
         htmlPanel.panelNode.focus();
         htmlPanel.startInspecting();
-        
+
         if (context.hoverNode)
             this.inspectNode(context.hoverNode);
     },
@@ -109,18 +109,18 @@ Firebug.Inspector = extend(Firebug.Module,
     {
         if (node && node.nodeType != 1)
             node = node.parentNode;
-        
+
         if (node && node.firebugIgnore)
             return;
 
         var context = this.inspectingContext;
-        
+
         if (this.inspectTimeout)
         {
             context.clearTimeout(this.inspectTimeout);
             delete this.inspectTimeout;
         }
-            
+
         this.highlightObject(node, context, "frame");
 
         this.inspectingNode = node;
@@ -162,7 +162,7 @@ Firebug.Inspector = extend(Firebug.Module,
             context.chrome.focus();
 
         if (cancelled)
-        {            
+        {
             if (this.previouslyCollapsed)
                 Firebug.showBar(false);
 
@@ -178,9 +178,9 @@ Firebug.Inspector = extend(Firebug.Module,
         }
 
         htmlPanel.stopInspecting(htmlPanel.selection, cancelled);
-            
+
         this.inspectNode(null);
-        
+
         delete this.previousObject;
         delete this.previousPanelName;
         delete this.previousSidePanelName;
@@ -191,7 +191,7 @@ Firebug.Inspector = extend(Firebug.Module,
     {
         var target;
         var node = this.inspectingNode;
-        
+
         if (dir == "up")
             target = this.inspectingContext.chrome.getNextObject();
         else if (dir == "down")
@@ -205,14 +205,14 @@ Firebug.Inspector = extend(Firebug.Module,
                     target = getNextElement(node.firstChild);
             }
         }
-        
+
         if (target && isElement(target))
             this.inspectNode(target);
         else
             beep();
     },
-    
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
     attachInspectListeners: function(context)
     {
@@ -224,7 +224,7 @@ Firebug.Inspector = extend(Firebug.Module,
         if (!chrome)
             chrome = FirebugChrome;
 
-        this.keyListeners = 
+        this.keyListeners =
         [
             chrome.keyCodeListen("RETURN", null, bindFixed(this.stopInspecting, this)),
             chrome.keyCodeListen("ESCAPE", null, bindFixed(this.stopInspecting, this, true)),
@@ -250,10 +250,13 @@ Firebug.Inspector = extend(Firebug.Module,
         if (!chrome)
             chrome = FirebugChrome;
 
-        for (var i = 0; i < this.keyListeners.length; ++i)
-            chrome.keyIgnore(this.keyListeners[i]);
-        delete this.keyListeners;
-        
+        if (this.keyListeners)  // XXXjjb for some reason this is null some times...
+        {
+            for (var i = 0; i < this.keyListeners.length; ++i)
+                chrome.keyIgnore(this.keyListeners[i]);
+            delete this.keyListeners;
+        }
+
         iterateWindows(win, bind(function(subWin)
         {
             subWin.document.removeEventListener("mouseover", this.onInspectingMouseOver, true);
@@ -270,8 +273,8 @@ Firebug.Inspector = extend(Firebug.Module,
             subWin.document.removeEventListener("click", this.onInspectingClick, true);
         }, this));
     },
-    
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
     onInspectingMouseOver: function(event)
     {
@@ -296,9 +299,9 @@ Firebug.Inspector = extend(Firebug.Module,
         cancelEvent(event);
     },
 
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
     // extends Module
-    
+
     initialize: function()
     {
         this.onInspectingMouseOver = bind(this.onInspectingMouseOver, this);
@@ -307,12 +310,12 @@ Firebug.Inspector = extend(Firebug.Module,
 
         this.updateOption("shadeBoxModel", Firebug.shadeBoxModel);
     },
-    
+
     initContext: function(context)
     {
         context.onPreInspectMouseOver = function(event) { context.hoverNode = event.target; };
     },
-    
+
     destroyContext: function(context)
     {
         if (context.highlightTimeout)
@@ -322,9 +325,9 @@ Firebug.Inspector = extend(Firebug.Module,
         }
 
         if (this.inspecting)
-            this.stopInspecting(true);  
+            this.stopInspecting(true);
     },
-    
+
     watchWindow: function(context, win)
     {
         win.addEventListener("mouseover", context.onPreInspectMouseOver, true);
@@ -348,7 +351,7 @@ Firebug.Inspector = extend(Firebug.Module,
         var disabled = !context || !context.loaded;
         browser.chrome.setGlobalAttribute("menu_firebugInspect", "disabled", disabled);
     },
-    
+
     showPanel: function(browser, panel)
     {
         var chrome = browser.chrome;
@@ -362,7 +365,7 @@ Firebug.Inspector = extend(Firebug.Module,
         context.chrome.setGlobalAttribute("cmd_toggleInspecting", "disabled", "false");
         context.chrome.setGlobalAttribute("menu_firebugInspect", "disabled", "false");
     },
-    
+
     updateOption: function(name, value)
     {
         if (name == "shadeBoxModel")
@@ -371,19 +374,19 @@ Firebug.Inspector = extend(Firebug.Module,
             this.defaultHighlighter = value ? getHighlighter("boxModel") : getHighlighter("frame");
         }
     },
-    
+
     getObjectByURL: function(context, url)
     {
         var styleSheet = getStyleSheetByHref(url, context);
         if (styleSheet)
             return styleSheet;
-        
+
         /*var path = getURLPath(url);
         var xpath = "//*[contains(@src, '" + path + "')]";
         var elements = getElementsByXPath(context.window.document, xpath);
         if (elements.length)
             return elements[0];*/
-    }    
+    }
 });
 
 // ************************************************************************************************
@@ -413,20 +416,20 @@ function pad(element, t, r, b, l)
         + Math.abs(b) + "px " + Math.abs(l) + "px";
 }
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 function FrameHighlighter()
 {
 }
 
-FrameHighlighter.prototype = 
+FrameHighlighter.prototype =
 {
     highlight: function(context, element)
     {
         var offset = getViewOffset(element, true);
         var x = offset.x, y = offset.y;
         var w = element.offsetWidth, h = element.offsetHeight;
-        
+
         var nodes = this.getNodes(context, element);
 
         move(nodes.top, x, y-edgeSize);
@@ -444,17 +447,24 @@ FrameHighlighter.prototype =
         var body = getNonFrameBody(element);
         if (!body)
             return this.unhighlight(context);
-        
+
         var needsAppend = !nodes.top.parentNode || nodes.top.ownerDocument != body.ownerDocument;
         if (needsAppend)
         {
             attachStyles(context, body);
-
             for (var edge in nodes)
-                body.appendChild(nodes[edge]);
+            {
+                try
+                {
+                    body.appendChild(nodes[edge]);
+                }
+                catch(exc)
+                {
+                }
+            }
         }
     },
-    
+
     unhighlight: function(context)
     {
         var nodes = this.getNodes(context);
@@ -465,7 +475,7 @@ FrameHighlighter.prototype =
                 body.removeChild(nodes[edge]);
         }
     },
-    
+
     getNodes: function(context)
     {
         if (!context.frameHighlighter)
@@ -480,7 +490,7 @@ FrameHighlighter.prototype =
                 return div;
             }
 
-            context.frameHighlighter = 
+            context.frameHighlighter =
             {
                 top: createEdge("Top"),
                 right: createEdge("Right"),
@@ -490,16 +500,16 @@ FrameHighlighter.prototype =
         }
 
         return context.frameHighlighter;
-    }    
+    }
 };
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 function BoxModelHighlighter()
-{    
+{
 }
 
-BoxModelHighlighter.prototype = 
+BoxModelHighlighter.prototype =
 {
     highlight: function(context, element, boxFrame)
     {
@@ -510,7 +520,7 @@ BoxModelHighlighter.prototype =
             removeClass(context.highlightFrame, "firebugHighlightBox");
 
         context.highlightFrame = highlightFrame;
-        
+
         if (highlightFrame)
         {
             setClass(nodes.offset, "firebugHighlightGroup");
@@ -522,7 +532,7 @@ BoxModelHighlighter.prototype =
         var win = element.ownerDocument.defaultView;
         if (!win)
             return;
-        
+
         var offsetParent = element.offsetParent;
         if (!offsetParent)
             return;
@@ -533,7 +543,7 @@ BoxModelHighlighter.prototype =
         var parentY = parentOffset.y + parseInt(parentStyle.borderTopWidth);
         var parentW = offsetParent.offsetWidth-1;
         var parentH = offsetParent.offsetHeight-1;
-        
+
         var style = win.getComputedStyle(element, "");
         var styles = readBoxStyles(style);
 
@@ -574,7 +584,7 @@ BoxModelHighlighter.prototype =
             var top = y;
             var width = w-1;
             var height = h-1;
-            
+
             if (boxFrame == "content")
             {
                 left += Math.abs(styles.marginLeft) + Math.abs(styles.borderLeft)
@@ -606,21 +616,21 @@ BoxModelHighlighter.prototype =
                 height += Math.abs(styles.paddingTop) + Math.abs(styles.paddingBottom)
                     + Math.abs(styles.borderTop) + Math.abs(styles.borderBottom)
                     + Math.abs(styles.marginTop) + Math.abs(styles.marginBottom);
-            }            
-            
+            }
+
             move(nodes.lines.top, 0, top);
             move(nodes.lines.right, left+width, 0);
             move(nodes.lines.bottom, 0, top+height);
             move(nodes.lines.left, left, 0)
         }
-        
+
         var body = getNonFrameBody(element);
         if (!body)
             return this.unhighlight(context);
 
         var needsAppend = !nodes.offset.parentNode
             || nodes.offset.parentNode.ownerDocument != body.ownerDocument;
-        
+
         if (needsAppend)
         {
             attachStyles(context, body);
@@ -645,7 +655,7 @@ BoxModelHighlighter.prototype =
                 body.removeChild(nodes.lines[line]);
         }
     },
-    
+
     unhighlight: function(context)
     {
         var nodes = this.getNodes(context);
@@ -663,7 +673,7 @@ BoxModelHighlighter.prototype =
             }
         }
     },
-    
+
     getNodes: function(context)
     {
         if (!context.boxModelHighlighter)
@@ -694,7 +704,7 @@ BoxModelHighlighter.prototype =
                 return div;
             }
 
-            var nodes = context.boxModelHighlighter = 
+            var nodes = context.boxModelHighlighter =
             {
                 parent: createBox("Parent"),
                 rulerH: createRuler("H"),
@@ -721,7 +731,7 @@ BoxModelHighlighter.prototype =
         }
 
         return context.boxModelHighlighter;
-    }    
+    }
 };
 
 function getNonFrameBody(elt)
@@ -735,7 +745,7 @@ function attachStyles(context, body)
     var doc = body.ownerDocument;
     if (!context.highlightStyle)
         context.highlightStyle = createStyleSheet(doc, highlightCSS);
-    
+
     if (!context.highlightStyle.parentNode || context.highlightStyle.ownerDocument != doc)
         addStyleSheet(body.ownerDocument, context.highlightStyle);
 }
@@ -745,5 +755,5 @@ function attachStyles(context, body)
 Firebug.registerModule(Firebug.Inspector);
 
 // ************************************************************************************************
-    
+
 }});

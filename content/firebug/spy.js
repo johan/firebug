@@ -1,11 +1,62 @@
 /* See license.txt for terms of usage */
- 
+
 FBL.ns(function() { with (FBL) {
 
 // ************************************************************************************************
 // Constants
 
 const nsIHttpChannel = CI("nsIHttpChannel");
+const nsIUploadChannel = CI("nsIUploadChannel");
+const nsIRequest = CI("nsIRequest")
+const nsIXMLHttpRequest = CI("nsIXMLHttpRequest");
+const nsIWebProgress = CI("nsIWebProgress");
+const nsISeekableStream = CI("nsISeekableStream");
+
+const LOAD_BACKGROUND = nsIRequest.LOAD_BACKGROUND;
+const NS_SEEK_SET = nsISeekableStream.NS_SEEK_SET;
+
+const observerService = CCSV("@mozilla.org/observer-service;1", "nsIObserverService");
+
+// ************************************************************************************************
+
+var contexts = [];
+const httpObserver =
+{
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    // nsIObserver
+
+    observe: function(request, topic, data)
+    {
+        request = QI(request, nsIHttpChannel);
+        if ((topic == "http-on-modify-request") && (request.loadFlags & LOAD_BACKGROUND))
+        {
+            try
+            {
+                if (request.notificationCallbacks)
+                {
+                    var xhrRequest = request.notificationCallbacks.getInterface(nsIXMLHttpRequest);
+                    if (xhrRequest)
+                    {
+                        var win = QI(request.loadGroup.groupObserver, nsIWebProgress).DOMWindow;
+                        for( var i = 0; i < contexts.length; ++i )
+                        {
+                            if (contexts[i].win == win)
+                            {
+                                requestStarted(xhrRequest, contexts[i].context, request.requestMethod, request.URI.asciiSpec);
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+            catch(exc)
+            {
+            }
+        }
+    }
+};
+
+var listeners = [];
 
 // ************************************************************************************************
 
@@ -13,47 +64,46 @@ Firebug.Spy = extend(Firebug.Module,
 {
     attachSpy: function(context, win)
     {
-        if (win && win.XMLHttpRequest && !win.XMLHttpRequest.wrapped)
+        if (win)
         {
-            insertSafeWrapper(win, context);
-     
-            // Don't attach to XML documents - there are bugs in Firefox's XML document
-            // implementation that prevent the spy from working correctly
-            // XXXjoe ... or not.
-            //if (win.document && win.document.xmlVersion)
-                //return;
-
-            win.XMLHttpRequest.wrapped =
+            var uri = win.location.href; // don't attach spy to chrome
+            if (uri &&  (uri.indexOf("about:") == 0 || uri.indexOf("chrome:") == 0))
+                return;
+            for( var i = 0; i < contexts.length; ++i )
             {
-                open: win.XMLHttpRequest.prototype.open,
-                send: win.XMLHttpRequest.prototype.send,
-                load: win.XMLDocument.prototype.load
-            };            
-
-            win.XMLHttpRequest.prototype.open = function(method, url, async, username, password)
+                if ( (contexts[i].context == context) && (contexts[i].win == win) )
+                    return;
+            }
+            if ( contexts.length == 0 )
             {
-                if (typeof(async) == "undefined")
-                    async = false; 
-
-                httpOpenWrapper(this, context, win, method, url, async, username, password);
-            };
+                observerService.addObserver(httpObserver, "http-on-modify-request", false);
+            }
+            contexts.push({ context: context, win: win });
         }
     },
-    
+
     detachSpy: function(context, win)
     {
-        if (win && win.XMLHttpRequest && win.XMLHttpRequest.wrapped)
+        if (win)
         {
-            win.XMLHttpRequest.prototype.open = win.XMLHttpRequest.wrapped.open;
-            win.XMLDocument.prototype.load = win.XMLHttpRequest.wrapped.load;
-
-            delete win.XMLHttpRequest.wrapped;
+            for( var i = 0; i < contexts.length; ++i )
+            {
+                if ( (contexts[i].context == context) && (contexts[i].win == win) )
+                {
+                    contexts.splice(i, 1);
+                    if ( contexts.length == 0 )
+                    {
+                        observerService.removeObserver(httpObserver, "http-on-modify-request", false);
+                    }
+                    return;
+                }
+            }
         }
     },
-        
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
     // extends Module
-    
+
     initContext: function(context)
     {
         context.spies = [];
@@ -61,7 +111,7 @@ Firebug.Spy = extend(Firebug.Module,
         if (!Firebug.disableNetMonitor)
             this.attachSpy(context, context.window);
     },
-    
+
     destroyContext: function(context)
     {
         // For any spies that are in progress, remove our listeners so that they don't leak
@@ -73,24 +123,27 @@ Firebug.Spy = extend(Firebug.Module,
 
         delete context.spies;
     },
-    
+
     watchWindow: function(context, win)
     {
         if (!Firebug.disableNetMonitor)
             this.attachSpy(context, win);
     },
-    
+
     unwatchWindow: function(context, win)
     {
-        try {        
-            if (!Firebug.disableNetMonitor)
-                this.detachSpy(context, win);
+        try {
+            // this.detachSpy has to be called even if the Firebug.disableNetMonitor
+            // is true. This make sure that the existing context is properly
+            // removed from "contexts" array.
+            this.detachSpy(context, win);
         } catch (ex) {
             // Get exceptions here sometimes, so let's just ignore them
             // since the window is going away anyhow
+            ERROR(ex);
         }
     },
-    
+
     updateOption: function(name, value)
     {
         if (name == "showXMLHttpRequests")
@@ -105,6 +158,16 @@ Firebug.Spy = extend(Firebug.Module,
                 });
             }
         }
+    },
+
+    addListener: function(listener)
+    {
+        listeners.push(listener);
+    },
+
+    removeListener: function(listener)
+    {
+        remove(listeners, listener);
     }
 });
 
@@ -122,7 +185,7 @@ Firebug.Spy.XHR = domplate(Firebug.Rep,
             ),
             TAG(FirebugReps.SourceLink.tag, {object: "$object.sourceLink"})
         ),
-    
+
     getCaption: function(spy)
     {
         return spy.method.toUpperCase() + " " + this.getURL(spy);
@@ -132,7 +195,7 @@ Firebug.Spy.XHR = domplate(Firebug.Rep,
     {
         return spy.request.channel ? spy.request.channel.name : spy.url;
     },
-    
+
     onToggleBody: function(event)
     {
         var target = event.currentTarget;
@@ -149,43 +212,43 @@ Firebug.Spy.XHR = domplate(Firebug.Rep,
             }
         }
     },
-        
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
     copyURL: function(spy)
     {
         copyToClipboard(this.getURL(spy));
     },
-    
+
     copyParams: function(spy)
     {
         var text = spy.postText;
         if (!text)
             return;
-        
+
         var lines = text.split("\n");
         var params = parseURLEncodedText(lines[lines.length-1]);
-        
+
         var args = [];
         for (var i = 0; i < params.length; ++i)
             args.push(escape(params[i].name)+"="+escape(params[i].value));
-        
+
         var url = this.getURL(spy);
         url += (url.indexOf("?") == -1 ? "?" : "&") + args.join("&");
         copyToClipboard(url);
     },
-    
+
     copyResponse: function(spy)
     {
         copyToClipboard(spy.request.responseText);
     },
-    
+
     openInTab: function(spy)
     {
         openNewTab(this.getURL(spy));
     },
 
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
     supportsObject: function(object)
     {
@@ -210,7 +273,7 @@ Firebug.Spy.XHR = domplate(Firebug.Rep,
         var items = [
             {label: "CopyLocation", command: bindFixed(this.copyURL, this, spy) }
         ];
-        
+
         if (spy.postText)
         {
             items.push(
@@ -223,18 +286,17 @@ Firebug.Spy.XHR = domplate(Firebug.Rep,
             "-",
             {label: "OpenInTab", command: bindFixed(this.openInTab, this, spy) }
         );
-        
+
         return items;
     }
 });
 
 // ************************************************************************************************
 
-top.XMLHttpRequestSpy = function(request, context, win)
+top.XMLHttpRequestSpy = function(request, context)
 {
     this.request = request;
     this.context = context;
-    this.win = win;
     this.responseText = null;
 };
 
@@ -249,7 +311,7 @@ XMLHttpRequestSpy.prototype =
 
         this.onreadystatechange = this.request.onreadystatechange;
 
-        this.request.onreadystatechange = this.onReadyStateChange;    
+        this.request.onreadystatechange = this.onReadyStateChange;
         this.request.addEventListener("load", this.onLoad, true);
         this.request.addEventListener("error", this.onError, true);
     },
@@ -266,69 +328,46 @@ XMLHttpRequestSpy.prototype =
     }
 };
 
+Firebug.XHRSpyListener =
+{
+    onStart: function(context, spy)
+    {
+    },
+
+    onLoad: function(context, spy)
+    {
+    }
+};
+
 // ************************************************************************************************
 
-function httpOpenWrapper(request, context, win, method, url, async, username, password)
+function requestStarted(request, context, method, url)
 {
-    // Usually the wrapper is there already, except in rare cases
-    insertSafeWrapper(win, context);
-    
-    var spy = new XMLHttpRequestSpy(request, context, win);
+    var spy = new XMLHttpRequestSpy(request, context);
     context.spies.push(spy);
 
-    spy.method = typeof(method) == "string" ? method : "GET";
-    spy.url = url+"";
-    spy.async = async;
-    spy.username = username;
-    spy.password = password;
-    
-    spy.send = request.send;
-    request.send = function(text) { httpSendWrapper(spy, text); };
+    spy.method = method;
+    spy.url = url;
 
-    request.__open = win.XMLHttpRequest.wrapped.open;
-    if (win.__firebug__)
-        win.__firebug__.open(request, method, url, async, username, password);
-}
+    if ( method == "POST" )
+        spy.postText = getPostText(request, context);
 
-function httpSendWrapper(spy, text)
-{
-    spy.postText = text;
     spy.urlParams = parseURLParams(spy.url);
-    spy.sourceLink = getStackSourceLink();            
+    spy.sourceLink = getStackSourceLink();
+
+    if (!spy.requestHeaders)
+        spy.requestHeaders = getRequestHeaders(spy);
+
+    dispatch(listeners,"onStart",[context, spy]);
 
     if (Firebug.showXMLHttpRequests)
     {
         spy.logRow = Firebug.Console.log(spy, spy.context, "spy", null, true);
         setClass(spy.logRow, "loading");
     }
-    
+
     spy.attach();
     spy.sendTime = new Date().getTime();
-
-    // Remember this locally because onLoad will be called after send, which detaches it
-    var onreadystatechange = spy.onreadystatechange;
-
-    spy.request.send = spy.win.XMLHttpRequest.wrapped.send;
-    if (spy.win.__firebug__)
-        spy.win.__firebug__.send(spy.request, text);
-
-    var netProgress = spy.context.netProgress;
-    if (netProgress)
-        netProgress.post(netProgress.requestedFile,
-                [spy.request.channel, spy.sendTime, null, "xhr"]);
-
-    // Synchronous calls should call onreadystatechange themselves, but they don't,
-    // so we have to do it ourselves here
-    if (!spy.async && onreadystatechange)
-    {
-        try
-        {
-            onreadystatechange.handleEvent();
-        }
-        catch (exc)
-        {
-        }
-    }
 }
 
 function onHTTPSpyReadyStateChange(spy, event)
@@ -343,7 +382,17 @@ function onHTTPSpyReadyStateChange(spy, event)
     }
 
     if (spy.request.readyState == 4)
+    {
         onHTTPSpyLoad(spy);
+        if (!spy.responseHeaders)
+            spy.responseHeaders = getResponseHeaders(spy);
+        if (!spy.statusText)
+        {
+            spy.statusCode = spy.request.status;
+            spy.statusText = spy.request.statusText;
+        }
+        dispatch(listeners,"onLoad",[spy.context, spy]);
+    }
 }
 
 function onHTTPSpyLoad(spy)
@@ -353,7 +402,7 @@ function onHTTPSpyLoad(spy)
         return;
 
     var now = new Date().getTime();
-    var responseTime = new Date().getTime() - spy.sendTime;
+    var responseTime = now - spy.sendTime;
 
     spy.loaded = true;
 
@@ -365,6 +414,7 @@ function onHTTPSpyLoad(spy)
         netProgress.post(netProgress.stopFile,
                 [spy.request.channel, now, spy.postText, spy.responseText]);
 
+
     if (spy.logRow)
     {
         updateLogRow(spy, responseTime);
@@ -372,7 +422,7 @@ function onHTTPSpyLoad(spy)
     }
 
     spy.detach();
-    
+
     if (spy.context.spies)
         remove(spy.context.spies, spy);
 }
@@ -380,7 +430,7 @@ function onHTTPSpyLoad(spy)
 function onHTTPSpyError(spy)
 {
     var now = new Date().getTime();
-    
+
     var netProgress = spy.context.netProgress;
     if (netProgress)
         netProgress.post(netProgress.stopFile, [spy.request.channel, now]);
@@ -415,25 +465,25 @@ function updateLogRow(spy, responseTime)
             errorBox.textContent = spy.request.status;
         }
     }
-    catch (exc) {}    
+    catch (exc) {}
 }
 
 function updateHttpSpyInfo(spy)
 {
     if (!spy.logRow || !hasClass(spy.logRow, "opened"))
         return;
-    
+
     var template = Firebug.NetMonitor.NetInfoBody;
 
     if (!spy.params)
         spy.params = parseURLParams(spy.url+"");
-    
+
     if (!spy.requestHeaders)
         spy.requestHeaders = getRequestHeaders(spy);
 
     if (!spy.responseHeaders && spy.loaded)
         spy.responseHeaders = getResponseHeaders(spy);
-    
+
     var netInfoBox = getChildByClass(spy.logRow, "spyHead", "netInfoBody");
     if (!netInfoBox)
     {
@@ -445,7 +495,7 @@ function updateHttpSpyInfo(spy)
         template.updateInfo(netInfoBox, spy, spy.context);
 }
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 function getRequestHeaders(spy)
 {
@@ -459,16 +509,16 @@ function getRequestHeaders(spy)
             {
                 headers.push({name: name, value: value});
             }
-        });            
-    }    
-    
+        });
+    }
+
     return headers;
 }
 
 function getResponseHeaders(spy)
 {
     var headers = [];
-    
+
     try
     {
         if (spy.request.channel instanceof nsIHttpChannel)
@@ -479,37 +529,35 @@ function getResponseHeaders(spy)
                 {
                     headers.push({name: name, value: value});
                 }
-            });            
-        }    
+            });
+        }
     }
     catch (exc)
     {
-        
+
     }
-    
+
     return headers;
 }
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
-
-function insertSafeWrapper(win, context)
+function getPostText(request, context)
 {
-    // For security purposes we can't call open() directly, we have to insert the 
-    // calling code into the page so that the page's own security credentials are
-    // assigned
-    evalSafeScript(win, context,
-        "var __firebug__ = { " + 
-        "open: function(req, m, u, s, us, p) { req.__open(m, u, s, us, p); delete req.__open; }, " + 
-        "send: function(req, text) { req.send(text); }" + 
-        "};"
-    );
-}
-
-function evalSafeScript(win, context, text)
-{    
-    win.__firebugTemp__ = text;
-    win.location = "javascript: eval(__firebugTemp__);";
-    delete win.__firebugTemp__;
+    try
+    {
+        var is = QI(request.channel, nsIUploadChannel).uploadStream;
+        if (is)
+        {
+            var charset = context.window.document.characterSet;
+            var text = readFromStream(is, charset);
+            var ss = QI(is, nsISeekableStream);
+            if ( ss )
+                ss.seek(NS_SEEK_SET, 0);
+            return text;
+        }
+    }
+    catch(exc)
+    {
+    }
 }
 
 // ************************************************************************************************
@@ -518,5 +566,5 @@ Firebug.registerModule(Firebug.Spy);
 Firebug.registerRep(Firebug.Spy.XHR);
 
 // ************************************************************************************************
-    
+
 }});

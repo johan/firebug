@@ -38,12 +38,18 @@ const LOAD_FROM_CACHE = nsIRequest.LOAD_FROM_CACHE;
 const LOAD_DOCUMENT_URI = nsIChannel.LOAD_DOCUMENT_URI;
 
 const ACCESS_READ = nsICache.ACCESS_READ;
+const STORE_ANYWHERE = nsICache.STORE_ANYWHERE;
+
+const NS_ERROR_CACHE_KEY_NOT_FOUND = 0x804B003D;
+const NS_ERROR_CACHE_WAIT_FOR_VALIDATION = 0x804B0040;
+
 
 const observerService = CCSV("@mozilla.org/observer-service;1", "nsIObserverService");
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 const maxPendingCheck = 200;
+const maxQueueRequests = 50;
 
 const mimeExtensionMap =
 {
@@ -76,7 +82,7 @@ const fileCategories =
     "bin": 1
 };
 
-const textFileCategories = 
+const textFileCategories =
 {
     "txt": 1,
     "html": 1,
@@ -85,13 +91,13 @@ const textFileCategories =
     "js": 1
 };
 
-const binaryFileCategories = 
+const binaryFileCategories =
 {
     "bin": 1,
     "flash": 1
 };
 
-const mimeCategoryMap = 
+const mimeCategoryMap =
 {
     "text/plain": "txt",
     "application/octet-stream": "bin",
@@ -113,13 +119,15 @@ const binaryCategoryMap =
     "flash" : 1
 };
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 const reIgnore = /about:|javascript:|resource:|chrome:|jar:/;
 
 const layoutInterval = 300;
 const phaseInterval = 1000;
 const indentWidth = 18;
+
+var cacheSession = null;
 
 // ************************************************************************************************
 
@@ -134,7 +142,7 @@ Firebug.NetMonitor = extend(Firebug.Module,
         if (context.netProgress)
             context.netProgress.clear();
     },
-    
+
     onToggleFilter: function(context, filterCategory)
     {
         Firebug.setPref("netFilterCategory", filterCategory);
@@ -146,14 +154,14 @@ Firebug.NetMonitor = extend(Firebug.Module,
             panel.updateSummaries(now(), true);
         }
     },
-    
+
     syncFilterButtons: function(chrome)
     {
         var button = chrome.$("fbNetFilter-"+Firebug.netFilterCategory);
-        button.checked = true;    
+        button.checked = true;
     },
-    
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
     // extends Module
 
     initialize: function()
@@ -166,19 +174,19 @@ Firebug.NetMonitor = extend(Firebug.Module,
         if (!Firebug.disableNetMonitor)
             monitorContext(context);
     },
-    
-    reattachContext: function(context)
+
+    reattachContext: function(browser, context)
     {
         var chrome = context ? context.chrome : FirebugChrome;
         this.syncFilterButtons(chrome);
     },
-    
+
     destroyContext: function(context)
     {
         if (context.netProgress)
             unmonitorContext(context);
     },
-    
+
     showContext: function(browser, context)
     {
         /*if (context)
@@ -188,13 +196,13 @@ Firebug.NetMonitor = extend(Firebug.Module,
                 context.netProgress.panel = panel;
         }*/
     },
-    
+
     loadedContext: function(context)
     {
         if (context.netProgress)
             context.netProgress.loaded = true;
     },
-    
+
     showPanel: function(browser, panel)
     {
         var netButtons = browser.chrome.$("fbNetButtons");
@@ -207,7 +215,7 @@ Firebug.NetMonitor = extend(Firebug.Module,
             else
                 panel.context.netProgress.activate(null);
         }
-    }    
+    }
 });
 
 // ************************************************************************************************
@@ -215,8 +223,8 @@ Firebug.NetMonitor = extend(Firebug.Module,
 function NetPanel() {}
 
 NetPanel.prototype = domplate(Firebug.Panel,
-{   
-    tableTag: 
+{
+    tableTag:
         TABLE({class: "netTable", cellpadding: 0, cellspacing: 0, onclick: "$onClick"},
             TBODY(
                 TR(
@@ -228,7 +236,7 @@ NetPanel.prototype = domplate(Firebug.Panel,
             )
         ),
 
-    fileTag: 
+    fileTag:
         FOR("file", "$files",
             TR({class: "netRow $file.file|getCategory",
                 $hasHeaders: "$file.file|hasResponseHeaders",
@@ -273,12 +281,12 @@ NetPanel.prototype = domplate(Firebug.Panel,
         TR({class: "netInfoRow"},
             TD({class: "netInfoCol", colspan: 4})
         ),
-    
+
     phaseTag:
         TR({class: "netRow netPhaseRow"},
             TD({class: "netPhaseCol", colspan: 4})
         ),
-    
+
     summaryTag:
         TR({class: "netRow netSummaryRow"},
             TD({class: "netCol"},
@@ -308,12 +316,12 @@ NetPanel.prototype = domplate(Firebug.Panel,
     {
         return "category-"+getFileCategory(file);
     },
-    
+
     getInFrame: function(file)
     {
         return !!file.document.parent;
     },
-    
+
     getIndent: function(file)
     {
         // XXXjoe Turn off indenting for now, it's confusing since we don't
@@ -321,13 +329,13 @@ NetPanel.prototype = domplate(Firebug.Panel,
         //return file.document.level * indentWidth;
         return 0;
     },
-    
+
     isError: function(file)
     {
         var errorRange = Math.floor(file.status/100);
         return errorRange == 4 || errorRange == 5;
     },
-    
+
     summarizePhase: function(phase, rightNow)
     {
         var cachedSize = 0, totalSize = 0;
@@ -335,7 +343,7 @@ NetPanel.prototype = domplate(Firebug.Panel,
         var category = Firebug.netFilterCategory;
         if (category == "all")
             category = null;
-        
+
         var fileCount = 0;
         var minTime = 0, maxTime = 0;
         for (var file = phase.phaseLastStart; file; file = file.previousFile)
@@ -356,11 +364,11 @@ NetPanel.prototype = domplate(Firebug.Panel,
                 if (file.endTime > maxTime)
                     maxTime = file.endTime;
             }
-            
+
             if (file == phase)
                 break;
         }
-      
+
         var totalTime = maxTime - minTime;
         return {cachedSize: cachedSize, totalSize: totalSize, totalTime: totalTime,
                 fileCount: fileCount}
@@ -368,27 +376,27 @@ NetPanel.prototype = domplate(Firebug.Panel,
 
     getHref: function(file)
     {
-        if (file.status && file.status != 200 && file.status != 304)
+        if (file.status && file.status != 200)
             return getFileName(file.href) + " (" + file.status + ")";
         else
             return getFileName(file.href);
     },
-    
+
     getDomain: function(file)
     {
         return getPrettyDomain(file.href);
     },
-    
+
     getSize: function(file)
     {
         return this.formatSize(file.size);
     },
-    
+
     hasResponseHeaders: function(file)
     {
         return !!file.responseHeaders;
     },
-    
+
     formatSize: function(bytes)
     {
         if (bytes == -1 || bytes == undefined)
@@ -400,11 +408,11 @@ NetPanel.prototype = domplate(Firebug.Panel,
         else
             return (Math.ceil(bytes/10000)/100) + " MB";
     },
-    
+
     formatTime: function(elapsed)
     {
         if (elapsed == -1)
-            return "&nbsp;";
+            return "_"; // should be &nbsp; but this will be escaped so we need something that is no whitespace
         else if (elapsed < 1000)
             return elapsed + "ms";
         else if (elapsed < 60000)
@@ -413,7 +421,7 @@ NetPanel.prototype = domplate(Firebug.Panel,
             return (Math.ceil((elapsed/60000)*100)/100) + "m";
     },
 
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
     onClick: function(event)
     {
@@ -427,23 +435,23 @@ NetPanel.prototype = domplate(Firebug.Panel,
             }
         }
     },
-    
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
-    
+
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
     clear: function()
     {
         this.panelNode.innerHTML = "";
         this.table = null;
         this.summaryRow = null;
-        
+
         this.queue = [];
         this.invalidPhases = false;
     },
-    
+
     setFilter: function(filterCategory)
     {
         this.filterCategory = filterCategory;
-        
+
         var panelNode = this.panelNode;
         for (var category in fileCategories)
         {
@@ -453,22 +461,22 @@ NetPanel.prototype = domplate(Firebug.Panel,
                 removeClass(panelNode, "hideCategory-"+category);
         }
     },
-    
+
     toggleHeadersRow: function(row)
     {
         if (!hasClass(row, "hasHeaders"))
             return;
-        
+
         toggleClass(row, "opened");
-        
+
         if (hasClass(row, "opened"))
         {
             var template = Firebug.NetMonitor.NetInfoBody;
-            
+
             var netInfoRow = this.netInfoTag.insertRows({}, row)[0];
             var netInfo = template.tag.replace({file: row.repObject}, netInfoRow.firstChild);
             template.selectTabByName(netInfo, "Headers");
-            
+
             setClass(netInfo, "category-"+getFileCategory(row.repObject));
         }
         else
@@ -483,17 +491,17 @@ NetPanel.prototype = domplate(Firebug.Panel,
 
         var lines = text.split("\n");
         var params = parseURLEncodedText(lines[lines.length-1]);
-        
+
         var args = [];
         for (var i = 0; i < params.length; ++i)
             args.push(escape(params[i].name)+"="+escape(params[i].value));
-        
+
         var url = file.href;
         url += (url.indexOf("?") == -1 ? "?" : "&") + args.join("&");
 
         copyToClipboard(url);
     },
-        
+
     copyHeaders: function(headers)
     {
         var lines = [];
@@ -505,41 +513,41 @@ NetPanel.prototype = domplate(Firebug.Panel,
                 lines.push(header.name + ": " + header.value);
             }
         }
-        
+
         var text = lines.join("\r\n");
         copyToClipboard(text);
     },
-    
+
     copyResponse: function(file)
     {
         var text = file.responseText
             ? file.responseText
             : this.context.sourceCache.loadText(file.href);
-        
+
         copyToClipboard(text);
     },
-    
+
     stopLoading: function(file)
     {
         const NS_BINDING_ABORTED = 0x804b0002;
-        
+
         file.request.cancel(NS_BINDING_ABORTED);
     },
-    
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *    
+
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
     // extends Panel
-    
+
     name: "net",
     searchable: true,
     editable: false,
-    
+
     initialize: function()
     {
         this.queue = [];
 
         Firebug.Panel.initialize.apply(this, arguments);
     },
-    
+
     destroy: function(state)
     {
         if (this.pendingInterval)
@@ -547,30 +555,30 @@ NetPanel.prototype = domplate(Firebug.Panel,
             this.context.clearInterval(this.pendingInterval);
             delete this.pendingInterval;
         }
-        
+
         Firebug.Panel.destroy.apply(this, arguments);
     },
-    
+
     show: function(state)
     {
         if (!this.filterCategory)
             this.setFilter(Firebug.netFilterCategory);
-        
+
         this.layout();
         this.layoutInterval = setInterval(bindFixed(this.updateLayout, this), layoutInterval);
 
         if (this.wasScrolledToBottom)
             scrollToBottom(this.panelNode);
     },
-    
+
     hide: function()
     {
         this.wasScrolledToBottom = isScrolledToBottom(this.panelNode);
-        
+
         clearInterval(this.layoutInterval);
         delete this.layoutInterval;
     },
-    
+
     updateOption: function(name, value)
     {
         if (name == "disableNetMonitor")
@@ -585,7 +593,7 @@ NetPanel.prototype = domplate(Firebug.Panel,
             }
         }
     },
-    
+
     getOptionsMenuItems: function()
     {
         return [
@@ -600,40 +608,40 @@ NetPanel.prototype = domplate(Firebug.Panel,
         var file = Firebug.getRepObject(target);
         if (!file)
             return items;
-            
+
         var object = Firebug.getObjectByURL(this.context, file.href);
         var isPost = isURLEncodedFile(file, getPostText(file, this.context));
-        
+
         items.push(
             {label: "CopyLocation", command: bindFixed(copyToClipboard, FBL, file.href) }
         );
-        
+
         if (isPost)
         {
             items.push(
                 {label: "CopyLocationParameters", command: bindFixed(this.copyParams, this, file) }
             );
         }
-        
+
         items.push(
             {label: "CopyRequestHeaders",
                 command: bindFixed(this.copyHeaders, this, file.requestHeaders) },
             {label: "CopyResponseHeaders",
                 command: bindFixed(this.copyHeaders, this, file.responseHeaders) }
         );
-        
+
         if (file.category in textFileCategories)
         {
             items.push(
                 {label: "CopyResponse", command: bindFixed(this.copyResponse, this, file) }
             );
         }
-        
+
         items.push(
             "-",
             {label: "OpenInTab", command: bindFixed(openNewTab, FBL, file.href) }
         );
-        
+
         if (!file.loaded)
         {
             items.push(
@@ -641,7 +649,7 @@ NetPanel.prototype = domplate(Firebug.Panel,
                 {label: "StopLoading", command: bindFixed(this.stopLoading, this, file) }
             );
         }
-        
+
         if (object)
         {
             var subItems = FirebugChrome.getInspectMenuItems(object);
@@ -654,7 +662,7 @@ NetPanel.prototype = domplate(Firebug.Panel,
 
         return items;
     },
-    
+
     showInfoTip: function(infoTip, target, x, y)
     {
         var row = getAncestorByClass(target, "netRow");
@@ -665,13 +673,13 @@ NetPanel.prototype = domplate(Firebug.Panel,
                 var url = row.repObject.href;
                 if (url == this.infoTipURL)
                     return true;
-                
+
                 this.infoTipURL = url;
                 return Firebug.InfoTip.populateImageInfoTip(infoTip, url);
             }
         }
     },
-    
+
     search: function(text)
     {
         if (!text)
@@ -689,7 +697,7 @@ NetPanel.prototype = domplate(Firebug.Panel,
             this.currentSearch = new TextSearch(this.panelNode, findRow);
             row = this.currentSearch.find(text);
         }
-        
+
         if (row)
         {
             var sel = this.document.defaultView.getSelection();
@@ -703,14 +711,14 @@ NetPanel.prototype = domplate(Firebug.Panel,
             return false;
     },
 
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
     updateFile: function(file)
     {
         if (!file.invalid)
         {
             file.invalid = true;
-            this.queue.push(file);            
+            this.queue.push(file);
         }
     },
 
@@ -722,7 +730,7 @@ NetPanel.prototype = domplate(Firebug.Panel,
             this.invalidPhases = true;
         }
     },
-    
+
     updateLayout: function()
     {
         if (!this.queue.length)
@@ -735,7 +743,7 @@ NetPanel.prototype = domplate(Firebug.Panel,
         if (scrolledToBottom)
             scrollToBottom(this.panelNode);
     },
-        
+
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
     layout: function()
@@ -748,13 +756,13 @@ NetPanel.prototype = domplate(Firebug.Panel,
             this.table = this.tableTag.replace({}, this.panelNode, this);
             this.summaryRow =  this.summaryTag.insertRows({}, this.table.lastChild.lastChild)[0];
         }
-        
-        var rightNow = now();        
+
+        var rightNow = now();
         this.updateRowData(rightNow);
         this.updateTimeline(rightNow);
         this.updateSummaries(rightNow);
     },
-        
+
     updateRowData: function(rightNow)
     {
         var queue = this.queue;
@@ -789,7 +797,7 @@ NetPanel.prototype = domplate(Firebug.Panel,
             }
         }
     },
-    
+
     updateFileRow: function(file, newFileData)
     {
         var row = file.row;
@@ -823,7 +831,7 @@ NetPanel.prototype = domplate(Firebug.Panel,
                 setClass(row, "fromCache");
             else
                 removeClass(row, "fromCache");
-            
+
             if (this.isError(file))
             {
                 setClass(row, "responseError");
@@ -852,10 +860,10 @@ NetPanel.prototype = domplate(Firebug.Panel,
             }
         }
     },
-    
+
     updateTimeline: function(rightNow)
     {
-        var rootFile = this.context.netProgress.rootFile;
+        var rootFile = this.context.netProgress.rootFile; // XXXjjb never read?
         var tbody = this.table.firstChild;
 
         // XXXjoe Don't update rows whose phase is done and layed out already
@@ -872,7 +880,7 @@ NetPanel.prototype = domplate(Firebug.Panel,
             var timeBar = totalBar.nextSibling;
 
             totalBar.style.left = timeBar.style.left = this.barOffset + "%";
-            timeBar.style.width = this.barWidth + "%";            
+            timeBar.style.width = this.barWidth + "%";
 
             if (file.phase.phaseLastEnd && !file.phase.summaryRow)
             {
@@ -883,49 +891,49 @@ NetPanel.prototype = domplate(Firebug.Panel,
                     previousPhase.summaryRow = this.phaseTag.insertRows({}, lastRow)[0];
                     this.invalidatePhase(previousPhase);
                 }
-                
+
                 this.summaryRow.phase = file.phase;
                 file.phase.summaryRow = this.summaryRow;
             }
         }
     },
-    
+
     updateSummaries: function(rightNow, updateAll)
     {
         if (!this.invalidPhases && !updateAll)
             return;
-        
+
         this.invalidPhases = false;
 
         var phases = this.context.netProgress.phases;
         if (!phases.length)
             return;
-                
+
         var fileCount = 0, totalSize = 0, cachedSize = 0, totalTime = 0;
         for (var i = 0; i < phases.length; ++i)
         {
             var phase = phases[i];
             phase.invalidPhase = false;
-            
+
             var summary = this.summarizePhase(phase, rightNow);
             fileCount += summary.fileCount;
             totalSize += summary.totalSize;
             cachedSize += summary.cachedSize;
             totalTime += summary.totalTime
         }
-        
+
         var row = this.summaryRow;
         if (!row)
             return;
-            
+
         var countLabel = row.firstChild.firstChild;
         countLabel.firstChild.nodeValue = fileCount == 1
             ? $STR("Request")
             : $STRF("RequestCount", [fileCount]);
-        
+
         var sizeLabel = row.childNodes[2].firstChild;
         sizeLabel.firstChild.nodeValue = this.formatSize(totalSize);
-        
+
         var cacheSizeLabel = row.lastChild.firstChild.firstChild;
         cacheSizeLabel.setAttribute("collapsed", cachedSize == 0);
         cacheSizeLabel.childNodes[1].firstChild.nodeValue = this.formatSize(cachedSize);
@@ -933,7 +941,7 @@ NetPanel.prototype = domplate(Firebug.Panel,
         var timeLabel = row.lastChild.firstChild.lastChild.firstChild;
         timeLabel.innerHTML = this.formatTime(totalTime);
     },
-    
+
     calculateFileTimes: function(file, phase, rightNow)
     {
         if (phase != file.phase)
@@ -943,7 +951,7 @@ NetPanel.prototype = domplate(Firebug.Panel,
             this.phaseEndTime = phase.phaseLastEndTime ? phase.phaseLastEndTime : rightNow;
             this.phaseElapsed = this.phaseEndTime - phase.startTime;
         }
-        
+
         this.elapsed = file.loaded ? file.endTime - file.startTime : this.phaseEndTime - file.startTime;
         this.barWidth = Math.floor((this.elapsed/this.phaseElapsed) * 100);
         this.barOffset = Math.floor(((file.startTime-this.phaseStartTime)/this.phaseElapsed) * 100);
@@ -955,24 +963,31 @@ NetPanel.prototype = domplate(Firebug.Panel,
 // ************************************************************************************************
 
 function NetProgress(context)
-{    
+{
     this.context = context;
 
     var queue = null;
     var panel = null;
-    
+
     this.post = function(handler, args)
     {
         if (panel)
         {
             var file = handler.apply(this, args);
             if (file)
-                panel.updateFile(file);
+            {
+                 panel.updateFile(file);
+                return file;
+            }
         }
         else
+        {
+            if (queue.length/2 >= maxQueueRequests)
+                queue.splice(0, 2);
             queue.push(handler, args);
+        }
     };
-    
+
     this.flush = function()
     {
         for (var i = 0; i < queue.length; i += 2)
@@ -981,23 +996,23 @@ function NetProgress(context)
             if (file)
                 panel.updateFile(file);
         }
-        
+
         queue = [];
     };
-    
+
     this.activate = function(activePanel)
     {
         this.panel = panel = activePanel;
         if (panel)
             this.flush();
     };
-    
+
     this.update = function(file)
     {
         if (panel)
             panel.updateFile(file);
     };
-    
+
     this.clear = function()
     {
         this.requests = [];
@@ -1009,25 +1024,26 @@ function NetProgress(context)
 
         queue = [];
     };
-    
+
     this.clear();
 }
 
 NetProgress.prototype =
 {
     panel: null,
-        
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
-    
+
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
     respondedTopWindow: function(request, time, webProgress)
     {
-        this.requestedFile(request, time, webProgress);
+        var win = webProgress ? safeGetWindow(webProgress) : null;
+        this.requestedFile(request, time, win);
         return this.respondedFile(request, time);
     },
-    
-    requestedFile: function(request, time, webProgress, category)
+
+    requestedFile: function(request, time, win, category) // XXXjjb 3rd arg was webProgress, pulled safeGetWindow up
     {
-        var win = webProgress ? safeGetWindow(webProgress) : null;
+        // XXXjjb to allow spy to pass win.  var win = webProgress ? safeGetWindow(webProgress) : null;
         var file = this.getRequestFile(request, win);
         if (file)
         {
@@ -1037,29 +1053,30 @@ NetProgress.prototype =
             file.startTime = file.endTime = time;
             //file.fromCache = true;
             //file.loaded = true;
-            file.category = category;
+            if (category && !file.category)
+                file.category = category;
             file.isBackground = request.loadFlags & LOAD_BACKGROUND;
-            
+
             this.awaitFile(request, file);
             this.extendPhase(file);
-            
+
             return file;
         }
     },
-    
+
     respondedFile: function(request, time)
     {
         var file = this.getRequestFile(request);
         if (file)
         {
             var endedAlready = !!file.endTime;
-            
+
             file.respondedTime = time;
             file.endTime = time;
-            
+
             if (request.contentLength > 0)
                 file.size = request.contentLength;
-            
+
             if (request.responseStatus == 304)
                 file.fromCache = true;
             else if (!file.fromCache)
@@ -1072,14 +1089,14 @@ NetProgress.prototype =
             // If endTime was set before this, that means the cache request
             // came back, which only seems to happen for background images.
             // We thus end the load now, since we know we'll never hear
-            // from these requests again. 
+            // from these requests again.
             if (endedAlready)
                 this.endLoad(file);
-            
+
             return file;
         }
     },
-    
+
     progressFile: function(request, progress, expectedSize)
     {
         var file = this.getRequestFile(request);
@@ -1087,13 +1104,13 @@ NetProgress.prototype =
         {
             file.size = progress;
             file.expectedSize = expectedSize;
-            
+
             this.arriveFile(file, request);
 
             return file;
         }
     },
-    
+
     stopFile: function(request, time, postText, responseText)
     {
         var file = this.getRequestFile(request);
@@ -1102,18 +1119,17 @@ NetProgress.prototype =
             file.endTime = time;
             file.postText = postText;
             file.responseText = responseText;
-            
+
             // XXXjoe Nice work, pavlov.  This crashes randomly when it access decoderObserver.
             //file.sourceObject = getRequestElement(request);
 
             getHttpHeaders(request, file);
-            
+
             this.arriveFile(file, request);
             this.endLoad(file);
 
-            if (file.size == -1)
-                getFileSizeFromCache(file, this);
-            
+            getCacheEntry(file, this);
+
             return file;
         }
     },
@@ -1123,16 +1139,16 @@ NetProgress.prototype =
         file.loaded = true;
         if (size != -1)
             file.size = size;
-        
+
         getHttpHeaders(request, file);
 
         this.arriveFile(file, request);
         this.endLoad(file);
-        
+
         return file;
     },
-    
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
     getRequestFile: function(request, win)
     {
@@ -1143,7 +1159,7 @@ NetProgress.prototype =
         var index = this.requests.indexOf(request);
         if (index == -1)
         {
-            var file = this.requestMap[request.name];
+            var file = this.requestMap[name];
             if (file)
                 return file;
 
@@ -1154,7 +1170,7 @@ NetProgress.prototype =
             var isDocument = request.loadFlags & LOAD_DOCUMENT_URI && fileDoc.parent;
             var doc = isDocument ? fileDoc.parent : fileDoc;
 
-            file = doc.addFile(request);            
+            file = doc.addFile(request);
             if (isDocument)
             {
                 fileDoc.documentFile = file;
@@ -1162,22 +1178,22 @@ NetProgress.prototype =
             }
 
             if (!this.rootFile)
-                this.rootFile = file;
+                this.rootFile = file;  // don't set file.previousFile
             else
                 file.previousFile = this.files[this.files.length-1];
 
             file.request = request;
             file.index = this.files.length;
-            this.requestMap[request.name] = file;
+            this.requestMap[name] = file;
             this.requests.push(request);
             this.files.push(file);
-            
+
             return file;
         }
         else
             return this.files[index];
     },
-    
+
     getRequestDocument: function(win)
     {
         if (win)
@@ -1185,16 +1201,16 @@ NetProgress.prototype =
             var index = this.windows.indexOf(win);
             if (index == -1)
             {
-                var doc = new NetDocument(win);
+                var doc = new NetDocument(win);  // XXXjjb arg ignored
                 if (win.parent != win)
                     doc.parent = this.getRequestDocument(win.parent);
 
                 doc.index = this.documents.length;
                 doc.level = getFrameLevel(win);
-                
+
                 this.documents.push(doc);
                 this.windows.push(win);
-                
+
                 return doc;
             }
             else
@@ -1203,14 +1219,14 @@ NetProgress.prototype =
         else
             return this.documents[0];
     },
-    
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
-    
+
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
     awaitFile: function(request, file)
     {
         if (!this.pending)
             this.pending = [];
-        
+
         // XXXjoe Remove files after they have been checked N times
         if (!this.pendingInterval)
         {
@@ -1230,7 +1246,7 @@ NetProgress.prototype =
                 }
             }, this), 300);
         }
-        
+
         file.pendingIndex = this.pending.length;
         this.pending.push(file);
     },
@@ -1249,18 +1265,18 @@ NetProgress.prototype =
             delete this.pendingInterval;
         }
     },
-    
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
     endLoad: function(file)
     {
         file.loaded = true;
-        
+
         file.phase.phaseLastEnd = file;
         if (!file.phase.phaseLastEndTime || file.endTime > file.phase.phaseLastEndTime)
             file.phase.phaseLastEndTime = file.endTime;
     },
-    
+
     extendPhase: function(file)
     {
         if (this.currentPhase)
@@ -1277,19 +1293,19 @@ NetProgress.prototype =
 
         file.phase.phaseLastStart = file;
     },
-    
+
     startPhase: function(file, phaseLastStart)
     {
         if (phaseLastStart)
             phaseLastStart.endPhase = true;
-        
-        file.phase = this.currentPhase = file;        
+
+        file.phase = this.currentPhase = file;
         file.startPhase = true;
-        
+
         this.phases.push(file);
     },
-    
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
     // nsISupports
 
     QueryInterface: function(iid)
@@ -1303,8 +1319,8 @@ NetProgress.prototype =
 
         throw Components.results.NS_NOINTERFACE;
     },
-    
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
     // nsIObserver
 
     observe: function(request, topic, data)
@@ -1313,14 +1329,16 @@ NetProgress.prototype =
         if (topic == "http-on-modify-request")
         {
             var webProgress = getRequestWebProgress(request, this);
-            this.post(requestedFile, [request, now(), webProgress]);
+            var category = getRequestCategory(request);
+            var win = webProgress ? safeGetWindow(webProgress) : null;
+            this.post(requestedFile, [request, now(), win, category]);
         }
         else
         {
             this.post(respondedFile, [request, now()]);
         }
     },
-    
+
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
     // nsIWebProgressListener
 
@@ -1333,19 +1351,22 @@ NetProgress.prototype =
                 this.post(respondedTopWindow, [request, now(), progress]);
         }
         else if (flag & STATE_STOP && flag & STATE_IS_REQUEST)
-            this.post(stopFile, [request, now()]);
+        {
+            if (this.getRequestFile(request))
+                this.post(stopFile, [request, now()]);
+        }
     },
-    
+
     onProgressChange : function(progress, request, current, max, total, maxTotal)
     {
         this.post(progressFile, [request, current, max]);
     },
-    
+
     stateIsRequest: false,
     onLocationChange: function() {},
     onStatusChange : function() {},
     onSecurityChange : function() {},
-    onLinkIconAvailable : function() {}    
+    onLinkIconAvailable : function() {}
 };
 
 var requestedFile = NetProgress.prototype.requestedFile;
@@ -1362,18 +1383,18 @@ function NetDocument()
     this.files = [];
 }
 
-NetDocument.prototype = 
+NetDocument.prototype =
 {
     loaded: false,
-    
+
     addFile: function(request)
     {
         var file = new NetFile(request.name, this);
         this.files.push(file);
-        
+
         if (this.files.length == 1)
             this.rootFile = file;
-        
+
         return file;
     }
 };
@@ -1386,7 +1407,7 @@ function NetFile(href, document)
     this.document = document
 }
 
-NetFile.prototype = 
+NetFile.prototype =
 {
     status: 0,
     files: 0,
@@ -1394,7 +1415,7 @@ NetFile.prototype =
     fromCache: false,
     size: -1,
     expectedSize: -1,
-    endTime: null    
+    endTime: null
 };
 
 Firebug.NetFile = NetFile;
@@ -1411,7 +1432,7 @@ function monitorContext(context)
         context.browser.addProgressListener(listener, NOTIFY_ALL);
 
         observerService.addObserver(listener, "http-on-modify-request", false);
-        observerService.addObserver(listener, "http-on-examine-response", false);    
+        observerService.addObserver(listener, "http-on-examine-response", false);
     }
 }
 
@@ -1422,41 +1443,48 @@ function unmonitorContext(context)
         if (context.browser.docShell)
             context.browser.removeProgressListener(context.netProgress, NOTIFY_ALL);
 
-        // XXXjoe We also want to do this when the context is hidden, so that 
+        // XXXjoe We also want to do this when the context is hidden, so that
         // background files are only logged in the currently visible context
         observerService.removeObserver(context.netProgress, "http-on-modify-request", false);
         observerService.removeObserver(context.netProgress, "http-on-examine-response", false);
-        
+
         delete context.netProgress;
     }
 }
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+function initCacheSession()
+{
+    if (!cacheSession)
+    {
+        var cacheService = CacheService.getService(nsICacheService);
+        cacheSession = cacheService.createSession("HTTP", STORE_ANYWHERE, true);
+        cacheSession.doomEntriesIfExpired = false;
+    }
+}
 
 function waitForCacheCompletion(request, file, netProgress)
 {
     try
     {
-        var cacheService = CacheService.getService(nsICacheService);
-
-        var session = cacheService.createSession("HTTP", 0, true);
-        session.doomEntriesIfExpired = false;
-
-        session.asyncOpenCacheEntry(file.href, ACCESS_READ, {
-            onCacheEntryAvailable: function(descriptor, accessGranted, status)
-            {
-                if (descriptor)
-                    netProgress.post(cacheEntryReady, [request, file, descriptor.dataSize]);
-            }
-        });
+        initCacheSession();
+        var descriptor = cacheSession.openCacheEntry(file.href, ACCESS_READ, false);
+        if (descriptor)
+            netProgress.post(cacheEntryReady, [request, file, descriptor.dataSize]);
     }
     catch (exc)
     {
-        netProgress.post(cacheEntryReady, [request, file, -1]);
-    }        
+        if (exc.result != NS_ERROR_CACHE_WAIT_FOR_VALIDATION
+            && exc.result != NS_ERROR_CACHE_KEY_NOT_FOUND)
+        {
+            ERROR(exc);
+            netProgress.post(cacheEntryReady, [request, file, -1]);
+        }
+    }
 }
 
-function getFileSizeFromCache(file, netProgress)
+function getCacheEntry(file, netProgress)
 {
     // Pause first because this is usually called from stopFile, at which point
     // the file's cache entry is locked
@@ -1464,17 +1492,37 @@ function getFileSizeFromCache(file, netProgress)
     {
         try
         {
-            var cacheService = CacheService.getService(nsICacheService);
-
-            var session = cacheService.createSession("HTTP", 0, true);
-            session.doomEntriesIfExpired = false;
-
-            session.asyncOpenCacheEntry(file.href, ACCESS_READ, {
+            initCacheSession();
+            cacheSession.asyncOpenCacheEntry(file.href, ACCESS_READ, {
                 onCacheEntryAvailable: function(descriptor, accessGranted, status)
                 {
                     if (descriptor)
                     {
-                        file.size = descriptor.dataSize;
+                        if(file.size == -1)
+                        {
+                            file.size = descriptor.dataSize;
+                        }
+                        if(descriptor.lastModified && descriptor.lastFetched &&
+                            descriptor.lastModified < Math.floor(file.startTime/1000)) {
+                            file.fromCache = true;
+                        }
+                        file.cacheEntry = [
+                          { name: "Last Modified",
+                            value: getDateFromSeconds(descriptor.lastModified)
+                          },
+                          { name: "Last Fetched",
+                            value: getDateFromSeconds(descriptor.lastFetched)
+                          },
+                          { name: "Data Size",
+                            value: descriptor.dataSize
+                          },
+                          { name: "Fetch Count",
+                            value: descriptor.fetchCount
+                          },
+                          { name: "Device",
+                            value: descriptor.deviceID
+                          }
+                        ];
                         netProgress.update(file);
                     }
                 }
@@ -1482,8 +1530,16 @@ function getFileSizeFromCache(file, netProgress)
         }
         catch (exc)
         {
-        }        
+            ERROR(exc);
+        }
     });
+}
+
+function getDateFromSeconds(s)
+{
+    var d = new Date();
+    d.setTime(s*1000);
+    return d;
 }
 
 function getHttpHeaders(request, file)
@@ -1497,27 +1553,27 @@ function getHttpHeaders(request, file)
 
         if (!file.mimeType)
             file.mimeType = getMimeType(request);
-        
+
         // Disable temporarily
         if (!file.responseHeaders && Firebug.collectHttpHeaders)
         {
-            var request = [], response = [];
+            var requestHeaders = [], responseHeaders = [];
 
             http.visitRequestHeaders({
                 visitHeader: function(name, value)
                 {
-                    request.push({name: name, value: value});
+                    requestHeaders.push({name: name, value: value});
                 }
             });
             http.visitResponseHeaders({
                 visitHeader: function(name, value)
                 {
-                    response.push({name: name, value: value});
+                    responseHeaders.push({name: name, value: value});
                 }
             });
 
-            file.requestHeaders = request;
-            file.responseHeaders = response;
+            file.requestHeaders = requestHeaders;
+            file.responseHeaders = responseHeaders;
         }
     }
     catch (exc)
@@ -1543,15 +1599,30 @@ function getRequestWebProgress(request, netProgress)
                     }
                 });
             }
+            // XXXjjb Joe review: code above sets bypass, so this stmt should be in if (gives exceptions otherwise)
+            if (!bypass && request.notificationCallbacks instanceof nsIWebProgress)
+                return request.notificationCallbacks.getInterface(nsIWebProgress);
         }
-        if (!bypass)
-            return request.notificationCallbacks.getInterface(nsIWebProgress);
     }
     catch (exc) {}
 
     try
     {
-        return QI(request.loadGroup.groupObserver, nsIWebProgress);
+        if (request.loadGroup && request.loadGroup.groupObserver)
+            return QI(request.loadGroup.groupObserver, nsIWebProgress);
+    }
+    catch (exc) {}
+}
+
+function getRequestCategory(request)
+{
+    try
+    {
+        if (request.notificationCallbacks)
+        {
+            if (request.notificationCallbacks instanceof XMLHttpRequest)
+                return "xhr";
+        }
     }
     catch (exc) {}
 }
@@ -1564,7 +1635,7 @@ function getRequestElement(request)
         {
             return request.decoderObserver;
         }
-    }    
+    }
 }
 
 function safeGetWindow(webProgress)
@@ -1595,14 +1666,14 @@ function getFileCategory(file)
 {
     if (file.category)
         return file.category;
-    
+
     if (!file.mimeType)
     {
         var ext = getFileExtension(file.href);
         if (ext)
             file.mimeType = mimeExtensionMap[ext.toLowerCase()];
     }
-    
+
     return (file.category = mimeCategoryMap[file.mimeType]);
 }
 
@@ -1624,7 +1695,7 @@ function getMimeType(request)
         return mimeType;
 }
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 function now()
 {
@@ -1634,14 +1705,14 @@ function now()
 function getFrameLevel(win)
 {
     var level = 0;
-    
+
     for (; win && win != win.parent; win = win.parent)
         ++level;
-    
+
     return level;
 }
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 Firebug.NetMonitor.NetInfoBody = domplate(Firebug.Rep,
 {
@@ -1666,6 +1737,11 @@ Firebug.NetMonitor.NetInfoBody = domplate(Firebug.Rep,
                     view: "Response",
                     $collapsed: "$file|hideResponse"},
                     $STR("Response")
+                ),
+                A({class: "netInfoCacheTab netInfoTab", onclick: "$onClickTab",
+                   view: "Cache",
+                   $collapsed: "$file|hideCache"},
+                   "Cache" // todo: Localization
                 )
             ),
             TABLE({class: "netInfoParamsText netInfoText netInfoParamsTable",
@@ -1690,11 +1766,16 @@ Firebug.NetMonitor.NetInfoBody = domplate(Firebug.Rep,
                     TBODY()
                 )
             ),
-            DIV({class: "netInfoResponseText netInfoText"}, 
+            DIV({class: "netInfoResponseText netInfoText"},
                 $STR("Loading")
-            )            
+            ),
+            DIV({class: "netInfoCacheText netInfoText"},
+                TABLE({class: "netInfoCacheTable", cellpadding: 0, cellspacing: 0},
+                    TBODY()
+                )
+            )
         ),
-    
+
     headerDataTag:
         FOR("param", "$headers",
             TR(
@@ -1707,23 +1788,28 @@ Firebug.NetMonitor.NetInfoBody = domplate(Firebug.Rep,
     {
         return !file.urlParams || !file.urlParams.length;
     },
-    
+
     hidePost: function(file)
     {
         return file.method.toUpperCase() != "POST";
     },
-    
+
     hideResponse: function(file)
     {
         return file.category in binaryFileCategories;
     },
-    
+
+    hideCache: function(file)
+    {
+        return !file.cacheEntry || file.category=="image";
+    },
+
     onClickTab: function(event)
     {
         this.selectTab(event.currentTarget);
     },
-    
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
     selectTabByName: function(netInfoBox, tabName)
     {
@@ -1731,7 +1817,7 @@ Firebug.NetMonitor.NetInfoBody = domplate(Firebug.Rep,
         if (tab)
             this.selectTab(tab);
     },
-    
+
     selectTab: function(tab)
     {
         var netInfoBox = tab.parentNode.parentNode;
@@ -1740,7 +1826,7 @@ Firebug.NetMonitor.NetInfoBody = domplate(Firebug.Rep,
         if (netInfoBox.selectedTab)
         {
             netInfoBox.selectedTab.removeAttribute("selected");
-            netInfoBox.selectedText.removeAttribute("selected");        
+            netInfoBox.selectedText.removeAttribute("selected");
         }
 
         var textBodyName = "netInfo" + view + "Text";
@@ -1750,12 +1836,12 @@ Firebug.NetMonitor.NetInfoBody = domplate(Firebug.Rep,
 
         netInfoBox.selectedTab.setAttribute("selected", "true");
         netInfoBox.selectedText.setAttribute("selected", "true");
-        
+
         var file = Firebug.getRepObject(netInfoBox);
         var context = Firebug.getElementPanel(netInfoBox).context;
         this.updateInfo(netInfoBox, file, context);
     },
-    
+
     updateInfo: function(netInfoBox, file, context)
     {
         var tab = netInfoBox.selectedTab;
@@ -1767,7 +1853,7 @@ Firebug.NetMonitor.NetInfoBody = domplate(Firebug.Rep,
                 this.insertHeaderRows(netInfoBox, file.urlParams, "Params");
             }
         }
-        
+
         if (hasClass(tab, "netInfoHeadersTab"))
         {
             if (file.responseHeaders && !netInfoBox.responseHeadersPresented)
@@ -1791,7 +1877,7 @@ Firebug.NetMonitor.NetInfoBody = domplate(Firebug.Rep,
                 netInfoBox.postPresented  = true;
 
                 var text = getPostText(file, context);
-                if (text)
+                if (text != undefined)
                 {
                     if (isURLEncodedFile(file, text))
                     {
@@ -1808,7 +1894,7 @@ Firebug.NetMonitor.NetInfoBody = domplate(Firebug.Rep,
                 }
             }
         }
-        
+
         if (hasClass(tab, "netInfoResponseTab") && file.loaded && !netInfoBox.responsePresented)
         {
             netInfoBox.responsePresented = true;
@@ -1825,13 +1911,25 @@ Firebug.NetMonitor.NetInfoBody = domplate(Firebug.Rep,
                 var text = file.responseText
                     ? file.responseText
                     : context.sourceCache.loadText(file.href);
-                
+
                 if (text)
                     insertWrappedText(text, responseTextBox);
+                else
+                    insertWrappedText("", responseTextBox);
+            }
+        }
+
+        if (hasClass(tab, "netInfoCacheTab") && file.loaded && !netInfoBox.cachePresented)
+        {
+            netInfoBox.cachePresented = true;
+
+            var responseTextBox = getChildByClass(netInfoBox, "netInfoCacheText");
+            if(file.cacheEntry) {
+              this.insertHeaderRows(netInfoBox, file.cacheEntry, "Cache");
             }
         }
     },
-    
+
     insertHeaderRows: function(netInfoBox, headers, tableName, rowName)
     {
         var headersTable = getElementByClass(netInfoBox, "netInfo"+tableName+"Table");
@@ -1881,7 +1979,7 @@ function insertWrappedText(text, textBox)
 
     var html = [];
     var wrapWidth = Firebug.textWrapWidth;
-        
+
     var lines = splitLines(text);
     for (var i = 0; i < lines.length; ++i)
     {
@@ -1903,7 +2001,7 @@ function insertWrappedText(text, textBox)
         html.push("</pre>");
     }
 
-    textBox.innerHTML = html.join("");    
+    textBox.innerHTML = html.join("");
 }
 
 function isURLEncodedFile(file, text)
@@ -1920,4 +2018,4 @@ Firebug.registerPanel(NetPanel);
 // ************************************************************************************************
 
 }});
-    
+

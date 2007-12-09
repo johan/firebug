@@ -4,18 +4,24 @@ FBL.ns(function() { with (FBL) {
 
 // ************************************************************************************************
 
+var listeners = [];
+
+// ************************************************************************************************
+
 Firebug.Console = extend(Firebug.Module,
 {
     log: function(object, context, className, rep, noThrottle, sourceLink)
     {
+        dispatch(listeners,"log",[context, object, className, sourceLink]);
         return this.logRow(appendObject, object, context, className, rep, sourceLink, noThrottle);
     },
 
     logFormatted: function(objects, context, className, noThrottle, sourceLink)
     {
+        dispatch(listeners,"logFormatted",[context, objects, className, sourceLink]);
         return this.logRow(appendFormatted, objects, context, className, null, sourceLink, noThrottle);
     },
-    
+
     openGroup: function(objects, context, className, rep, noThrottle, sourceLink, noPush)
     {
         return this.logRow(appendOpenGroup, objects, context, className, rep, sourceLink, noThrottle);
@@ -25,15 +31,16 @@ Firebug.Console = extend(Firebug.Module,
     {
         return this.logRow(appendCloseGroup, null, context, null, null, null, noThrottle, true);
     },
-    
+
     logRow: function(appender, objects, context, className, rep, sourceLink, noThrottle, noRow)
     {
         if (!context)
             context = FirebugContext;
 
+
         if (noThrottle)
         {
-            var panel = context.getPanel("console");
+            var panel = this.getPanel(context);
             return panel.append(appender, objects, className, rep, sourceLink, noRow);
         }
         else
@@ -48,10 +55,10 @@ Firebug.Console = extend(Firebug.Module,
         if (!context)
             context = FirebugContext;
 
-        var panel = context.getPanel("console");
+        var panel = this.getPanel(context);
         panel.appendFormatted(args, row);
     },
-    
+
     clear: function(context)
     {
         if (!context)
@@ -59,12 +66,28 @@ Firebug.Console = extend(Firebug.Module,
 
         Firebug.Errors.clear(context);
 
-        var panel = context.getPanel("console", true);
+        var panel = this.getPanel(context, true);
         if (panel)
             panel.clear();
     },
 
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+    // Override to direct output to your panel
+    getPanel: function(context, noCreate)
+    {
+        return context.getPanel("console", noCreate);
+    },
+
+    addListener: function(listener)
+    {
+        listeners.push(listener);
+    },
+
+    removeListener: function(listener)
+    {
+        remove(listeners, listener);
+    },
+
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
     // extends Module
 
     showContext: function(browser, context)
@@ -74,9 +97,10 @@ Firebug.Console = extend(Firebug.Module,
 
     showPanel: function(browser, panel)
     {
-        var isConsole = panel && panel.name == "console";
-        var consoleButtons = browser.chrome.$("fbConsoleButtons");
-        collapse(consoleButtons, !isConsole);
+        // XXXjjb moved to panel show/hide
+        //var isConsole = panel && panel.name == "console";
+        //var consoleButtons = browser.chrome.$("fbConsoleButtons");
+        //collapse(consoleButtons, !isConsole);
 
         // XXXjoe Not really the place for this - but it's the easiest for now
         var isCSS = panel && panel.name == "stylesheet";
@@ -89,17 +113,28 @@ Firebug.Console = extend(Firebug.Module,
     }
 });
 
+Firebug.ConsoleListener =
+{
+    log: function(context, object, className, sourceLink)
+    {
+    },
+
+    logFormatted: function(context, objects, className, sourceLink)
+    {
+    }
+};
+
 // ************************************************************************************************
 
-function ConsolePanel() {}
+Firebug.ConsolePanel = function () {} // XXjjb attach Firebug so this panel can be extended.
 
-ConsolePanel.prototype = extend(Firebug.Panel,
+Firebug.ConsolePanel.prototype = extend(Firebug.Panel,
 {
     wasScrolledToBottom: true,
     messageCount: 0,
     lastLogTime: 0,
     groups: null,
-    
+
     append: function(appender, objects, className, rep, sourceLink, noRow)
     {
         var container = this.getTopContainer();
@@ -135,11 +170,12 @@ ConsolePanel.prototype = extend(Firebug.Panel,
             clearNode(this.panelNode);
     },
 
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
-    
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
     appendObject: function(object, row, rep)
     {
-        var rep = rep ? rep : Firebug.getRep(object);
+        if (!rep)
+            rep = Firebug.getRep(object);
         return rep.tag.append({object: object}, row);
     },
 
@@ -164,6 +200,22 @@ ConsolePanel.prototype = extend(Firebug.Panel,
         }
 
         var parts = parseFormat(format);
+        var trialIndex = objIndex;
+        for (var i= 0; i < parts.length; i++)
+        {
+            var part = parts[i];
+            if (part && typeof(part) == "object")
+            {
+                if (++trialIndex > objects.length)  // then too few parameters for format, assume unformatted.
+                {
+                    format = "";
+                    objIndex = -1;
+                    parts.length = 0;
+                    break;
+                }
+            }
+
+        }
         for (var i = 0; i < parts.length; ++i)
         {
             var part = parts[i];
@@ -223,24 +275,38 @@ ConsolePanel.prototype = extend(Firebug.Panel,
     appendCloseGroup: function(object, row, rep)
     {
         if (this.groups)
-            this.groups.pop();    
+            this.groups.pop();
     },
-    
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *    
+
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
     // extends Panel
-    
+
     name: "console",
     searchable: true,
     editable: false,
-    
+
+    initialize: function(context, doc)
+    {
+        Firebug.Panel.initialize.apply(this, arguments);
+        if (Firebug.Console.needStrictWarning)
+        {
+            delete 	Firebug.Console.needStrictWarning;
+            Firebug.Console.log("javascript.options.strict is true. Experience suggests that large Javascript evaluations may crash Firefox;  you can change this in \"about:config\"", context, "warn");
+        }
+    },
+
     show: function(state)
     {
+        var consoleButtons = this.context.browser.chrome.$("fbConsoleButtons");
+        collapse(consoleButtons, false);
         if (this.wasScrolledToBottom)
             scrollToBottom(this.panelNode);
     },
-    
+
     hide: function()
     {
+        var consoleButtons = this.context.browser.chrome.$("fbConsoleButtons");
+        collapse(consoleButtons, true);
         this.wasScrolledToBottom = isScrolledToBottom(this.panelNode);
     },
 
@@ -252,6 +318,10 @@ ConsolePanel.prototype = extend(Firebug.Panel,
             optionMenu("ShowCSSErrors", "showCSSErrors"),
             optionMenu("ShowXMLErrors", "showXMLErrors"),
             optionMenu("ShowXMLHttpRequests", "showXMLHttpRequests"),
+            optionMenu("ShowChromeErrors", "showChromeErrors"),
+            optionMenu("ShowChromeMessages", "showChromeMessages"),
+            optionMenu("ShowExternalErrors", "showExternalErrors"),
+            optionMenu("ShowStackTrace", "showStackTrace"),
             "-",
             optionMenu("LargeCommandLine", "largeCommandLine")
         ];
@@ -277,19 +347,19 @@ ConsolePanel.prototype = extend(Firebug.Panel,
         var logRow = search.find(text);
         if (!logRow)
             return false;
-        
+
         for (; logRow; logRow = search.findNext())
         {
             setClass(logRow, "matched");
             this.matchSet.push(logRow);
         }
-        
+
         return true;
     },
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
     // private
-    
+
     createRow: function(rowName, className)
     {
         var elt = this.document.createElement("div");
@@ -343,7 +413,7 @@ ConsolePanel.prototype = extend(Firebug.Panel,
         endPt.setStartAfter(logRow);
 
         return finder.Find(text, searchRange, startPt, endPt) != null;
-    }    
+    }
 });
 
 // ************************************************************************************************
@@ -351,8 +421,10 @@ ConsolePanel.prototype = extend(Firebug.Panel,
 function parseFormat(format)
 {
     var parts = [];
-    
-    var reg = /((^%|.%)(\d+)?(\.)([a-zA-Z]))|((^%|.%)([a-zA-Z]))/;    
+    if (format.length <= 0)
+        return parts;
+
+    var reg = /((^%|.%)(\d+)?(\.)([a-zA-Z]))|((^%|.%)([a-zA-Z]))/;
     for (var m = reg.exec(format); m; m = reg.exec(format))
     {
         if (m[0].substr(0, 2) == "%%")
@@ -384,26 +456,26 @@ function parseFormat(format)
             parts.push(format.substr(0, m[0][0] == "%" ? m.index : m.index+1));
             parts.push({rep: rep, precision: precision});
         }
-        
+
         format = format.substr(m.index+m[0].length);
     }
-    
+
     parts.push(format);
-    
+
     return parts;
 }
 
 // ************************************************************************************************
 
-var appendObject = ConsolePanel.prototype.appendObject;
-var appendFormatted = ConsolePanel.prototype.appendFormatted;
-var appendOpenGroup = ConsolePanel.prototype.appendOpenGroup;
-var appendCloseGroup = ConsolePanel.prototype.appendCloseGroup;
+var appendObject = Firebug.ConsolePanel.prototype.appendObject;
+var appendFormatted = Firebug.ConsolePanel.prototype.appendFormatted;
+var appendOpenGroup = Firebug.ConsolePanel.prototype.appendOpenGroup;
+var appendCloseGroup = Firebug.ConsolePanel.prototype.appendCloseGroup;
 
 // ************************************************************************************************
 
 Firebug.registerModule(Firebug.Console);
-Firebug.registerPanel(ConsolePanel);
+Firebug.registerPanel(Firebug.ConsolePanel);
 
 // ************************************************************************************************
 

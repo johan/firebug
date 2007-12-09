@@ -1,0 +1,57 @@
+<!ENTITY  firebug.Firebug               "Firebug">
+<!ENTITY  firebug.Close                 "Luk">
+<!ENTITY  firebug.View                  "Vis">
+<!ENTITY  firebug.Help                  "Hj�lp">
+<!ENTITY  firebug.Vertical              "Vertikal opdeling">
+<!ENTITY  firebug.Run                   "K�r">
+<!ENTITY  firebug.Copy                  "Kopier">
+<!ENTITY  firebug.CopyBookmarklet       "Kopier scriptet som et bogm�rke.">
+
+<!ENTITY  firebug.Options               "Indstillinger">
+<!ENTITY  firebug.TextSize              "Tekst st�rrelse">
+<!ENTITY  firebug.IncreaseTextSize      "For�g tekst st�rrelse">
+<!ENTITY  firebug.DecreaseTextSize      "Formindsk tekst st�rrelse">
+<!ENTITY  firebug.NormalTextSize        "Normal tekst st�rrelse">
+<!ENTITY  firebug.ShowTooltips          "Vis hj�lpetekster">
+<!ENTITY  firebug.ShadeBoxModel         "Skygge boks model">
+<!ENTITY  firebug.Website               "Firebug hjemmeside...">
+<!ENTITY  firebug.Documentation         "Dokumentation...">
+<!ENTITY  firebug.KeyShortcuts          "Tastatur genveje...">
+<!ENTITY  firebug.Forums                "Diskussions gruppe...">
+<!ENTITY  firebug.Issues                "Problem liste...">
+<!ENTITY  firebug.Donate                "St�t Firebug...">
+<!ENTITY  firebug.AlwaysOpenInWindow    "Altid �ben i nyt vindue">
+
+<!ENTITY  firebug.ShowFirebug           "�ben Firebug">
+<!ENTITY  firebug.DetachFirebug         "�ben Firebug i nyt vindue">
+<!ENTITY  firebug.CloseFirebug          "Luk Firebug">
+<!ENTITY  firebug.DisableFirebug        "Deaktiver Firebug">
+<!ENTITY  firebug.AllowedSites          "Tilladte dom�ner...">
+<!ENTITY  firebug.CommandLine           "Kommando linie">
+<!ENTITY  firebug.Search                "S�g">
+
+<!ENTITY  firebug.Continue              "Forts�t (F8)">
+<!ENTITY  firebug.StepOver              "Spring over (F10)">
+<!ENTITY  firebug.StepInto              "Spring ind i (F11)">
+<!ENTITY  firebug.StepOut               "Spring ud">
+<!ENTITY  firebug.BreakOnErrors         "Afbryd ved fejl">
+
+<!ENTITY  firebug.Inspect               "Unders�g">
+<!ENTITY  firebug.InspectElement        "Unders�g element">
+<!ENTITY  firebug.InspectTooltip        "Klik p� et element p� siden for at unders�ge det">
+
+<!ENTITY  firebug.Edit                  "Ret">
+<!ENTITY  firebug.EditHTMLTooltip       "Ret i HTML">
+<!ENTITY  firebug.EditCSSTooltip        "Ret i CSS regler">
+
+<!ENTITY  firebug.Profile               "Profil">
+<!ENTITY  firebug.ProfileScript         "Profil af JavaScript">
+<!ENTITY  firebug.ProfileTooltip        "Profil af JavaScript udf�relses tid">
+
+<!ENTITY  firebug.Clear                 "Ryd">
+<!ENTITY  firebug.ClearConsole          "Ryd konsol">
+<!ENTITY  firebug.ClearTooltip          "Ryd konsolens indhold">
+
+<!ENTITY  firebug.All                   "Alle">
+<!ENTITY  firebug.Images                "Billeder">
+<!ENTITY  firebug.Flash                 "Flash">

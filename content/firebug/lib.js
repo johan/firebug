@@ -10,16 +10,26 @@ var FirebugLib = FBL = XPCOMUtils;
 this.fbs = this.CCSV("@joehewitt.com/firebug;1", "nsIFireBug");
 this.jsd = this.CCSV("@mozilla.org/js/jsd/debugger-service;1", "jsdIDebuggerService");
 
-var finder = this.finder = this.CCIN("@mozilla.org/embedcomp/rangefind;1", "nsIFind");
+const finder = this.finder = this.CCIN("@mozilla.org/embedcomp/rangefind;1", "nsIFind");
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+const PCMAP_SOURCETEXT = this.CI("jsdIScript").PCMAP_SOURCETEXT;
+const PCMAP_PRETTYPRINT = this.CI("jsdIScript").PCMAP_PRETTYPRINT;
 
-var reNotWhitespace = /[^\s]/;
-var reSplitFile = /:\/{1,3}(.*?)\/([^\/]*?)\/?($|\?.*)/;
-var reSplitLines = /\r\n|\r|\n/;
-var reFunctionArgNames = /function ([^(]*)\(([^)]*)\)/;
-var reGuessFunction = /['"]?([0-9A-Za-z_]+)['"]?\s*[:=]\s*(function|eval|new Function)/;
-var reWord = /([A-Za-z_][A-Za-z_0-9]*)(\.([A-Za-z_][A-Za-z_0-9]*))*/;
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+const reNotWhitespace = /[^\s]/;
+const reSplitFile = /:\/{1,3}(.*?)\/([^\/]*?)\/?($|\?.*)/;
+const reURL = /(([^:]+:)\/{1,2}[^\/]*)(.*?)$/;  // This RE and the previous one should changed to be consistent
+// Globals
+this.reDataURL = /data:text\/javascript;fileName=([^;]*);baseLineNumber=(\d*?),((?:.*?%0A)|(?:.*))/g;
+this.reJavascript = /\s*javascript:\s*(.*)/;
+this.reChrome = /chrome:\/\/([^\/]*)\//;
+this.reCSS = /\.css$/;
+
+const reSplitLines = /\r\n|\r|\n/;
+const reFunctionArgNames = /function ([^(]*)\(([^)]*)\)/;
+const reGuessFunction = /['"]?([0-9A-Za-z_]+)['"]?\s*[:=]\s*(function|eval|new Function)/;
+const reWord = /([A-Za-z_][A-Za-z_0-9]*)(\.([A-Za-z_][A-Za-z_0-9]*))*/;
 
 const restoreRetryTimeout = 500;
 
@@ -28,7 +38,7 @@ const restoreRetryTimeout = 500;
 
 var namespaces = [];
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 this.ns = function(fn)
 {
@@ -84,7 +94,7 @@ this.keys = function(map)
     {
         // Sometimes we get exceptions trying to iterate properties
     }
-    
+
     return keys;
 };
 
@@ -103,14 +113,14 @@ this.values = function(map)
             {
                 // Sometimes we get exceptions trying to access properties
             }
-            
+
         }
     }
     catch (exc)
     {
         // Sometimes we get exceptions trying to iterate properties
     }
-    
+
     return values;
 };
 
@@ -131,7 +141,7 @@ this.sliceArray = function(array, index)
     var slice = [];
     for (var i = index; i < array.length; ++i)
         slice.push(array[i]);
-        
+
     return slice;
 };
 
@@ -192,7 +202,7 @@ this.convertToUnicode = function(text, charset)
     }
     catch (exc)
     {
-        this.ERROR(exc);
+        this.ERROR("lib.convertToUnicode: fails"+exc);
         return text;
     }
 };
@@ -205,12 +215,21 @@ this.getPlatformName = function()
 this.beep = function()
 {
     var sounder = this.CCSV("@mozilla.org/sound;1", "nsISound");
-    sounder.beep();    
+    sounder.beep();
 };
+
+this.getUniqueId = function() {
+    return this.getRandomInt(0,65536);
+}
+
+this.getRandomInt = function(min, max) {
+  return Math.floor(Math.random() * (max - min + 1) + min);
+}
 
 this.createStyleSheet = function(doc, url)
 {
     var link = doc.createElementNS("http://www.w3.org/1999/xhtml", "link");
+    link.setAttribute("charset","utf-8");
     link.firebugIgnore = true;
     link.setAttribute("rel", "stylesheet");
     link.setAttribute("type", "text/css");
@@ -290,7 +309,9 @@ this.iterateWindows = function(win, handler)
         return;
 
     handler(win);
-    
+
+    if (win == top) return; // XXXjjb hack for chromeBug
+
     for (var i = 0; i < win.frames.length; ++i)
     {
         var subWin = win.frames[i];
@@ -361,7 +382,7 @@ this.setClassTimed = function(elt, name, context, timeout)
 {
     if (!timeout)
         timeout = 1300;
-    
+
     if (elt.__setClassTimeout)
         context.clearTimeout(elt.__setClassTimeout);
     else
@@ -370,7 +391,7 @@ this.setClassTimed = function(elt, name, context, timeout)
     elt.__setClassTimeout = context.setTimeout(function()
     {
         delete elt.__setClassTimeout;
-        
+
         FBL.removeClass(elt, name);
     }, timeout);
 };
@@ -412,7 +433,7 @@ this.getChildByClass = function(node)
             }
         }
     }
-    
+
     return node;
 };
 
@@ -423,7 +444,7 @@ this.getAncestorByClass = function(node, className)
         if (this.hasClass(parent, className))
             return parent;
     }
-    
+
     return null;
 };
 
@@ -440,7 +461,7 @@ this.getElementByClass = function(node, className)
                 return found;
         }
     }
-    
+
     return null;
 };
 
@@ -451,7 +472,7 @@ this.isAncestor = function(node, potentialAncestor)
         if (parent == potentialAncestor)
             return true;
     }
-    
+
     return false;
 };
 
@@ -459,7 +480,7 @@ this.getNextElement = function(node)
 {
     while (node && node.nodeType != 1)
         node = node.nextSibling;
-    
+
     return node;
 };
 
@@ -467,7 +488,7 @@ this.getPreviousElement = function(node)
 {
     while (node && node.nodeType != 1)
         node = node.previousSibling;
-    
+
     return node;
 };
 
@@ -475,7 +496,7 @@ this.getBody = function(doc)
 {
     if (doc.body)
         return doc.body;
-    
+
     return doc.getElementsByTagName("body")[0];
 };
 
@@ -522,7 +543,7 @@ this.findNext = function(node, criteria, upOnly, maxRoot)
         if (next)
             return next;
     }
-    
+
     for (var sib = node.nextSibling; sib; sib = sib.nextSibling)
     {
         if (criteria(sib))
@@ -541,7 +562,7 @@ this.findPrevious = function(node, criteria, downOnly, maxRoot)
 {
     if (!node)
         return null;
-    
+
     for (var sib = node.previousSibling; sib; sib = sib.previousSibling)
     {
         var prev = this.findPreviousUp(sib, criteria);
@@ -551,7 +572,7 @@ this.findPrevious = function(node, criteria, downOnly, maxRoot)
         if (criteria(sib))
             return sib;
     }
-    
+
     if (!downOnly)
     {
         var next = this.findPreviousUp(node, criteria);
@@ -563,7 +584,7 @@ this.findPrevious = function(node, criteria, downOnly, maxRoot)
     {
         if (criteria(node.parentNode))
             return node.parentNode;
-        
+
         return this.findPrevious(node.parentNode, criteria, true);
     }
 };
@@ -584,13 +605,13 @@ this.hasChildElements = function(node)
 {
     if (node.contentDocument) // iframes
         return true;
-    
+
     for (var child = node.firstChild; child; child = child.nextSibling)
     {
         if (child.nodeType == 1)
             return true;
     }
-    
+
     return false;
 };
 
@@ -643,11 +664,11 @@ this.appendInnerHTML = function(element, html)
 this.insertTextIntoElement = function(element, text)
 {
     var command = "cmd_insertText";
-    
+
     var controller = element.controllers.getControllerForCommand(command);
     if (!controller || !controller.isCommandEnabled(command))
         return;
-        
+
     var params = this.CCIN("@mozilla.org/embedcomp/command-params;1", "nsICommandParams");
     params.setStringValue("state_data", text);
 
@@ -660,7 +681,7 @@ this.insertTextIntoElement = function(element, text)
 
 /**
  * Gets an XPath for an element which describes its hierarchical location.
- */ 
+ */
 this.getElementXPath = function(element)
 {
     if (element && element.id)
@@ -672,7 +693,7 @@ this.getElementXPath = function(element)
 this.getElementTreeXPath = function(element)
 {
     var paths = [];
-    
+
     for (; element && element.nodeType == 1; element = element.parentNode)
     {
         var index = 0;
@@ -681,13 +702,13 @@ this.getElementTreeXPath = function(element)
             if (sibling.localName == element.localName)
                 ++index;
         }
-        
+
         var tagName = element.localName.toLowerCase();
         var pathIndex = (index ? "[" + (index+1) + "]" : "");
         paths.splice(0, 0, tagName + pathIndex);
     }
-    
-    return paths.length ? "/" + paths.join("/") : null;    
+
+    return paths.length ? "/" + paths.join("/") : null;
 };
 
 this.cssToXPath = function(rule)
@@ -702,7 +723,7 @@ this.cssToXPath = function(rule)
     var index = 1;
     var parts = ["//", "*"];
     var lastRule = null;
-    
+
     while (rule.length && rule != lastRule)
     {
         lastRule = rule;
@@ -711,7 +732,7 @@ this.cssToXPath = function(rule)
         rule = rule.replace(/^\s*|\s*$/g,"");
         if (!rule.length)
             break;
-        
+
         // Match the element identifier
         var m = regElement.exec(rule);
         if (m)
@@ -725,13 +746,13 @@ this.cssToXPath = function(rule)
                     parts[index] = m[2];
             }
             else if (m[1] == '#')
-                parts.push("[@id='" + m[2] + "']"); 
+                parts.push("[@id='" + m[2] + "']");
             else if (m[1] == '.')
-                parts.push("[contains(@class, '" + m[2] + "')]"); 
-            
+                parts.push("[contains(@class, '" + m[2] + "')]");
+
             rule = rule.substr(m[0].length);
         }
-        
+
         // Match attribute selectors
         m = regAttr2.exec(rule);
         if (m)
@@ -752,7 +773,7 @@ this.cssToXPath = function(rule)
                 rule = rule.substr(m[0].length);
             }
         }
-        
+
         // Skip over pseudo-classes and pseudo-elements, which are of no use to us
         m = regPseudo.exec(rule);
         while (m)
@@ -760,7 +781,7 @@ this.cssToXPath = function(rule)
             rule = rule.substr(m[0].length);
             m = regPseudo.exec(rule);
         }
-        
+
         // Match combinators
         m = regCombinator.exec(rule);
         if (m && m[0].length)
@@ -776,7 +797,7 @@ this.cssToXPath = function(rule)
             parts.push("*");
             rule = rule.substr(m[0].length);
         }
-        
+
         m = regComma.exec(rule);
         if (m)
         {
@@ -785,7 +806,7 @@ this.cssToXPath = function(rule)
             rule = rule.substr(m[0].length);
         }
     }
-    
+
     var xpath = parts.join("");
     return xpath;
 };
@@ -796,19 +817,12 @@ this.getElementsBySelector = function(doc, css)
     return this.getElementsByXPath(doc, xpath);
 };
 
-this.getElementsByXPath = function(doc, xpath, contextNode)
+this.getElementsByXPath = function(doc, xpath)
 {
     var nodes = [];
 
     try {
-        var result = doc.evaluate(xpath, contextNode||doc, null, XPathResult.ANY_TYPE, null);
-        switch (result.resultType)
-        {
-            case result.STRING_TYPE:  return result.stringValue;
-            case result.NUMBER_TYPE:  return result.numberValue;
-            case result.BOOLEAN_TYPE: return result.booleanValue;
-        }
-    
+        var result = doc.evaluate(xpath, doc, null, XPathResult.ANY_TYPE, null);
         for (var item = result.iterateNext(); item; item = result.iterateNext())
             nodes.push(item);
     }
@@ -817,9 +831,9 @@ this.getElementsByXPath = function(doc, xpath, contextNode)
         // Invalid xpath expressions make their way here sometimes.  If that happens,
         // we still want to return an empty set without an exception.
     }
-    
+
     return nodes;
-}
+};
 
 this.getRuleMatchingElements = function(rule, doc)
 {
@@ -857,11 +871,11 @@ this.getClientOffset = function(elt)
         {
             if (p.nodeType == 1)
                 addOffset(p, coords, view);
-        } 
+        }
         else if (elt.ownerDocument.defaultView.frameElement)
             addOffset(elt.ownerDocument.defaultView.frameElement, coords, elt.ownerDocument.defaultView);
     }
-    
+
     var coords = {x: 0, y: 0};
     if (elt)
     {
@@ -879,7 +893,7 @@ this.getViewOffset = function(elt, singleFrame)
         var p = elt.offsetParent;
         coords.x += elt.offsetLeft - (p ? p.scrollLeft : 0);
         coords.y += elt.offsetTop - (p ? p.scrollTop : 0);
-                
+
         if (p)
         {
             if (p.nodeType == 1)
@@ -889,7 +903,7 @@ this.getViewOffset = function(elt, singleFrame)
                 {
                     coords.x += parseInt(parentStyle.borderLeftWidth);
                     coords.y += parseInt(parentStyle.borderTopWidth);
-                    
+
                     if (p.localName == "TABLE")
                     {
                         coords.x += parseInt(parentStyle.paddingLeft);
@@ -917,7 +931,7 @@ this.getViewOffset = function(elt, singleFrame)
                 }
                 addOffset(p, coords, view);
             }
-        } 
+        }
         else
         {
             if (elt.localName == "BODY")
@@ -935,14 +949,14 @@ this.getViewOffset = function(elt, singleFrame)
                 coords.x += elt.scrollLeft;
             if (elt.scrollTop)
                 coords.y += elt.scrollTop;
-            
+
             var win = elt.ownerDocument.defaultView;
             if (win && (!singleFrame && win.frameElement))
                 addOffset(win.frameElement, coords, win);
-        } 
-        
+        }
+
     }
-    
+
     var coords = {x: 0, y: 0};
     if (elt)
         addOffset(elt, coords, elt.ownerDocument.defaultView);
@@ -961,7 +975,7 @@ this.getOverflowParent = function(element)
     {
         if (scrollParent.scrollHeight > scrollParent.offsetHeight)
             return scrollParent;
-    }    
+    }
 };
 
 this.isScrolledToBottom = function(element)
@@ -990,13 +1004,13 @@ this.scrollIntoCenterView = function(element, scrollBox, notX, notY)
 {
     if (!element)
         return;
-    
+
     if (!scrollBox)
         scrollBox = this.getOverflowParent(element);
-    
+
     if (!scrollBox)
         return;
-    
+
     var offset = this.getClientOffset(element);
 
     if (!notY)
@@ -1038,11 +1052,11 @@ this.getCSSKeywordsByProperty = function(propName)
     if (!cssKeywordMap)
     {
         cssKeywordMap = {};
-        
+
         for (var name in this.cssInfo)
         {
             var list = [];
-            
+
             var types = this.cssInfo[name];
             for (var i = 0; i < types.length; ++i)
             {
@@ -1050,11 +1064,11 @@ this.getCSSKeywordsByProperty = function(propName)
                 if (keywords)
                     list.push.apply(list, keywords);
             }
-            
+
             cssKeywordMap[name] = list;
         }
     }
-    
+
     return propName in cssKeywordMap ? cssKeywordMap[propName] : [];
 };
 
@@ -1063,11 +1077,11 @@ this.getCSSPropertyNames = function()
     if (!cssPropNames)
     {
         cssPropNames = [];
-        
+
         for (var name in this.cssInfo)
             cssPropNames.push(name);
     }
-    
+
     return cssPropNames;
 };
 
@@ -1075,11 +1089,11 @@ this.isColorKeyword = function(keyword)
 {
     if (keyword == "transparent")
         return false;
-    
+
     if (!cssColorNames)
     {
         cssColorNames = [];
-        
+
         var colors = this.cssKeywords["color"];
         for (var i = 0; i < colors.length; ++i)
             cssColorNames.push(colors[i].toLowerCase());
@@ -1088,7 +1102,7 @@ this.isColorKeyword = function(keyword)
         for (var i = 0; i < systemColors.length; ++i)
             cssColorNames.push(systemColors[i].toLowerCase());
     }
-    
+
     return cssColorNames.indexOf(keyword.toLowerCase()) != -1;
 };
 
@@ -1099,12 +1113,12 @@ this.copyTextStyles = function(fromNode, toNode, style)
     {
         if (!style)
             style = view.getComputedStyle(fromNode, "");
-        
+
         toNode.style.fontFamily = style.getPropertyCSSValue("font-family").cssText;
         toNode.style.fontSize = style.getPropertyCSSValue("font-size").cssText;
         toNode.style.fontWeight = style.getPropertyCSSValue("font-weight").cssText;
         toNode.style.fontStyle = style.getPropertyCSSValue("font-style").cssText;
-        
+
         return style;
     }
 };
@@ -1116,7 +1130,7 @@ this.copyBoxStyles = function(fromNode, toNode, style)
     {
         if (!style)
             style = view.getComputedStyle(fromNode, "");
-        
+
         toNode.style.marginTop = style.getPropertyCSSValue("margin-top").cssText;
         toNode.style.marginRight = style.getPropertyCSSValue("margin-right").cssText;
         toNode.style.marginBottom = style.getPropertyCSSValue("margin-bottom").cssText;
@@ -1125,7 +1139,7 @@ this.copyBoxStyles = function(fromNode, toNode, style)
         toNode.style.borderRightWidth = style.getPropertyCSSValue("border-right-width").cssText;
         toNode.style.borderBottomWidth = style.getPropertyCSSValue("border-bottom-width").cssText;
         toNode.style.borderLeftWidth = style.getPropertyCSSValue("border-left-width").cssText;
-        
+
         return style;
     }
 };
@@ -1168,7 +1182,7 @@ this.getElementXML = function(element)
         if (elt.nodeType == 1)
         {
             xml.push('<', elt.localName.toLowerCase());
-        
+
             for (var i = 0; i < elt.attributes.length; ++i)
             {
                 var attr = elt.attributes[i];
@@ -1176,10 +1190,10 @@ this.getElementXML = function(element)
                 // Hide attributes set by Firebug
                 if (attr.localName.indexOf("firebug-") == 0)
                     continue;
-            
+
                 xml.push(' ', attr.localName, '=', escapeHTMLAttribute(attr.nodeValue));
             }
-        
+
             if (elt.firstChild)
             {
                 xml.push('>');
@@ -1198,8 +1212,8 @@ this.getElementXML = function(element)
             xml.push('<![CDATA[', elt.nodeValue, ']]>');
         else if (elt.nodeType == 8)
             xml.push('<!--', elt.nodeValue, '-->');
-    } 
-    
+    }
+
     var xml = [];
     toXML(element);
     return xml.join("");
@@ -1280,11 +1294,11 @@ this.cropString = function(text, limit)
 
     if (!limit)
         limit = 100;
-    
+
     if (text.length > limit)
         return this.escapeNewLines(text.substr(0, limit)) + "...";
     else
-        return this.escapeNewLines(text);    
+        return this.escapeNewLines(text);
 };
 
 this.isWhitespace = function(text)
@@ -1313,15 +1327,15 @@ this.createMenu = function(popup, label)
     return menuPopup;
 };
 
-this.createMenuItem = function(popup, item)
+this.createMenuItem = function(popup, item, before)
 {
     if (typeof(item) == "string" && item.indexOf("-") == 0)
-        return this.createMenuSeparator(popup);
-    
+        return this.createMenuSeparator(popup, before);
+
     var menuitem = popup.ownerDocument.createElement("menuitem");
 
     var label = item.nol10n ? item.label : this.$STR(item.label);
-    
+
     menuitem.setAttribute("label", label);
     menuitem.setAttribute("type", item.type);
     if (item.checked)
@@ -1333,11 +1347,14 @@ this.createMenuItem = function(popup, item)
         menuitem.setAttribute("class", "menuitem-iconic");
         menuitem.setAttribute("image", item.image);
     }
-    
+
     if (item.command)
         menuitem.addEventListener("command", item.command, false);
 
-    popup.appendChild(menuitem);
+    if (before)
+        popup.insertBefore(menuitem, before);
+    else
+        popup.appendChild(menuitem);
     return menuitem;
 };
 
@@ -1345,22 +1362,25 @@ this.createMenuHeader = function(popup, item)
 {
     var header = popup.ownerDocument.createElement("label");
     header.setAttribute("class", "menuHeader");
-    
+
     var label = item.nol10n ? item.label : this.$STR(item.label);
-    
+
     header.setAttribute("value", label);
 
     popup.appendChild(header);
     return header;
 };
 
-this.createMenuSeparator = function(popup)
+this.createMenuSeparator = function(popup, before)
 {
     if (!popup.firstChild)
         return;
 
     var menuitem = popup.ownerDocument.createElement("menuseparator");
-    popup.appendChild(menuitem);
+    if (before)
+        popup.insertBefore(menuitem, before);
+    else
+        popup.appendChild(menuitem);
     return menuitem;
 };
 
@@ -1376,7 +1396,7 @@ this.optionMenu = function(label, option)
 this.getCurrentStackTrace = function(context)
 {
     var trace = null;
-    
+
     Firebug.Debugger.halt(function(frame)
     {
         trace = FBL.getStackTrace(frame, context);
@@ -1404,11 +1424,48 @@ this.getStackTrace = function(frame, context)
 
 this.getStackFrame = function(frame, context)
 {
+    if (frame.isNative || frame.isDebugger)   // XXXjjb
+    {
+        var excuse = (frame.isNative) ?  "(native)" : "(debugger)";
+        return new this.StackFrame(context, excuse, null, excuse, 0, []);
+    }
     try
     {
-        var fn = frame.script.functionObject.getWrappedValue();
-        var args = this.getFunctionArgValues(fn, frame);    
-        return new this.StackFrame(context, fn, frame.script, frame.script.fileName, frame.line, args);
+        if (frame.script.functionName) // normal js
+        {
+            // XXXjjb At one time I thought this causes leak of script objects, but small test case is ok now.
+            var fn = frame.script.functionObject.getWrappedValue();
+            var args = this.getFunctionArgValues(fn, frame);
+            if (context.evalSourceURLByTag && frame.script.tag in context.evalSourceURLByTag)
+            {
+                var url = context.evalSourceURLByTag[frame.script.tag];
+                var lineNo = FBL.getLineAtPCForEvaled(frame, context);
+                return new this.StackFrame(context, fn, frame.script, url, lineNo, args);
+            }
+            else if (context.eventSourceURLByTag && frame.script.tag in context.eventSourceURLByTag)
+            {
+                var url = context.eventSourceURLByTag[frame.script.tag];
+                var lineNo = FBL.getLineAtPCForEvent(frame, context);
+                return new this.StackFrame(context, fn, frame.script, url, lineNo, args);
+            }
+            return new this.StackFrame(context, fn, frame.script, frame.script.fileName, frame.line, args);
+        }
+        else
+        {
+            if (frame.callingFrame) // eval-level
+            {
+                var sourceFile = this.getSourceFileForEval(frame.script, context);
+                var lineNo = FBL.getLineAtPCForEvaled(frame, context);
+                var eval_frame = new this.StackFrame(context, sourceFile.evalExpression, frame.script, sourceFile.href, lineNo, [sourceFile.evalExpression]);
+                return eval_frame;
+            }
+            else // __top_level__
+            {
+                var file_name = this.getFileName(frame.script.fileName);
+                file_name = file_name ? file_name: "__top_level__";
+                return new this.StackFrame(context, file_name, frame.script, frame.script.fileName, frame.line, []);
+            }
+        }
     }
     catch (exc)
     {
@@ -1416,12 +1473,39 @@ this.getStackFrame = function(frame, context)
     }
 };
 
+this.getLineAtPCForEvaled = function(frame, context)
+{
+    var lineNo = context.evalBaseLineNumberByTag[frame.script.tag];
+    var offset = frame.line - frame.script.baseLineNumber;
+    return lineNo + offset;
+}
+
+this.getSourceLinkAtPCForEvaled = function(frame, context)
+{
+    var url = context.evalSourceURLByTag[frame.script.tag];
+    var lineNo = FBL.getLineAtPCForEvaled(frame, context);
+    return new this.SourceLink(url, lineNo, "js");
+}
+
+this.getLineAtPCForEvent = function(frame, context)
+{
+    var lineNo = frame.script.pcToLine(frame.pc, PCMAP_PRETTYPRINT);
+    return lineNo;
+}
+
+this.getSourceLinkAtPCForEvent = function(frame, context)
+{
+    var url = context.eventSourceURLByTag[frame.script.tag];
+    var lineNo = FBL.getLineAtPCForEvent(frame, context);
+    return new this.SourceLink(url, lineNo, "js");
+}
+
 this.getStackDump = function()
 {
     var lines = [];
     for (var frame = Components.stack; frame; frame = frame.caller)
         lines.push(frame.filename + " (" + frame.lineNumber + ")");
-    
+
     return lines.join("\n");
 };
 
@@ -1439,10 +1523,10 @@ this.getStackSourceLink = function()
             break;
         }
     }
-    
-    
+
+
     if (frame && frame.filename && frame.filename.indexOf(Firebug.CommandLine.evalScript) == -1)
-        return new this.SourceLink(frame.filename, frame.lineNumber, "js");
+        return new this.SourceLink(frame.filename, frame.lineNumber, "js");  // XXXjjb TODO Components stack?
     else
         return null;
 };
@@ -1480,7 +1564,7 @@ this.monitorEvents = function(object, type, context)
 
         if (!context.eventsMonitored)
             context.eventsMonitored = [];
-        
+
         context.eventsMonitored.push({object: object, type: type});
 
         if (!type)
@@ -1493,7 +1577,7 @@ this.monitorEvents = function(object, type, context)
 this.unmonitorEvents = function(object, type, context)
 {
     var eventsMonitored = context.eventsMonitored;
-    
+
     for (var i = 0; i < eventsMonitored.length; ++i)
     {
         if (eventsMonitored[i].object == object && eventsMonitored[i].type == type)
@@ -1520,7 +1604,7 @@ this.areEventsMonitored = function(object, type, context)
                 return true;
         }
     }
-    
+
     return false;
 };
 
@@ -1528,9 +1612,10 @@ this.areEventsMonitored = function(object, type, context)
 // Functions
 
 this.findScript = function(url, line)
-{    
+{
     url = this.denormalizeURL(url);
-    
+
+    var context = this.context;
     var foundScript = null;
     this.jsd.enumerateScripts({enumerateScript: function(script)
     {
@@ -1543,15 +1628,28 @@ this.findScript = function(url, line)
             if (!foundScript || script.lineExtent <= foundScript.lineExtent)
                 foundScript = script;
         }
+        else
+        {
+            if (context && context.evalSourceURLByTag && context.evalSourceURLByTag[script.tag] == url)
+            {
+                var offsetToScript = context.evalSourceLinesByTag[script.tag];
+                if (line >= offsetToScript && line <= offsetToScript + script.lineExtent)
+                    foundScript = script;  // debugger.onEvalScript deals with functions in functions.
+            }
+            else if (context && context.eventSourceURLByTag && context.eventSourceURLByTag[script.tag] == url)
+            {
+                foundScript = script;
+            }
+        }
     }});
-    
+
     return foundScript;
 };
 
 this.findScriptForFunction = function(fn)
 {
     var found = null;
-    
+
     this.jsd.enumerateScripts({enumerateScript: function(script)
     {
         try {
@@ -1563,52 +1661,95 @@ this.findScriptForFunction = function(fn)
     return found;
 };
 
-this.findSourceForFunction = function(fn)
+this.findSourceForFunction = function(fn, context)
 {
-    return this.getSourceForScript(this.findScriptForFunction(fn));
+    var script = this.findScriptForFunction(fn);
+    return (script)? this.getSourceForScript(script, context) : null;
 };
 
-this.getSourceForScript = function(script)
+this.getSourceForScript = function(script, context)
 {
+    if (context.evalSourceURLByTag && script.tag in context.evalSourceURLByTag)
+    {
+        var url = context.evalSourceURLByTag[script.tag];
+        var line = context.evalBaseLineNumberByTag[script.tag];
+        return new this.SourceLink(url, line, "js");
+    }
+    else if (context.eventSourceURLByTag && script.tag in context.eventSourceURLByTag)
+    {
+        var url = context.eventSourceURLByTag[script.tag];
+        return new this.SourceLink(url, 1, "js");
+    }
     return script
         ? new this.SourceLink(this.normalizeURL(script.fileName), script.baseLineNumber, "js")
         : null;
 };
 
-this.getFunctionName = function(script, context)
+this.getFunctionName = function(script, context, frame)  // XXXjjb need frame to avoid analyzing top level
 {
+    if (!script)
+    {
+        return "(no script)";
+    }
     var name = script.functionName;
-    if (!name)
-        return this.getFileName(script.fileName);
+
+    if (!name) // XXXjjb eval frames have blank names, !name == true
+    {
+        if (context.evalSourceURLByTag) {
+            var url = context.evalSourceURLByTag[script.tag];
+            if (url)
+                return "__eval_level__";
+        }
+        var file_name = this.getFileName(script.fileName);
+        file_name = file_name ? file_name: "__top_level__";
+        return file_name;
+    }
     else if (name == "anonymous")
+    {
+
+        if (context.evalSourceURLByTag)
+        {
+            var url =  context.evalSourceURLByTag[script.tag];
+
+            if (url)
+                return this.guessFunctionName(url, context.evalBaseLineNumberByTag[script.tag], context);
+        }
         return this.guessFunctionName(script.fileName, script.baseLineNumber, context);
-    else
-        return name;
+    }
+
+    return name;
 };
 
 this.guessFunctionName = function(url, lineNo, context)
 {
-    if (context && context.sourceCache)
+    if (context)
     {
+        if (context.sourceCache)
+            return this.guessFunctionNameFromLines(url, lineNo, context.sourceCache);
+        return "(no cache)";
+    }
+    return "(no context)";
+};
+
+this.guessFunctionNameFromLines = function(url, lineNo, source) {
         // Walk backwards from the first line in the function until we find the line which
         // matches the pattern above, which is the function definition
         var line = "";
-        for (var i = 0; i < 3; ++i)
+        for (var i = 0; i < 4; ++i)
         {
-            line = context.sourceCache.getLine(url, lineNo-i) + line;
-            if (line)
+            line = source.getLine(url, lineNo-i) + line;
+            if (line != undefined)
             {
                 var m = reGuessFunction.exec(line);
                 if (m)
                     return m[1];
+                else
                 m = reFunctionArgNames.exec(line);
                 if (m && m[1])
                     return m[1];
             }
         }
-    }
-
-    return this.$STR("NoName");
+        return "(?)";
 };
 
 this.getFunctionArgNames = function(fn)
@@ -1626,7 +1767,7 @@ this.getFunctionArgNames = function(fn)
 this.getFunctionArgValues = function(fn, frame)
 {
     var values = [];
-    
+
     var argNames = this.getFunctionArgNames(fn);
     for (var i = 0; i < argNames.length; ++i)
     {
@@ -1635,7 +1776,7 @@ this.getFunctionArgValues = function(fn, frame)
         var value = pvalue ? pvalue.value.getWrappedValue() : undefined;
         values.push({name: argName, value: value});
     }
-    
+
     return values;
 };
 
@@ -1653,6 +1794,33 @@ this.getScriptFileByHref = function(url, context)
         this.updateScriptFiles(context, true);
 
     return context.sourceFileMap[url];
+};
+
+this.initSourceFileForEval = function(context)
+{
+    if (!context.evalSourceURLByTag)
+    {
+        context.evalSourceURLByTag = {};  // script.tag -> source url
+        context.evalSourceFilesByURL = {}; // source url -> sourceFile obj
+        context.evalBaseLineNumberByTag = {};       // script.tag -> source line offset in sourceFile.text
+    }
+}
+
+this.getSourceFileForEval = function(script, context)
+{
+    this.initSourceFileForEval(context);
+
+    var sourceURL = context.evalSourceURLByTag[script.tag];
+    if (sourceURL)
+        return context.evalSourceFilesByURL[sourceURL];
+};
+
+this.setSourceFileForEvalIntoContext = function(context, tag, sourceFile)
+{
+    this.initSourceFileForEval(context);
+    context.evalSourceFilesByURL[sourceFile.href] = sourceFile;
+    context.evalSourceURLByTag[tag] = sourceFile.href;
+    context.evalBaseLineNumberByTag[tag] = 1;
 };
 
 this.getStyleSheetByHref = function(url, context)
@@ -1685,18 +1853,18 @@ this.getStyleSheetByHref = function(url, context)
 
 this.updateScriptFiles = function(context, reload)
 {
-    var oldMap = reload ? context.sourceFileMap : null;
-    
     if (!context.sourceFiles || reload)
+        context.sourceFiles = [];    // list of all SourceFiles, built here only and cached
+
+    if (!context.sourceFileMap)
     {
-        context.sourceFileMap = {};
-        context.sourceFiles = [];
+        context.sourceFileMap = {};  // url->FBL.SourceFile built here and elsewhere
     }
-    
-    if (!context.loaded || !context.sourceFiles.length)
+
+    if (!context.loaded || !context.sourceFiles.length) // XXXjjb: TODO dynamics may also need a new list
     {
+        var oldMap = reload ? context.sourceFileMap : null;
         var sourceFileMap = context.sourceFileMap;
-        var sourceFiles = context.sourceFiles;
 
         function addFile(url)
         {
@@ -1706,36 +1874,57 @@ this.updateScriptFiles = function(context, reload)
                 {
                     var sourceFile = oldMap[url];
                     sourceFileMap[url] = sourceFile;
-                    sourceFiles.push(sourceFile);
                 }
                 else
                 {
-                    var sourceFile = new FBL.SourceFile(url);
-                    sourceFileMap[url] = sourceFile;
-                    sourceFiles.push(sourceFile);
+                    var sourceFile = new FBL.SourceFile(url, context);
                 }
             }
         }
 
+        // iff script tag mutation
         this.iterateWindows(context.window, this.bind(function(win)
         {
             if (!win.document.documentElement)
                 return;
-                
+
             var scripts = win.document.documentElement.getElementsByTagName("script");
             for (var i = 0; i < scripts.length; ++i)
             {
-                var script = scripts[i];
-                var url = this.normalizeURL(script.src ? script.src : win.location.href);
+                var scriptSrc = scripts[i].getAttribute('src'); // for XUL use attribute
+                var url = scriptSrc ? this.absoluteURL(scriptSrc, win.location.href) : win.location.href;
+                url = this.normalizeURL(url ? url : win.location.href);
                 addFile(url);
             }
         }, this));
 
-        addFile(context.window.location.href);
+        this.addSourceFilesByURL(context.sourceFiles, sourceFileMap);
+
+        //addFile(context.window.location.href); // ?? This should be handled by the first iteration of iterateWindows
     }
-    
+
     return context.sourceFiles;
 };
+
+this.addSourceFilesByURL = function(sourceFiles, sourceFilesByURL)
+{
+    for (url in sourceFilesByURL)
+    {
+        if (Firebug.showAllSourceFiles || this.showThisSourceFile(url))
+        {
+            var sourceFile = sourceFilesByURL[url];
+            sourceFiles.push(sourceFile);     // will append, whether or not the map was overwritten
+        }
+    }
+};
+
+this.showThisSourceFile = function(url)
+{
+    //-----------------------123456789
+    if (url.substr(0, 9) == "chrome://")
+        return false;
+    return true;
+}
 
 // ************************************************************************************************
 // Firefox browsing
@@ -1766,7 +1955,7 @@ this.openWindow = function(windowType, url, features, params)
 
 this.viewSource = function(url, lineNo)
 {
-    window.openDialog("chrome://global/content/viewSource.xul", "_blank", 
+    window.openDialog("chrome://global/content/viewSource.xul", "_blank",
         "all,dialog=no", url, null, null, lineNo);
 };
 
@@ -1787,14 +1976,14 @@ this.getExpressionAt = function(text, charOffset)
             var subExpr = word.split(".").slice(0, dots).join(".");
             return {expr: subExpr, offset: wordOffset};
         }
-        
+
         offset = wordOffset+word.length;
     }
-    
+
     return {expr: null, offset: -1};
 };
 
-var jsKeywords = 
+var jsKeywords =
 {
     "var": 1,
     "const": 1,
@@ -1844,7 +2033,7 @@ this.isJavaScriptKeyword = function(name)
 this.cancelEvent = function(event)
 {
     event.stopPropagation();
-    event.preventDefault();    
+    event.preventDefault();
 };
 
 this.isLeftClick = function(event)
@@ -1894,11 +2083,32 @@ this.isShift = function(event)
 
 this.dispatch = function(listeners, name, args)
 {
+    try {
+        for (var i = 0; i < listeners.length; ++i)
+        {
+            var listener = listeners[i];
+            if (name in listener)
+                listener[name].apply(listener, args);
+        }
+    }
+    catch (exc)
+    {
+            FBTrace.dumpProperties(" Exception in lib.dispatch "+ name, exc); // XXXjjb
+    }
+};
+
+this.dispatch2 = function(listeners, name, args)
+{
+
     for (var i = 0; i < listeners.length; ++i)
     {
         var listener = listeners[i];
         if (name in listener)
-            listener[name].apply(listener, args);
+        {
+            var result = listener[name].apply(listener, args);
+            if ( result )
+                return result;
+        }
     }
 };
 
@@ -1984,7 +2194,7 @@ this.getEventFamily = function(eventType)
     if (!this.families)
     {
         this.families = {};
-        
+
         for (var family in eventTypes)
         {
             var types = eventTypes[family];
@@ -1992,12 +2202,12 @@ this.getEventFamily = function(eventType)
                 this.families[types[i]] = family;
         }
     }
-    
+
     return this.families[eventType];
 };
 
 this.attachAllListeners = function(object, listener)
-{    
+{
     for (var family in eventTypes)
     {
         if (family != "mutation" || Firebug.attachMutationEvents)
@@ -2015,7 +2225,7 @@ this.detachAllListeners = function(object, listener)
 };
 
 this.attachFamilyListeners = function(family, object, listener)
-{    
+{
     var types = eventTypes[family];
     for (var i = 0; i < types.length; ++i)
         object.addEventListener(types[i], listener, false);
@@ -2033,17 +2243,22 @@ this.detachFamilyListeners = function(family, object, listener)
 
 this.getFileName = function(url)
 {
-    var m = reSplitFile.exec(url);
-    if (!m)
-        return url;
-    else if (!m[2])
-        return m[1];
-    else
-        return m[2];
+    var split = this.splitURLBase(url);
+    return split.name;
 };
 
 this.splitFileName = function(url)
-{
+{ // Dead code
+    var d = this.reDataURL.exec(url);
+    if (d)
+    {
+        var path = decodeURIComponent(d[1]);
+        if (!d[2])
+            return { path: path, name: 'eval' };
+        else
+            return { path: path, name: 'eval', line: d[2] };
+    }
+
     var m = reSplitFile.exec(url);
     if (!m)
         return {name: url, path: url};
@@ -2054,6 +2269,29 @@ this.splitFileName = function(url)
 };
 
 this.splitURLBase = function(url)
+{
+    this.reDataURL.lastIndex = 0;
+    var d = this.reDataURL.exec(url); // 1: fileName, 2: baseLineNumber, 3: first line
+    if (d)
+    {
+        var src_starts = this.reDataURL.lastIndex;
+        var caller_URL = decodeURIComponent(d[1]);
+        var caller_split = this.splitURLTrue(caller_URL);
+
+        if (!d[3])
+            var hint = url.substr(src_starts);
+        else
+            var hint = decodeURIComponent(d[3]).replace(/\s*$/, "");
+
+        if (!d[2])
+            return { path: caller_split.path, name: 'eval->'+hint };
+        else
+            return { path: caller_split.path, name: 'eval->'+hint, line: d[2] };
+    }
+    return this.splitURLTrue(url);
+};
+
+this.splitURLTrue = function(url)
 {
     var m = reSplitFile.exec(url);
     if (!m)
@@ -2072,6 +2310,8 @@ this.getFileExtension = function(url)
 
 this.isSystemURL = function(url)
 {
+    if (!url) return true;
+    if (url.length == 0) return true; // spec for about:blank
     if (url.substr(0, 9) == "resource:")
         return true;
     else if (url.substr(0, 17) == "chrome://firebug/")
@@ -2082,6 +2322,51 @@ this.isSystemURL = function(url)
         return true;
     else
         return false;
+};
+
+this.isSystemPage = function(win)
+{
+    try
+    {
+        var doc = win.document;
+        if (!doc)
+            return false;
+
+        // Detect pages for pretty printed XML
+        if ((doc.styleSheets.length && doc.styleSheets[0].href
+                == "chrome://global/content/xml/XMLPrettyPrint.css")
+            || (doc.styleSheets.length > 1 && doc.styleSheets[1].href
+                == "chrome://browser/skin/feeds/subscribe.css"))
+            return true;
+
+        return FBL.isSystemURL(win.location.href);
+    }
+    catch (exc)
+    {
+        // Sometimes documents just aren't ready to be manipulated here, but don't let that
+        // gum up the works
+        ERROR("tabWatcher.isSystemPage document not ready:"+ exc);
+        return false;
+    }
+}
+
+this.isLocalURL = function(url)
+{
+    if (url.substr(0, 5) == "file:")
+        return true;
+    else
+        return false;
+};
+
+this.getLocalPath = function(url)
+{
+    if (this.isLocalURL(url))
+    {
+        var ioService = this.CCSV("@mozilla.org/network/io-service;1", "nsIIOService");
+        var fileHandler = ioService.getProtocolHandler("file").QueryInterface(this.CI("nsIFileProtocolHandler"));
+        var file = fileHandler.getFileFromURLSpec(url);
+        return file.path;
+    }
 };
 
 this.getDomain = function(url)
@@ -2106,16 +2391,16 @@ this.absoluteURL = function(url, baseURL)
 {
     if (url[0] == "?")
         return baseURL + url;
-    
+
     var reURL = /(([^:]+:)\/{1,2}[^\/]*)(.*?)$/;
     var m = reURL.exec(url);
     if (m)
         return url;
-    
+
     var m = reURL.exec(baseURL);
     if (!m)
         return "";
-    
+
     var head = m[1];
     var tail = m[3];
     if (url.substr(0, 2) == "//")
@@ -2146,7 +2431,7 @@ this.denormalizeURL = function(url)
 };
 
 this.parseURLParams = function(url)
-{    
+{
     var q = url ? url.indexOf("?") : -1;
     if (q == -1)
         return [];
@@ -2165,7 +2450,7 @@ this.parseURLParams = function(url)
 this.parseURLEncodedText = function(text)
 {
     const maxValueLength = 25000;
-    
+
     var params = [];
 
     var args = text.split("&");
@@ -2176,15 +2461,15 @@ this.parseURLEncodedText = function(text)
         {
             if (parts[1].length > maxValueLength)
                 parts[1] = this.$STR("LargeData");
-            
+
             params.push({name: unescape(parts[0]), value: unescape(parts[1])});
         }
         else
             params.push({name: unescape(parts[0]), value: ""});
     }
-    
+
     params.sort(function(a, b) { return a.name < b.name ? -1 : 1; });
-    
+
     return params;
 };
 
@@ -2193,20 +2478,21 @@ this.parseURLEncodedText = function(text)
 
 this.readFromStream = function(stream, charset)
 {
-    var sis = this.CCSV("@mozilla.org/scriptableinputstream;1", "nsIScriptableInputStream");
-    sis.init(stream);
-
-    var segments = [];
-    for (var count = stream.available(); count; count = stream.available())
+    try
     {
-        var segment = sis.read(count);
-        segments.push(segment);
-    }
+        var sis = this.CCSV("@mozilla.org/binaryinputstream;1", "nsIBinaryInputStream");
+        sis.setInputStream(stream);
 
-    sis.close();
+        var segments = [];
+        for (var count = stream.available(); count; count = stream.available())
+            segments.push(sis.readBytes(count));
 
-    var text = segments.join("");
-    return this.convertToUnicode(text, charset);
+        var text = segments.join("");
+        return this.convertToUnicode(text, charset);
+     }
+     catch(exc)
+     {
+     }
 };
 
 this.readPostText = function(url, context)
@@ -2218,10 +2504,10 @@ this.readPostText = function(url, context)
             var webNav = context.browser.webNavigation;
             var descriptor = this.QI(webNav, this.CI("nsIWebPageDescriptor")).currentDescriptor;
             var entry = this.QI(descriptor, this.CI("nsISHEntry"));
-            
+
             var postStream = this.QI(entry.postData, this.CI("nsISeekableStream"));
             postStream.seek(0, 0);
-            
+
             var charset = context.window.document.characterSet;
             return this.readFromStream(postStream, charset);
          }
@@ -2230,6 +2516,54 @@ this.readPostText = function(url, context)
          }
      }
 };
+
+// ************************************************************************************************
+// Programs
+
+this.launchProgram = function(exePath, args)
+{
+    try {
+        var file = this.CCIN("@mozilla.org/file/local;1", "nsILocalFile");
+        file.initWithPath(exePath);
+        if (this.getPlatformName() == "Darwin" && file.isDirectory())
+        {
+            args = this.extendArray(["-a", exePath], args);
+            file.initWithPath("/usr/bin/open");
+        }
+        if (!file.exists())
+            return false;
+        var process = this.CCIN("@mozilla.org/process/util;1", "nsIProcess");
+        process.init(file);
+        process.run(false, args, args.length, {});
+        return true;
+    }
+    catch(exc)
+    {
+        this.ERROR(exc);
+    }
+    return false;
+};
+
+this.getIconURLForFile = function(path)
+{
+    var ioService = this.CCSV("@mozilla.org/network/io-service;1", "nsIIOService");
+    var fileHandler = ioService.getProtocolHandler("file").QueryInterface(this.CI("nsIFileProtocolHandler"));
+    try {
+        var file = this.CCIN("@mozilla.org/file/local;1", "nsILocalFile");
+        file.initWithPath(path);
+        if ((this.getPlatformName() == "Darwin") && !file.isDirectory() && (path.indexOf(".app/") != -1))
+        {
+            path = path.substr(0,path.lastIndexOf(".app/")+4);
+            file.initWithPath(path);
+        }
+        return "moz-icon://" + fileHandler.getURLSpecFromFile(file) + "?size=16";
+    }
+    catch(exc)
+    {
+        this.ERROR(exc);
+    }
+    return null;
+}
 
 // ************************************************************************************************
 
@@ -2245,7 +2579,7 @@ this.getSourceLineRange = function(lines, min, max, maxLineNoChars)
 
     for (var i = min; i <= max; ++i)
     {
-        // Make sure all line numbers are the same width (with a fixed-width font) 
+        // Make sure all line numbers are the same width (with a fixed-width font)
         var lineNo = (i+1) + "";
         while (lineNo.length < maxLineNoChars)
             lineNo = " " + lineNo;
@@ -2253,10 +2587,10 @@ this.getSourceLineRange = function(lines, min, max, maxLineNoChars)
         var line = escapeHTML(lines[i]);
 
         html.push(
-            '<div class="sourceRow"><a class="sourceLine">', 
+            '<div class="sourceRow"><a class="sourceLine">',
             lineNo,
             '</a><span class="sourceRowText">',
-            line, 
+            line,
             '</span></div>'
         );
     }
@@ -2294,7 +2628,7 @@ this.restoreObjects = function(panel, panelState)
 
     if (!panel.location)
         panel.navigate(null);
-    
+
     if (!panel.selection && panelState && panelState.persistedSelection)
     {
         var selection = panelState.persistedSelection(panel.context);
@@ -2306,7 +2640,7 @@ this.restoreObjects = function(panel, panelState)
     {
         // Couldn't restore the selection, so select the default object
         panel.select(null);
-        
+
         if (panelState && panelState.persistedSelection)
         {
             // If we couldn't restore the selection, wait a bit and try again
@@ -2317,7 +2651,7 @@ this.restoreObjects = function(panel, panelState)
                     var selection = panelState.persistedSelection(panel.context);
                     if (selection)
                         panel.select(selection);
-                }                
+                }
             }, restoreRetryTimeout);
         }
     }
@@ -2325,7 +2659,7 @@ this.restoreObjects = function(panel, panelState)
 
 // ************************************************************************************************
 
-this.ErrorMessage = function(message, href, lineNo, source, category, context)
+this.ErrorMessage = function(message, href, lineNo, source, category, context, trace)
 {
     this.message = message;
     this.href = href;
@@ -2333,6 +2667,7 @@ this.ErrorMessage = function(message, href, lineNo, source, category, context)
     this.source = source;
     this.category = category;
     this.context = context;
+    this.trace = trace;
 };
 
 this.ErrorMessage.prototype =
@@ -2347,30 +2682,30 @@ this.ErrorMessage.prototype =
 
 this.TextSearch = function(rootNode, rowFinder)
 {
-    var doc = rootNode.ownerDocument;    
+    var doc = rootNode.ownerDocument;
     var count, searchRange, startPt, endPt;
-    
+
     this.find = function(text)
     {
         this.text = text;
-        
+
         var range = this.range = finder.Find(text, searchRange, startPt, endPt);
         var match = range ?  range.startContainer : null;
         return this.currentNode = (rowFinder && match ? rowFinder(match) : match);
     };
-    
+
     this.findNext = function(wrapAround, sameNode)
     {
         startPt = doc.createRange();
         startPt.setStartAfter(this.currentNode ? this.currentNode : rootNode);
-        
+
         var match = this.find(this.text);
         if (!match && wrapAround)
         {
             this.reset();
             return this.find(this.text);
         }
-        
+
         return match;
     };
 
@@ -2389,7 +2724,7 @@ this.TextSearch = function(rootNode, rowFinder)
         endPt.setStart(rootNode, count);
         endPt.setEnd(rootNode, count);
     };
-    
+
     this.reset();
 };
 
@@ -2397,7 +2732,7 @@ this.TextSearch = function(rootNode, rowFinder)
 
 this.Continued = function()
 {
-    
+
 };
 
 this.Continued.prototype =
@@ -2409,7 +2744,7 @@ this.Continued.prototype =
         else
             this.result = cloneArray(arguments);
     },
-    
+
     wait: function(cb)
     {
         if ("result" in this)
@@ -2419,7 +2754,7 @@ this.Continued.prototype =
     }
 };
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 this.SourceLink = function(url, line, type, object)
 {
@@ -2429,30 +2764,71 @@ this.SourceLink = function(url, line, type, object)
     this.object = object;
 };
 
-this.SourceLink.prototype = 
+this.SourceLink.prototype =
 {
     toString: function()
     {
-        return "SourceLink " + this.href;
+        return this.href;
     }
 };
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
-this.SourceFile = function(url)
+this.SourceFile = function(url, context)
 {
     this.href = url;
+    this.lineMap = {};
+    this.pcMapTypeByScriptTag = {};
+    context.sourceFileMap[url] = this;
 };
 
-this.SourceFile.prototype = 
+this.SourceFile.prototype =
 {
     toString: function()
     {
-        return "SourceFile " + this.href;
+        var str = this.href + " ( ";
+        for (tag in this.pcMapTypeByScriptTag)
+            str += tag+" ";
+        str += ")";
+        return str;
+    },
+
+    dumpLineMap: function()
+    {
+        var str = "SourceFile " + this.href+"; lineMap: ";
+        for (line in this.lineMap) str += "["+line+"]="+this.lineMap[line];
+        return str;
+    },
+
+    hasLineTableForScript: function(tag)
+    {
+        return this.pcMapTypeByScriptTag[tag];
+    },
+
+    addToLineTable: function(script, trueBaseLineNumber, sourceLines)
+    {
+        var pcmap_type = (sourceLines) ? PCMAP_PRETTYPRINT : PCMAP_SOURCETEXT;
+        var lineCount = (sourceLines) ? sourceLines.length : script.lineExtent;
+
+        this.pcMapTypeByScriptTag[script.tag] = pcmap_type;
+
+        for (var i = 0; i <= lineCount; i++)
+        {
+            var scriptLineNo = i + script.baseLineNumber;
+            var mapLineNo = i + trueBaseLineNumber;
+
+            if (script.isLineExecutable(scriptLineNo, pcmap_type))
+                this.lineMap[mapLineNo] = script.tag;
+        }
+    },
+
+    isInExecutableTable: function(lineNo)
+    {
+        return this.lineMap[lineNo];
     }
 };
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 this.SourceText = function(lines, owner)
 {
@@ -2460,22 +2836,41 @@ this.SourceText = function(lines, owner)
     this.owner = owner;
 };
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 this.StackTrace = function()
 {
     this.frames = [];
 };
 
-this.StackTrace.prototype = 
+this.StackTrace.prototype =
 {
     toString: function()
     {
-        return "StackTrace " + this.frames.length;
+        var trace = "<top>\n";
+        for (var i = 0; i < this.frames.length; i++)
+        {
+            trace += "[" + i + "]"+ this.frames[i]+"\n";
+        }
+        trace += "<bottom>\n";
+        return trace;
+    },
+    reverse: function()
+    {
+        this.frames.reverse();
+        return this;
+    },
+
+    destroy: function()
+    {
+        for (var i = 0; i < this.frames.length; i++)
+        {
+            this.frames[i].destroy();
+        }
     }
 };
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 this.StackFrame = function(context, fn, script, href, lineNo, args)
 {
@@ -2485,23 +2880,31 @@ this.StackFrame = function(context, fn, script, href, lineNo, args)
     this.href = href;
     this.lineNo = lineNo;
     this.args = args;
+    this.flags = script.flags;
 };
 
-this.StackTrace.prototype = 
+this.StackFrame.prototype =
 {
     toString: function()
     {
-        return "StackTrace " + this.frames.length;
+        // XXXjjb analyze args and fn?
+        return "("+this.flags+")"+this.href+":"+this.script.baseLineNumber+"-"
+                  +(this.script.baseLineNumber+this.script.lineExtent)+"@"+this.lineNo;
+    },
+    destroy: function()
+    {
+        this.script = null;
+        this.fn = null;
     }
 };
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 this.Property = function(object, name)
 {
     this.object = object;
     this.name = name;
-    
+
     this.getObject = function()
     {
         return object[name];
@@ -2531,16 +2934,16 @@ this.EventCopy = EventCopy;
 // DOM Constants
 
 this.getDOMMembers = function(object)
-{    
+{
     if (!domMemberCache)
     {
         domMemberCache = {};
-        
+
         for (var name in domMemberMap)
         {
             var builtins = domMemberMap[name];
             var cache = domMemberCache[name] = {};
-            
+
             for (var i = 0; i < builtins.length; ++i)
                 cache[builtins[i]] = i;
         }
@@ -2567,7 +2970,7 @@ this.getDOMMembers = function(object)
     else if (object instanceof HTMLHtmlElement)
         { return domMemberCache.HTMLHtmlElement; }
     else if (object instanceof HTMLScriptElement)
-        { return domMemberCache.HTMLScriptElement; }    
+        { return domMemberCache.HTMLScriptElement; }
     else if (object instanceof HTMLTableElement)
         { return domMemberCache.HTMLTableElement; }
     else if (object instanceof HTMLTableRowElement)
@@ -2603,11 +3006,11 @@ this.isDOMMember = function(object, propName)
 var domMemberCache = null;
 var domMemberMap = {};
 
-domMemberMap.Window = 
+domMemberMap.Window =
 [
-    "document",    
+    "document",
     "frameElement",
-    
+
     "innerWidth",
     "innerHeight",
     "outerWidth",
@@ -2630,7 +3033,7 @@ domMemberMap.Window =
     "window",
     "content",
     "self",
-    
+
     "location",
     "history",
     "frames",
@@ -2656,10 +3059,10 @@ domMemberMap.Window =
     "name",
     "property",
     "length",
-    
+
     "sessionStorage",
     "globalStorage",
-    
+
     "setTimeout",
     "setInterval",
     "clearTimeout",
@@ -2707,7 +3110,7 @@ domMemberMap.Window =
     "GeckoActiveXObject"
 ];
 
-domMemberMap.Location = 
+domMemberMap.Location =
 [
     "href",
     "protocol",
@@ -2717,13 +3120,13 @@ domMemberMap.Location =
     "pathname",
     "search",
     "hash",
-    
+
     "assign",
     "reload",
     "replace"
 ];
 
-domMemberMap.Node = 
+domMemberMap.Node =
 [
     "id",
     "className",
@@ -2745,12 +3148,12 @@ domMemberMap.Node =
     "lastChild",
     "childNodes",
     "attributes",
-    
+
     "dir",
     "baseURI",
     "textContent",
     "innerHTML",
-    
+
     "addEventListener",
     "removeEventListener",
     "dispatchEvent",
@@ -2771,7 +3174,7 @@ domMemberMap.Node =
     "isSupported",
     "getFeature",
     "getUserData",
-    "setUserData"    
+    "setUserData"
 ];
 
 domMemberMap.Document = extendArray(domMemberMap.Node,
@@ -2792,7 +3195,7 @@ domMemberMap.Document = extendArray(domMemberMap.Node,
     "strictErrorChecking",
     "documentURI",
     "URL",
-    
+
     "defaultView",
     "doctype",
     "implementation",
@@ -2807,19 +3210,19 @@ domMemberMap.Document = extendArray(domMemberMap.Node,
 
     "width",
     "height",
-    
+
     "designMode",
     "compatMode",
     "async",
     "preferredStylesheetSet",
-    
+
     "alinkColor",
     "linkColor",
     "vlinkColor",
     "bgColor",
     "fgColor",
     "domain",
-    
+
     "addEventListener",
     "removeEventListener",
     "dispatchEvent",
@@ -2916,7 +3319,7 @@ domMemberMap.Element = extendArray(domMemberMap.Node,
     "lang",
     "align",
     "spellcheck",
-    
+
     "addEventListener",
     "removeEventListener",
     "dispatchEvent",
@@ -2954,7 +3357,7 @@ domMemberMap.Element = extendArray(domMemberMap.Node,
     "isSupported",
     "getFeature",
     "getUserData",
-    "setUserData"    
+    "setUserData"
 ]);
 
 domMemberMap.SVGElement = extendArray(domMemberMap.Element,
@@ -2967,7 +3370,7 @@ domMemberMap.SVGElement = extendArray(domMemberMap.Element,
     "ry",
     "transform",
     "href",
-    
+
     "ownerSVGElement",
     "viewportElement",
     "farthestViewportElement",
@@ -2990,19 +3393,19 @@ domMemberMap.SVGSVGElement = extendArray(domMemberMap.Element,
     "rx",
     "ry",
     "transform",
-    
+
     "viewBox",
     "viewport",
     "currentView",
     "useCurrentView",
     "pixelUnitToMillimeterX",
-    "pixelUnitToMillimeterY",    
+    "pixelUnitToMillimeterY",
     "screenPixelToMillimeterX",
-    "screenPixelToMillimeterY",        
+    "screenPixelToMillimeterY",
     "currentScale",
     "currentTranslate",
     "zoomAndPan",
-    
+
     "ownerSVGElement",
     "viewportElement",
     "farthestViewportElement",
@@ -3117,7 +3520,7 @@ domMemberMap.HTMLTableElement = extendArray(domMemberMap.Element,
     "tFoot",
     "tHead",
     "width",
-    
+
     "createCaption",
     "createTFoot",
     "createTHead",
@@ -3137,7 +3540,7 @@ domMemberMap.HTMLTableRowElement = extendArray(domMemberMap.Element,
     "rowIndex",
     "sectionRowIndex",
     "vAlign",
-    
+
     "deleteCell",
     "insertCell"
 ]);
@@ -3158,7 +3561,7 @@ domMemberMap.HTMLTableCellElement = extendArray(domMemberMap.Element,
     "scope",
     "vAlign",
     "width"
-    
+
 ]);
 
 domMemberMap.HTMLScriptElement = extendArray(domMemberMap.Element,
@@ -3174,7 +3577,7 @@ domMemberMap.HTMLButtonElement = extendArray(domMemberMap.Element,
     "name",
     "type",
     "value",
-    
+
     "click"
 ]);
 
@@ -3200,7 +3603,7 @@ domMemberMap.HTMLInputElement = extendArray(domMemberMap.Element,
     "src",
     "textLength",
     "useMap",
-    
+
     "click",
     "select",
     "setSelectionRange"
@@ -3222,9 +3625,9 @@ domMemberMap.HTMLFormElement = extendArray(domMemberMap.Element,
     "target",
     "text",
     "url",
-    
+
     "reset",
-    "submit"    
+    "submit"
 ]);
 
 domMemberMap.HTMLBodyElement = extendArray(domMemberMap.Element,
@@ -3246,7 +3649,7 @@ domMemberMap.Text = extendArray(domMemberMap.Node,
 [
     "data",
     "length",
-    
+
     "appendData",
     "deleteData",
     "insertData",
@@ -3302,7 +3705,7 @@ domMemberMap.Event =
 
     "isTrusted",
     "isChar",
-    
+
     "getPreventDefault",
     "initEvent",
     "initMouseEvent",
@@ -3314,9 +3717,9 @@ domMemberMap.Event =
     "stopPropagation"
 ];
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
-this.domConstantMap = 
+this.domConstantMap =
 {
     "ELEMENT_NODE": 1,
     "ATTRIBUTE_NODE": 1,
@@ -3337,7 +3740,7 @@ this.domConstantMap =
     "DOCUMENT_POSITION_CONTAINS": 1,
     "DOCUMENT_POSITION_CONTAINED_BY": 1,
     "DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC": 1,
-    
+
     "UNKNOWN_RULE": 1,
     "STYLE_RULE": 1,
     "CHARSET_RULE": 1,
@@ -3345,14 +3748,14 @@ this.domConstantMap =
     "MEDIA_RULE": 1,
     "FONT_FACE_RULE": 1,
     "PAGE_RULE": 1,
-    
+
     "CAPTURING_PHASE": 1,
     "AT_TARGET": 1,
     "BUBBLING_PHASE": 1,
-    
+
     "SCROLL_PAGE_UP": 1,
     "SCROLL_PAGE_DOWN": 1,
-    
+
     "MOUSEUP": 1,
     "MOUSEDOWN": 1,
     "MOUSEOVER": 1,
@@ -3389,7 +3792,7 @@ this.domConstantMap =
     "CONTROL_MASK": 1,
     "SHIFT_MASK": 1,
     "META_MASK": 1,
-    
+
     "DOM_VK_TAB": 1,
     "DOM_VK_PAGE_UP": 1,
     "DOM_VK_PAGE_DOWN": 1,
@@ -3505,7 +3908,7 @@ this.domConstantMap =
     "DOM_VK_CLOSE_BRACKET": 1,
     "DOM_VK_QUOTE": 1,
     "DOM_VK_META": 1,
-    
+
     "SVG_ZOOMANDPAN_DISABLE": 1,
     "SVG_ZOOMANDPAN_MAGNIFY": 1,
     "SVG_ZOOMANDPAN_UNKNOWN": 1
@@ -3519,7 +3922,7 @@ this.cssInfo =
     "background-image": ["none"],
     "background-position": ["bgPosition"],
     "background-repeat": ["bgRepeat"],
-    
+
     "border": ["borderStyle", "thickness", "color", "systemColor", "none"],
     "border-top": ["borderStyle", "borderCollapse", "color", "systemColor", "none"],
     "border-right": ["borderStyle", "borderCollapse", "color", "systemColor", "none"],
@@ -3542,7 +3945,7 @@ this.cssInfo =
     "border-right-width": ["thickness"],
     "border-bottom-width": ["thickness"],
     "border-left-width": ["thickness"],
-    
+
     "bottom": ["auto"],
     "caption-side": ["captionSide"],
     "clear": ["clear", "none"],
@@ -3567,7 +3970,7 @@ this.cssInfo =
     "font-weight": ["fontWeight"],
 
     "height": ["auto"],
-    "left": ["auto"],    
+    "left": ["auto"],
     "letter-spacing": [],
     "line-height": [],
 
@@ -3587,7 +3990,7 @@ this.cssInfo =
     "max-height": ["none"],
     "min-width": ["none"],
     "max-width": ["none"],
-    
+
     "outline": ["borderStyle", "color", "systemColor", "none"],
     "outline-color": ["color", "systemColor"],
     "outline-style": ["borderStyle"],
@@ -3596,7 +3999,7 @@ this.cssInfo =
     "overflow": ["overflow", "auto"],
     "overflow-x": ["overflow", "auto"],
     "overflow-y": ["overflow", "auto"],
-    
+
     "padding": [],
     "padding-top": [],
     "padding-right": [],
@@ -3619,7 +4022,7 @@ this.cssInfo =
     "width": ["auto"],
     "word-spacing": [],
     "z-index": [],
-    
+
     "-moz-appearance": ["mozAppearance"],
     "-moz-border-radius": [],
     "-moz-border-radius-bottomleft": [],
@@ -3685,7 +4088,7 @@ this.inheritedStyleNames =
     "word-spacing": 1
 };
 
-this.cssKeywords = 
+this.cssKeywords =
 {
     "appearance":
     [
@@ -3731,7 +4134,7 @@ this.cssKeywords =
         "treeview",
         "window"
     ],
-    
+
     "systemColor":
     [
         "ActiveBorder",
@@ -3768,7 +4171,7 @@ this.cssKeywords =
         "-moz-visitedhyperlinktext",
         "-moz-use-text-color"
     ],
-    
+
     "color":
     [
         "AliceBlue",
@@ -3915,19 +4318,19 @@ this.cssKeywords =
         "Yellow",
         "YellowGreen",
         "transparent",
-        "invert"        
+        "invert"
     ],
-    
+
     "auto":
     [
         "auto"
     ],
-    
+
     "none":
     [
         "none"
     ],
-    
+
     "captionSide":
     [
         "top",
@@ -3935,14 +4338,14 @@ this.cssKeywords =
         "left",
         "right"
     ],
-    
+
     "clear":
     [
         "left",
         "right",
         "both"
     ],
-    
+
     "cursor":
     [
         "auto",
@@ -3987,19 +4390,19 @@ this.cssKeywords =
         "-moz-zoom-out",
         "-moz-spinning"
     ],
-    
+
     "direction":
     [
         "ltr",
         "rtl"
     ],
-    
+
     "bgAttachment":
     [
         "scroll",
         "fixed"
     ],
-    
+
     "bgPosition":
     [
         "top",
@@ -4008,7 +4411,7 @@ this.cssKeywords =
         "left",
         "right"
     ],
-    
+
     "bgRepeat":
     [
         "repeat",
@@ -4016,7 +4419,7 @@ this.cssKeywords =
         "repeat-y",
         "no-repeat"
     ],
-    
+
     "borderStyle":
     [
         "hidden",
@@ -4032,13 +4435,13 @@ this.cssKeywords =
         "-moz-bg-outset",
         "-moz-bg-solid"
     ],
-    
+
     "borderCollapse":
     [
         "collapse",
         "separate"
     ],
-    
+
     "overflow":
     [
         "visible",
@@ -4048,7 +4451,7 @@ this.cssKeywords =
         "-moz-scrollbars-none",
         "-moz-scrollbars-vertical"
     ],
-    
+
     "listStyleType":
     [
         "disc",
@@ -4073,13 +4476,13 @@ this.cssKeywords =
         "katakana-iroha",
         "inherit"
     ],
-    
+
     "listStylePosition":
     [
         "inside",
         "outside"
     ],
-    
+
     "content":
     [
         "open-quote",
@@ -4088,7 +4491,7 @@ this.cssKeywords =
         "no-close-quote",
         "inherit"
     ],
-    
+
     "fontStyle":
     [
         "normal",
@@ -4096,7 +4499,7 @@ this.cssKeywords =
         "oblique",
         "inherit"
     ],
-        
+
     "fontVariant":
     [
         "normal",
@@ -4116,16 +4519,16 @@ this.cssKeywords =
     "fontSize":
     [
         "xx-small",
-        "x-small",        
+        "x-small",
         "small",
         "medium",
         "large",
         "x-large",
         "xx-large",
         "smaller",
-        "larger"        
+        "larger"
     ],
-    
+
     "fontFamily":
     [
         "Arial",
@@ -4150,7 +4553,7 @@ this.cssKeywords =
         "status-bar",
         "inherit"
     ],
-    
+
     "display":
     [
         "block",
@@ -4186,7 +4589,7 @@ this.cssKeywords =
         "-moz-runin",
         "-moz-stack"
     ],
-    
+
     "position":
     [
         "static",
@@ -4195,13 +4598,13 @@ this.cssKeywords =
         "fixed",
         "inherit"
     ],
-    
+
     "float":
     [
         "left",
         "right"
     ],
-    
+
     "textAlign":
     [
         "left",
@@ -4214,7 +4617,7 @@ this.cssKeywords =
     [
         "fixed"
     ],
-    
+
     "textDecoration":
     [
         "underline",
@@ -4222,7 +4625,7 @@ this.cssKeywords =
         "line-through",
         "blink"
     ],
-    
+
     "textTransform":
     [
         "capitalize",
@@ -4230,21 +4633,21 @@ this.cssKeywords =
         "uppercase",
         "inherit"
     ],
-    
+
     "unicodeBidi":
     [
         "normal",
         "embed",
         "bidi-override"
     ],
-    
+
     "whiteSpace":
     [
         "normal",
         "pre",
         "nowrap"
     ],
-    
+
     "verticalAlign":
     [
         "baseline",
@@ -4257,20 +4660,20 @@ this.cssKeywords =
         "text-bottom",
         "inherit"
     ],
-    
+
     "thickness":
     [
         "thin",
         "medium",
         "thick"
     ],
-    
+
     "userFocus":
     [
         "ignore",
         "normal"
     ],
-    
+
     "userInput":
     [
         "disabled",
@@ -4281,7 +4684,7 @@ this.cssKeywords =
     [
         "normal"
     ],
-    
+
     "mozBoxSizing":
     [
         "content-box",
@@ -4315,7 +4718,7 @@ this.cssKeywords =
         "start",
         "center",
         "end"
-    ]    
+    ]
 };
 
 this.nonEditableTags =
@@ -4352,7 +4755,7 @@ const invisibleTags = this.invisibleTags =
     "style": 1,
     "script": 1,
     "noscript": 1,
-    "br": 1,   
+    "br": 1
 };
 
 // ************************************************************************************************
@@ -4360,8 +4763,7 @@ const invisibleTags = this.invisibleTags =
 
 this.ERROR = function(exc)
 {
-    ddd("FIREBUG WARNING: " + exc);
-    //throw exc;
+        ddd("FIREBUG WARNING: " + exc);
 }
 
 // ************************************************************************************************
