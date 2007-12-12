@@ -35,6 +35,7 @@ const jsdICallHook = CI("jsdICallHook");
 const jsdIExecutionHook = CI("jsdIExecutionHook");
 const jsdIErrorHook = CI("jsdIErrorHook");
 const nsIFireBug = CI("nsIFireBug");
+const nsISupports = CI("nsISupports");
 const nsIFireBugNetworkDebugger = CI("nsIFireBugNetworkDebugger");
 const nsIFireBugScriptListener = CI("nsIFireBugScriptListener");
 const nsIFireBugURLProvider = CI("nsIFireBugURLProvider");
