@@ -196,6 +196,7 @@ FirebugService.prototype =
         prefs.removeObserver("extensions.firebug", FirebugPrefsObserver);
         timer = null;
         fbs = null;
+        jsd.off();  // https://bugzilla.mozilla.org/show_bug.cgi?id=411249
         jsd = null;
     },
 
