@@ -1,4 +1,5 @@
 
+<!ENTITY  editors.Title             "Firebug Editors">
 <!ENTITY  editors.Description       "Configured Firebug Editors:">
 <!ENTITY  editors.NameColumn        "Editor">
 <!ENTITY  editors.ExecutableColumn  "Executable">
@@ -9,6 +10,8 @@
 <!ENTITY  change.label            "Change">
 <!ENTITY  close.label             "Close">
 <!ENTITY  browse.label            "Browse...">
+
+<!ENTITY  changeEditor.Title      "Editor Configuration">
 <!ENTITY  changeEditor.Name       "Name:">
 <!ENTITY  changeEditor.Executable "Executable:">
 <!ENTITY  changeEditor.CmdLine    "Arguments:">
