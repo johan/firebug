@@ -14,18 +14,24 @@
 <!ENTITY  firebug.NormalTextSize        "Normal Metin Boyutu">
 <!ENTITY  firebug.ShowTooltips          "Önizleme kisayollarini göster">
 <!ENTITY  firebug.ShadeBoxModel         "Gölgeli Kutu Modeli">
+<!ENTITY  firebug.Support               "Firebug Destek">
 <!ENTITY  firebug.Website               "Firebug Anasayfasi...">
+<!ENTITY  firebug.Plugins               "Ilave Eklentiler...">
 <!ENTITY  firebug.Documentation         "Belgeler...">
 <!ENTITY  firebug.KeyShortcuts          "Klavye kisayollari...">
 <!ENTITY  firebug.Forums                "Tartisma gruplari...">
+<!ENTITY  firebug.Issues                "Is Takip Sistemi...">
 <!ENTITY  firebug.Donate                "Destekle...">
+<!ENTITY  firebug.About                 "Hakkinda...">
 <!ENTITY  firebug.AlwaysOpenInWindow    "Herzaman yeni pencerede aç">
 
 <!ENTITY  firebug.ShowFirebug           "Firebug'i aç">
 <!ENTITY  firebug.DetachFirebug         "Firebug'i yeni pencerede aç">
+<!ENTITY  firebug.OpenWith              "Birlikte Aç">
 <!ENTITY  firebug.CloseFirebug          "Firebug'i kapat">
 <!ENTITY  firebug.DisableFirebug        "Firebug'i etkisiz kil">
 <!ENTITY  firebug.AllowedSites          "Etkin Siteler...">
+<!ENTITY  firebug.ConfigureEditors      "Editorleri Ayarla...">
 <!ENTITY  firebug.CommandLine           "Komut Satiri">
 <!ENTITY  firebug.Search                "Ara">
 
