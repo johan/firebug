@@ -85,7 +85,10 @@ Firebug 1.1 is Firebug 1.05 by Joe Hewitt with additions by John J. Barton and M
     ** Issue 383: contributed tr locale added
     ** Issue 343: nsISupports is not defined on firebug-service.js
     ** Issue 105: Turning off Network Monitoring also turns of XMLHttpRequest monitoring
-    
+    ** Issue 450: DOM Browser crashes Firefox
+    ** Issue 434: Network Monitoring not showing image downloads
+    ** Unreported problem with breakpoints removed then re-added, seen in work on firebug 1.2
+
 
 === General ===
 * Supports Firefox 3

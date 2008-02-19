@@ -180,7 +180,7 @@ const DirTablePlate = domplate(Firebug.Rep,
                 for (var i = 0; i < path.length; ++i)
                 {
                     var name = path[i];
-                    if (name in toggles)
+                    if ( toggles.hasOwnProperty(name) )
                         toggles = toggles[name];
                     else
                         toggles = toggles[name] = {};
@@ -1320,7 +1320,7 @@ function expandMembers(members, toggles, offset, level)
         if (member.level > level)
             break;
 
-        if (member.name in toggles)
+        if ( toggles.hasOwnProperty(member.name) )
         {
             member.open = "opened";  // member.level <= level && member.name in toggles.
 
