@@ -1471,7 +1471,7 @@ FirebugService.prototype =
                     if (bp.disabled)
                         --disabledCount;
 
-                    if (bp.condition || bp.hitCount)
+                    if (bp.condition || bp.hitCount > 0)
                     {
                         --conditionCount;
                     }

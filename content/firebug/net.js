@@ -1600,7 +1600,8 @@ function getRequestWebProgress(request, netProgress)
                 });
             }
             // XXXjjb Joe review: code above sets bypass, so this stmt should be in if (gives exceptions otherwise)
-            if (!bypass && request.notificationCallbacks instanceof nsIWebProgress)
+            // The instanceof can't be used here. Fix for #434 [Honza]
+            if (!bypass)
                 return request.notificationCallbacks.getInterface(nsIWebProgress);
         }
     }
