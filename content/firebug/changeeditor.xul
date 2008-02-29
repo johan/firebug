@@ -10,7 +10,7 @@
         buttons="accept,cancel"
         id="firebug-external-editors-change"
         width="400" height="200"
-        title="Editor Configuration"
+        title="&changeEditor.Title;"
         onload="onLoad();"
         ondialogaccept="return onAccept();"
         persist="screenX screenY">

@@ -336,7 +336,7 @@ DomplateTag.prototype =
         for (var i = 0; i < varNames.length; ++i)
         {
             var name = varNames[i];
-            if (name in map)
+            if ( map.hasOwnProperty(name) )
                 continue;
 
             map[name] = 1;

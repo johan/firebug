@@ -34,6 +34,7 @@ const jsdICallHook = CI("jsdICallHook");
 const jsdIExecutionHook = CI("jsdIExecutionHook");
 const jsdIErrorHook = CI("jsdIErrorHook");
 const nsIFireBug = CI("nsIFireBug");
+const nsISupports = CI("nsISupports");
 const nsIFireBugNetworkDebugger = CI("nsIFireBugNetworkDebugger");
 const nsIFireBugScriptListener = CI("nsIFireBugScriptListener");
 const nsIFireBugURLProvider = CI("nsIFireBugURLProvider");
@@ -179,6 +180,7 @@ FirebugService.prototype =
         prefs.removeObserver("extensions.firebug", FirebugPrefsObserver);
         timer = null;
         fbs = null;
+        jsd.off();  // https://bugzilla.mozilla.org/show_bug.cgi?id=411249
         jsd = null;
     },
 
@@ -1469,7 +1471,7 @@ FirebugService.prototype =
                     if (bp.disabled)
                         --disabledCount;
 
-                    if (bp.condition || bp.hitCount)
+                    if (bp.condition || bp.hitCount > 0)
                     {
                         --conditionCount;
                     }

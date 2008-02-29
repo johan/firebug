@@ -10,7 +10,7 @@
         windowtype="Firebug:ExternalEditors"
         id="firebug-external-editors"
         width="600" height="300"
-        title="Firebug Editors"
+        title="&editors.Title;"
         onload="gEditorManager.init();"
         onunload="gEditorManager.uninit();"
         persist="screenX screenY width height">
