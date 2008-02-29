@@ -1,26 +1,23 @@
 <?xml version="1.0"?>
-<r:RDF xmlns:r="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-       xmlns="http://www.mozilla.org/2004/em-rdf#">
-<!-- Firebug -->
-<r:Description about="urn:mozilla:extension:firebug@software.joehewitt.com">
-  <updates>
-    <r:Seq>
-      <r:li>
-        <r:Description>
-          <version>1.1.0b10</version>
-          <targetApplication>
-            <r:Description>
-              <id>{ec8030f7-c20a-464f-9b0e-13a3a9e97384}</id>
-              <minVersion>1.5</minVersion>
-              <maxVersion>3.9</maxVersion>
-              <updateLink>http://fireclipse.xucia.com/files/fireclipse/firebug-1.1.0b10.xpi</updateLink>
-            </r:Description>
-          </targetApplication>
-        </r:Description>
-      </r:li>
-    </r:Seq>
-  </updates>
-  <version>1.1.0b10</version>
-  <updateLink>http://fireclipse.xucia.com/files/fireclipse/firebug-1.1.0b10.xpi</updateLink>
-</r:Description>
-</r:RDF>
+<RDF:RDF xmlns:NS1="http://www.mozilla.org/2004/em-rdf#"
+         xmlns:NC="http://home.netscape.com/NC-rdf#"
+         xmlns:RDF="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <RDF:Description RDF:about="rdf:#$sqOUH2"
+                   NS1:version="1.1.0b10">
+    <NS1:targetApplication RDF:resource="rdf:#$vqOUH2"/>
+  </RDF:Description>
+  <RDF:Description RDF:about="rdf:#$vqOUH2"
+                   NS1:id="{ec8030f7-c20a-464f-9b0e-13a3a9e97384}"
+                   NS1:minVersion="1.5"
+                   NS1:maxVersion="3.9"
+                   NS1:updateLink="http://getfirebug.com/releases/firebug/1.1/firebug-1.1.0b10.xpi" />
+  <RDF:Seq RDF:about="rdf:#$rqOUH2">
+    <RDF:li RDF:resource="rdf:#$sqOUH2"/>
+  </RDF:Seq>
+  <RDF:Description RDF:about="urn:mozilla:extension:firebug@software.joehewitt.com"
+                   NS1:version="1.1.0b10"
+                   NS1:updateLink="http://getfirebug.com/releases/firebug/1.1/firebug-1.1.0b10.xpi"
+                   NS1:signature="MIGTMA0GCSqGSIb3DQEBDQUAA4GBACa37kQCPtcvxor/8aHNwvQX0O/mzUeMMAOSl3qCwkKLl+7pqbKpUerv4UUzDvocSEVNV2H8Y3UVuTUC22vBNzK17YpbuAASacQrIElgrLWSZ2AuKu4u/6eFnwsiwFMM7Oqp4+C+5A5ofOo0NUTmYPVr3BrViNWMc0KypJGcvjxu">
+    <NS1:updates RDF:resource="rdf:#$rqOUH2"/>
+  </RDF:Description>
+</RDF:RDF>
