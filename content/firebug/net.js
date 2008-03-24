@@ -106,6 +106,7 @@ const mimeCategoryMap =
     "text/css": "css",
     "application/x-javascript": "js",
     "text/javascript": "js",
+    "application/javascript": "js",
     "image/jpeg": "image",
     "image/gif": "image",
     "image/png": "image",
