@@ -237,7 +237,7 @@
 
     <handlers>
         <handler event="popupshowing"><![CDATA[
-            if (!this.selectedPanel)
+            if (!this.selectedPanel || (event.target != this)) 
                 return;
 
             var menu = this.selectedPanel.getOptionsMenuItems(FirebugContext);
