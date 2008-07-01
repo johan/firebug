@@ -1821,7 +1821,6 @@ Firebug.Rep = domplate(
 Firebug.ActivableModule = extend(Firebug.Module,
 {
     panelName: null,
-    panelBar1: $("fbPanelBar1"),
     activeContexts: null,
 
     initialize: function()
@@ -1831,9 +1830,7 @@ Firebug.ActivableModule = extend(Firebug.Module,
 
     initializeUI: function(detachArgs)
     {
-        // Create activable menu within the tab.
-        var tab = this.panelBar1.getTab(this.panelName);
-        this.tabMenu = tab.initTabMenu(this);
+        this.updateTab(null);
     },
 
     initContext: function(context)
@@ -1862,17 +1859,15 @@ Firebug.ActivableModule = extend(Firebug.Module,
         return persistedPanelState;
     },
 
-    reattachContext: function(context)
+    reattachContext: function(browser, context)
     {
-        var persistedPanelState = this.syncPersistedPanelState(context, false);
+        this.updateTab(context);
+        this.syncPersistedPanelState(context, false);
     },
 
     showContext: function(browser, context)
     {
-        var tab = this.panelBar1.getTab(this.panelName);
-        var enabled = this.isEnabled(context);
-        tab.setAttribute("disabled", enabled ? "false" : "true");
-
+        this.updateTab(context);
     },
 
     destroyContext: function(context)
@@ -1926,7 +1921,8 @@ Firebug.ActivableModule = extend(Firebug.Module,
         {
             this.disablePanel(context);
 
-            var panelBar1 = $("fbPanelBar1");
+            var chrome = context ? context.chrome : FirebugChrome;
+            var panelBar1 = chrome.$("fbPanelBar1");
             var panel = context.getPanel(this.panelName, true);
 
             // Refresh the panel only if it's currently selected.
@@ -2104,7 +2100,7 @@ Firebug.ActivableModule = extend(Firebug.Module,
         var browserURI = FirebugChrome.getBrowserURI(context);
         var prefDomain = this.getPrefDomain();
 
-        if (!browserURI.spec)
+        if (!browserURI || !browserURI.spec)
             return Firebug.getPref(prefDomain, "enableSystemPages"); // eg resource://gre/res/hiddenWindow.html
 
         // If it's a local-file or a system-page see preferences.
@@ -2246,12 +2242,14 @@ Firebug.ActivableModule = extend(Firebug.Module,
 
     enablePanel: function(context)
     {
+        var chrome = context ? context.chrome : FirebugChrome;
         var panel = context.getPanel(this.panelName);
 
         var persistedPanelState = getPersistedState(panel.context, panel.name);
         persistedPanelState.enabled = true;
 
-        var tab = this.panelBar1.getTab(panel.name);
+        var panelBar = chrome.$("fbPanelBar1");
+        var tab = panelBar.getTab(panel.name);
         tab.removeAttribute("disabled");
     },
 
@@ -2264,7 +2262,9 @@ Firebug.ActivableModule = extend(Firebug.Module,
         var persistedPanelState = getPersistedState(context, panel.name);
         persistedPanelState.enabled = false;
 
-        var tab = this.panelBar1.getTab(panel.name);
+        var chrome = context ? context.chrome : FirebugChrome;
+        var panelBar = chrome.$("fbPanelBar1");
+        var tab = panelBar.getTab(panel.name);
         tab.setAttribute("disabled", "true");
 
         panel.clear();
@@ -2313,6 +2313,23 @@ Firebug.ActivableModule = extend(Firebug.Module,
 
         label = this.panelName + "." + label;
         return $STRF(label, [getURIHost(location)]);
+    },
+
+    updateTab: function(context)
+    {
+        var chrome = context ? context.chrome : FirebugChrome;
+        var panelBar = chrome.$("fbPanelBar1");
+        var tab = panelBar.getTab(this.panelName);
+
+        // Update activable tab menu.
+        tab.initTabMenu(this);
+
+        // Update tab label.
+        if (context)
+        {
+            var enabled = this.isEnabled(context);
+            tab.setAttribute("disabled", enabled ? "false" : "true");
+        }
     }
 });
 
