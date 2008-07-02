@@ -277,12 +277,38 @@ this.addScript = function(doc, id, src)
 
 function $STR(name)
 {
-    return document.getElementById("strings_firebug").getString(name);
+    try
+    {
+        return document.getElementById("strings_firebug").getString(name);
+    }
+    catch (err)
+    {
+        if (FBTrace.DBG_ERRORS)
+        {
+            FBTrace.sysout("lib.getString: " + name + "\n");
+            FBTrace.dumpProperties("lib.getString FAILS ", err);
+        }
+    }
+
+    return name;
 }
 
 function $STRF(name, args)
 {
-    return document.getElementById("strings_firebug").getFormattedString(name, args);
+    try
+    {
+        return document.getElementById("strings_firebug").getFormattedString(name, args);
+    }
+    catch (err)
+    {
+        if (FBTrace.DBG_ERRORS)
+        {
+            FBTrace.sysout("lib.getString: " + name + "\n");
+            FBTrace.dumpProperties("lib.getString FAILS ", err);
+        }
+    }
+
+    return name;
 }
 
 this.$STR = $STR;
