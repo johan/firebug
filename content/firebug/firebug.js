@@ -2457,15 +2457,22 @@ Firebug.ModuleManagerPage = domplate(Firebug.Rep,
     },
 
     show: function(panel, module)
-    {try {
-        this.module = module;
-        this.context = panel.context;
-        this.panelNode = panel.panelNode;
-        this.refresh();
-        }catch(e) {
-        FBTrace.dumpProperties("firebug moduleManager show", e);
+    {
+        try 
+        {
+            this.module = module;
+            this.context = panel.context;
+            this.panelNode = panel.panelNode;
+            this.refresh();
+        } 
+        catch(e) 
+        {
+            if (FBTrace.DBG_ERRORS)
+                FBTrace.dumpProperties("firebug moduleManager show", e);
         }
-        FBTrace.sysout("firebug moduleManager show\n");
+
+        if (FBTrace.DBG_PANELS)
+            FBTrace.sysout("firebug moduleManager show\n");
     },
 
     hide: function(panel)
