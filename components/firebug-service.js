@@ -184,6 +184,24 @@ FirebugService.prototype =
     {
         prefs.removeObserver("extensions.firebug-service", FirebugPrefsObserver);
         timer = null;
+        
+        if (!jsd)
+            return;
+        
+        try 
+        {
+            do 
+            {
+                var depth = jsd.exitNestedEventLoop();
+                ddd("FirebugService.shutdown exitNestedEventLoop "+depth+"\n"); // just in case we are not making progress...
+            }
+            while(depth > 0);
+        } 
+        catch (exc) 
+        {
+            // Seems to be the normal path...ddd("FirebugService, attempt to exitNestedEventLoop fails "+exc+"\n");
+        }
+        
         jsd.off();
         jsd = null;
         ddd("FirebugService.shutdown\n");
@@ -333,7 +351,7 @@ FirebugService.prototype =
     enterNestedEventLoop: function(callback)
     {
         dispatch(netDebuggers, "suspendActivity");
-        var result = jsd.enterNestedEventLoop({
+        fbs.nestedEventLoopDepth = jsd.enterNestedEventLoop({
             onNest: function()
             {
                 dispatch(netDebuggers, "resumeActivity");
@@ -341,7 +359,7 @@ FirebugService.prototype =
             }
         });
         dispatch(netDebuggers, "resumeActivity");
-        return result;
+        return fbs.nestedEventLoopDepth;
     },
 
     exitNestedEventLoop: function()
@@ -353,7 +371,7 @@ FirebugService.prototype =
         }
         catch (exc)
         {
-            ddd("fbs: jsd.exitNestedEventLoop FAILS "+exc);
+            ddd("fbs: jsd.exitNestedEventLoop FAILS "+exc+"\n");
         }
     },
 
@@ -2262,10 +2280,10 @@ var QuitApplicationGrantedObserver =
 {
     observe: function(subject, topic, data)
     {
-        if (fbs.DBG_FBS_ERRORS)
+        //if (fbs.DBG_FBS_ERRORS)
             ddd("xxxxxxxxxxxx FirebugService QuitApplicationGrantedObserver start xxxxxxxxxxxxxxx\n");
         fbs.shutdown();
-        if (fbs.DBG_FBS_ERRORS)
+        //if (fbs.DBG_FBS_ERRORS)
             ddd("xxxxxxxxxxxx FirebugService QuitApplicationGrantedObserver end xxxxxxxxxxxxxxxxx\n");
     }
 };
