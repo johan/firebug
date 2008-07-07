@@ -620,7 +620,8 @@ NetPanel.prototype = domplate(Firebug.Panel,
 
     copyResponse: function(file)
     {
-        var text = file.responseText
+        // The response text can be empty so, test against undefined.
+        var text = (file.responseText != undefined)
             ? file.responseText
             : this.context.sourceCache.loadText(file.href);
 
@@ -2421,7 +2422,8 @@ Firebug.NetMonitor.NetInfoBody = domplate(Firebug.Rep,
             }
             else if (!(binaryCategoryMap.hasOwnProperty(file.category)))
             {
-                var text = file.responseText
+                // The response text can be empty so, test against undefined.
+                var text = (file.responseText != undefined)
                     ? file.responseText
                     : context.sourceCache.loadText(file.href, file.method);
 
