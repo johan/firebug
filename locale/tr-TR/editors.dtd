@@ -1,14 +1,14 @@
 
 <!ENTITY  editors.Description       "Ayarli Firebug Editorleri:">
 <!ENTITY  editors.NameColumn        "Editor">
-<!ENTITY  editors.ExecutableColumn  "Çalistirilabilir">
+<!ENTITY  editors.ExecutableColumn  "Ã‡alistirilabilir">
 <!ENTITY  editors.ParamsColumn      "Komut parametreleri">
 
 <!ENTITY  add.label               "Ekle">
 <!ENTITY  remove.label            "Kaldir">
 <!ENTITY  change.label            "Degistir">
 <!ENTITY  close.label             "Kapat">
-<!ENTITY  browse.label            "Gözat...">
+<!ENTITY  browse.label            "GÃ¶zat...">
 <!ENTITY  changeEditor.Name       "Isim:">
 <!ENTITY  changeEditor.Executable "Komut:">
 <!ENTITY  changeEditor.CmdLine    "Parametreler:">
