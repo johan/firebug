@@ -152,8 +152,6 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
             return hookReturn;
         }
 
-        // TODO make FirebugContext == context
-
         try {
             executionContext.scriptsEnabled = false;
 
@@ -424,48 +422,16 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
             this.syncCommands(context);
             this.syncListeners(context);
 
-            // XXXms : better way to do this ?
-            if ( !context.hideDebuggerUI || (FirebugChrome.getCurrentBrowser() && FirebugChrome.getCurrentBrowser().showFirebug))
-            {
-                Firebug.showBar(true);
+            Firebug.toggleBar(true);
 
-                var panel = context.chrome.selectPanel("script");
+            FirebugChrome.select(context.currentFrame, "script");
 
-                if (panel)
-                {
-                    if (FBTrace.DBG_UI_LOOP) FBTrace.sysout("selectPanel done "+(panel?panel.name:"panel null")+"\n");                               /*@explore*/
-                    panel.select(context.debugFrame, true);
-                }
-                else
-                {
-                    if (FBTrace.DBG_ERRORS)
-                        FBTrace.sysout("debugger.startDebugging no panel for context "+context.window+"\n");
-                }
+            var stackPanel = context.getPanel("callstack");
+            if (stackPanel)
+                stackPanel.refresh(context);
 
-                var stackPanel = context.getPanel("callstack");
-                if (stackPanel)
-                    stackPanel.refresh(context);
+            context.chrome.focus();
 
-                if (FBTrace.DBG_UI_LOOP) FBTrace.sysout("select done; stackPanel="+stackPanel.name+"\n");                   /*@explore*/
-                context.chrome.focus();
-            } else {
-                // XXXms: workaround for Firebug hang in selectPanel("script")
-                // when stopping in top-level frame // investigate later
-                context.chrome.updateViewOnShowHook = function()
-                {
-                    var panel = context.chrome.selectPanel("script");  // else use prev sidePanel
-
-                    if (FBTrace.DBG_UI_LOOP) FBTrace.sysout("selectPanel done "+panel+"\n");                           /*@explore*/
-                    panel.select(context.debugFrame);
-
-                    var stackPanel = context.getPanel("callstack", true);
-                    if (stackPanel)
-                        stackPanel.refresh(context);
-
-                    if (FBTrace.DBG_UI_LOOP) FBTrace.sysout("select done; stackPanel="+stackPanel+"\n");               /*@explore*/
-                    context.chrome.focus();
-                };
-            }
         }
         catch(exc)
         {
@@ -491,9 +457,6 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
                 var chrome = context.chrome;
                 if (!chrome)
                     chrome = FirebugChrome;
-
-                if ( chrome.updateViewOnShowHook )
-                    delete chrome.updateViewOnShowHook;
 
                 this.syncCommands(context);
                 this.syncListeners(context);
@@ -1344,17 +1307,6 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
             $("cmd_breakOnTopLevel").setAttribute("checked", value);
     },
 
-    showPanel: function(browser, panel)
-    {
-        var chrome =  browser.chrome;
-        if (chrome.updateViewOnShowHook)
-        {
-            const hook = chrome.updateViewOnShowHook;
-            delete chrome.updateViewOnShowHook;
-            hook();
-        }
-    },
-
     getObjectByURL: function(context, url)
     {
         var sourceFile = getScriptFileByHref(url, context);
@@ -1393,8 +1345,15 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
         if (FBTrace.DBG_STACK || FBTrace.DBG_LINETABLE || FBTrace.DBG_SOURCEFILES || FBTrace.DBG_FBS_FINDDEBUGGER) /*@explore*/
             FBTrace.sysout("debugger.onPanelActivate **************> activeContexts: "+this.activeContexts.length+" for debuggerName "+this.debuggerName+" on "+context.window.location+"\n"); /*@explore*/
 
+        this.enableAllBreakpoints(context);
+
         if (!init)
             context.window.location.reload();
+    },
+
+    onPanelDeactivate: function(context, destroy, panelName)
+    {
+        this.disableAllBreakpoints(context);
     },
 
     onLastPanelDeactivate: function(context, destroy)
@@ -1416,7 +1375,6 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
     onScriptFilterMenuCommand: function(event, context)
     {
         var menu = event.target;
-        FBTrace.sysout(" onScriptFilterMenuCommand value: "+ menu.value+"\n");
         Firebug.setPref("extensions.firebug-service", "scriptsFilter", menu.value);
         Firebug.Debugger.filterMenuUpdate();
     },
@@ -1494,7 +1452,11 @@ ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
     {
         if (this.executionFile && this.location.href == this.executionFile.href)
             this.setExecutionLine(this.executionLineNo);
-        this.markRevealedLines(sourceBox);  // or panelNode?
+
+        var self = this;
+        setTimeout( function delayMarkRevealedLines() {
+            self.markRevealedLines(sourceBox);
+        });
     },
 
     getSourceType: function()
@@ -1507,6 +1469,8 @@ ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
         var sourceLink = findSourceForFunction(fn, this.context);
         if (sourceLink)
             this.showSourceLink(sourceLink);
+        else
+            if (FBTrace.DBG_ERRORS) FBTrace.dumpStack("no sourcelink for function"); // want to avoid the debugger panel if possible
     },
 
     showSourceLink: function(sourceLink)
@@ -1516,7 +1480,7 @@ ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
         {
             this.navigate(sourceFile);
             if (sourceLink.line)
-                this.context.throttle(this.highlightLine, this, [sourceLink.line]);
+                this.scrollToLine(sourceLink.line, true);
         }
     },
 
@@ -1569,10 +1533,10 @@ ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
             var checked = lineNode.getAttribute("exeChecked");
             if (!checked)
             {
-                var script = sourceFile.scriptIfLineCouldBeExecutable(lineNo, true);
+                var scripts = sourceFile.scriptsIfLineCouldBeExecutable(lineNo, true);
 
-                if (FBTrace.DBG_LINETABLE) FBTrace.sysout("debugger.markExecutableLines ["+lineNo+"]="+(script?script.tag:"X")+"\n");
-                if (script)
+                if (FBTrace.DBG_LINETABLE) FBTrace.sysout("debugger.markExecutableLines ["+lineNo+"]= "+(scripts?scripts.length+" scripts":"(none)")+"\n");
+                if (scripts)
                     lineNode.setAttribute("executable", "true");
                 else
                     lineNode.removeAttribute("executable");
@@ -1760,6 +1724,9 @@ ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
             this.lastScrollTop = 0;
 
         var scrollTop = scrollingElement.scrollTop;
+        if (!scrollTop)
+            scrollTop = 0;
+
         var aLineNode = this.getLineNode(1);
         if (!aLineNode)
         {
@@ -1767,35 +1734,52 @@ ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
             return;
         }
         var scrollStep = aLineNode.offsetHeight;
-        var delta = this.lastScrollTop - scrollTop;
-        var deltaStep =  delta/scrollStep;
-
-        var lastTopLine = Math.round(this.lastScrollTop/scrollStep + 1);
-        var lastBottomLine = Math.round((this.lastScrollTop + scrollingElement.clientHeight)/scrollStep);
-
-        var newTopLine = Math.round(scrollTop/scrollStep + 1);
-        var newBottomLine = Math.round((scrollTop + scrollingElement.clientHeight)/scrollStep);
-
-        if (delta < 0) // then we exposed a line at the bottom
+        if (!scrollStep || scrollStep < 1) // then not rendered yet
         {
-            var max = newBottomLine;
-            var min = newTopLine;
-            if (min < lastBottomLine)
-                min = lastBottomLine;
+            if (FBTrace.DBG_LINETABLE)
+            {
+                FBTrace.dumpStack("debugger.markRevealedLines: no offsetHeight", aLineNode);
+                FBTrace.dumpProperties("debugger.markRevealedLines: no offsetHeight", aLineNode);
+            }
+            min = 1;
+            max = 20;
         }
         else
         {
-            var min = newTopLine;
-            var max = newBottomLine;
-            if (max > lastTopLine)
-                max = lastTopLine;
-        }
 
-        if (FBTrace.DBG_LINETABLE)
-        {
-            FBTrace.sysout("debugger.onScroll scrollTop: "+scrollTop, " lastScrollTop:"+this.lastScrollTop);
-            FBTrace.sysout("debugger.onScroll lastTopLine:"+lastTopLine, "lastBottomLine: "+lastBottomLine);
-            FBTrace.sysout("debugger.onScroll newTopLine:"+newTopLine, "newBottomLine: "+newBottomLine);
+            var lastTopLine = Math.round(this.lastScrollTop/scrollStep + 1);
+            var lastBottomLine = Math.round((this.lastScrollTop + scrollingElement.clientHeight)/scrollStep);
+
+            var newTopLine = Math.round(scrollTop/scrollStep + 1);
+            var newBottomLine = Math.round((scrollTop + scrollingElement.clientHeight)/scrollStep);
+
+            var delta = this.lastScrollTop - scrollTop;
+            if (delta < 0) // then we exposed a line at the bottom
+            {
+                var min = newTopLine;
+                if (min < lastBottomLine)
+                    min = lastBottomLine;
+                var max = newBottomLine;
+            }
+            else if (delta > 0)
+            {
+                var min = newTopLine;
+                var max = newBottomLine;
+                if (max > lastTopLine)
+                    max = lastTopLine;
+            }
+            else  // delta = 0
+            {
+                var min = newTopLine;
+                var max = newBottomLine;
+            }
+
+            if (FBTrace.DBG_LINETABLE)
+            {
+                FBTrace.sysout("debugger.markRevealedLines scrollTop: "+scrollTop, " lastScrollTop:"+this.lastScrollTop);
+                FBTrace.sysout("debugger.markRevealedLines lastTopLine:"+lastTopLine, "lastBottomLine: "+lastBottomLine);
+                FBTrace.sysout("debugger.markRevealedLines newTopLine:"+newTopLine, "newBottomLine: "+newBottomLine);
+            }
         }
         this.lastScrollTop = scrollTop;
 
@@ -2129,11 +2113,13 @@ ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
 
             if ( isNaN(lineNo) )
                 return;
-            var script = this.location.scriptIfLineCouldBeExecutable(lineNo);
-            if (FBTrace.DBG_SOURCEFILES) FBTrace.sysout("debugger.getTooltipObject script "+(script?script.tag:"none")+'\n'); /*@explore*/
-            if (script)
+            var scripts = this.location.scriptsIfLineCouldBeExecutable(lineNo);
+            if (scripts)
             {
-                return script;
+                var str = "scripts ";
+                for(var i = 0; i < scripts.length; i++)
+                    str += scripts[i].tag +" ";
+                return str;
             }
             else
                 return new String("no executable script at "+lineNo);
@@ -2154,7 +2140,8 @@ ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
             return;
 
         var lineNo = parseInt(sourceRow.firstChild.textContent);
-        return findScript(this.context, this.location.href, lineNo);
+        var scripts = findScripts(this.context, this.location.href, lineNo);
+        return scripts; // gee I wonder what will happen?
     },
 
     showInfoTip: function(infoTip, target, x, y)
@@ -2212,7 +2199,6 @@ ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
         return [
             serviceOptionMenu("BreakOnAllErrors", "breakOnErrors"),
             // wait 1.2 optionMenu("BreakOnTopLevel", "breakOnTopLevel"),
-            // wait 1.2 optionMenu("ShowEvalSources", "showEvalSources"),
             serviceOptionMenu("ShowAllSourceFiles", "showAllSourceFiles"),
             // 1.2: always check last line; optionMenu("UseLastLineForEvalName", "useLastLineForEvalName"),
             // 1.2: always use MD5 optionMenu("UseMD5ForEvalName", "useMD5ForEvalName")
