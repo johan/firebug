@@ -1679,38 +1679,41 @@ FirebugService.prototype =
     setJSDBreakpoint: function(sourceFile, bp)
     {
         var scripts = sourceFile.getScriptsAtLineNumber(bp.lineNo);
-        if (scripts)
+        if (!scripts)
         {
-            for (var i = 0; i < scripts.length; i++)
-            {
-                var script = scripts[i];
-                if (!script.isValid)
-                    continue;
-
-                var pcmap = sourceFile.pcmap_type;
-                // we subtraced this offset when we showed the user so lineNo is a user line number; now we need to talk
-                // to jsd its line world
-                var jsdLine = bp.lineNo + sourceFile.getBaseLineOffset();
-                // test script.isLineExecutable(jsdLineNo, pcmap) ??
-                var pc = script.lineToPc(jsdLine, pcmap);
-                script.setBreakpoint(pc);
-                bp.scriptWithBreakpoint = script; // TODO may need array?
-                bp.pcmap = pcmap;
-                bp.pc = pc;
-                bp.jsdLine = jsdLine;
-
-                if (pc == 0)  // signal the breakpoint handler to break for user
-                    sourceFile.breakOnZero = script.tag;
-
-                if (fbs.DBG_FBS_BP) ddd("setJSDBreakpoint tag: "+bp.scriptWithBreakpoint.tag+" line.pc@url="+bp.lineNo +"."+bp.pc+"@"+sourceFile.href+" using offset:"+sourceFile.getBaseLineOffset()+"\n");                         /*@explore*/
+             if (fbs.DBG_FBS_BP)
+                ddd("setJSDBreakpoint:  NO inner scripts: "+bp.lineNo+"@"+sourceFile+"\n");
+             if (!sourceFile.outerScript || !sourceFile.outerScript.isValid)
+             {
+                if (fbs.DBG_FBS_BP)
+                    ddd("setJSDBreakpoint:  NO valid outerScript\n");
+                return;
              }
+             scripts = [sourceFile.outerScript];
         }
-        else /*@explore*/
-        { /*@explore*/
-             if (fbs.DBG_FBS_BP) /*@explore*/
-                ddd("setJSDBreakpoint:  NO scripts: "+bp.lineNo+"@"+sourceFile+"\n");                         /*@explore*/
-        } /*@explore*/
+        for (var i = 0; i < scripts.length; i++)
+        {
+            var script = scripts[i];
+            if (!script.isValid)
+                continue;
 
+            var pcmap = sourceFile.pcmap_type;
+            // we subtraced this offset when we showed the user so lineNo is a user line number; now we need to talk
+            // to jsd its line world
+            var jsdLine = bp.lineNo + sourceFile.getBaseLineOffset();
+            // test script.isLineExecutable(jsdLineNo, pcmap) ??
+            var pc = script.lineToPc(jsdLine, pcmap);
+            script.setBreakpoint(pc);
+            bp.scriptWithBreakpoint = script; // TODO may need array?
+            bp.pcmap = pcmap;
+            bp.pc = pc;
+            bp.jsdLine = jsdLine;
+
+            if (pc == 0)  // signal the breakpoint handler to break for user
+                sourceFile.breakOnZero = script.tag;
+
+            if (fbs.DBG_FBS_BP) ddd("setJSDBreakpoint tag: "+bp.scriptWithBreakpoint.tag+" line.pc@url="+bp.lineNo +"."+bp.pc+"@"+sourceFile.href+" using offset:"+sourceFile.getBaseLineOffset()+"\n");                         /*@explore*/
+         }
     },
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
