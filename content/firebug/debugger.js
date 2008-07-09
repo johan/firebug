@@ -313,6 +313,8 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
 
     enableAllBreakpoints: function(context)
     {
+        if (FBTrace.DBG_BP)
+            FBTrace.dumpProperties("enableAllBreakpoints sourceFileMap:", context.sourceFileMap);
         for (var url in context.sourceFileMap)
         {
             fbs.enumerateBreakpoints(url, {call: function(url, lineNo)
@@ -326,7 +328,7 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
     {
         for (var url in context.sourceFileMap)
         {
-            fbs.enumerateBreakpoints(url, {call: function(sourceFile, lineNo)
+            fbs.enumerateBreakpoints(url, {call: function(url, lineNo)
             {
                 fbs.disableBreakpoint(url, lineNo);
             }});
@@ -1345,15 +1347,17 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
         if (FBTrace.DBG_STACK || FBTrace.DBG_LINETABLE || FBTrace.DBG_SOURCEFILES || FBTrace.DBG_FBS_FINDDEBUGGER) /*@explore*/
             FBTrace.sysout("debugger.onPanelActivate **************> activeContexts: "+this.activeContexts.length+" for debuggerName "+this.debuggerName+" on "+context.window.location+"\n"); /*@explore*/
 
-        this.enableAllBreakpoints(context);
-
         if (!init)
             context.window.location.reload();
     },
 
     onPanelDeactivate: function(context, destroy, panelName)
     {
-        this.disableAllBreakpoints(context);
+        if (FBTrace.DBG_ERRORS) FBTrace.sysout("debugger.onPanelDeactivate destroy: "+destroy+" for "+context.window+"\n");
+
+        if (!destroy)  // then the user is saying no to debugging
+            this.clearAllBreakpoints(context);
+        // else the context is being torn down, possibly to reload
     },
 
     onLastPanelDeactivate: function(context, destroy)
@@ -2425,7 +2429,7 @@ BreakpointsPanel.prototype = extend(Firebug.Panel,
                 if (script)  // then this is a current (not future) breakpoint
                 {
                     var analyzer = getScriptAnalyzer(context, script);
-                    if (FBTrace.DBG_BP) FBTrace.sysout("debugger.refresh enumerateBreakpoints for script="+script.tag+(analyzer?"has analyzer":"no analyzer")+"\n"); /*@explore*/
+                    if (FBTrace.DBG_BP) FBTrace.sysout("debugger.refresh enumerateBreakpoints for script="+script.tag+(analyzer?" has analyzer":" no analyzer")+"\n"); /*@explore*/
 
                     if (analyzer)
                         var name = analyzer.getFunctionDescription(script, context).name;

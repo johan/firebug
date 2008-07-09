@@ -184,24 +184,24 @@ FirebugService.prototype =
     {
         prefs.removeObserver("extensions.firebug-service", FirebugPrefsObserver);
         timer = null;
-        
+
         if (!jsd)
             return;
-        
-        try 
+
+        try
         {
-            do 
+            do
             {
                 var depth = jsd.exitNestedEventLoop();
                 ddd("FirebugService.shutdown exitNestedEventLoop "+depth+"\n"); // just in case we are not making progress...
             }
             while(depth > 0);
-        } 
-        catch (exc) 
+        }
+        catch (exc)
         {
             // Seems to be the normal path...ddd("FirebugService, attempt to exitNestedEventLoop fails "+exc+"\n");
         }
-        
+
         jsd.off();
         jsd = null;
         ddd("FirebugService.shutdown\n");
@@ -1154,6 +1154,7 @@ FirebugService.prototype =
                 {
                     delete  fbs.onXScriptCreatedByTag[firstScript.tag];
                     firstScript.clearBreakpoint(0);
+                    if (fbs.DBG_FBS_SRCUNITS) ddd("fbs.onTopLevelScript clear bp@0 for firstScript.tag: "+firstScript.tag+"\n")
                 }
             }
 
@@ -2063,6 +2064,8 @@ function isFilteredURL(rawJSD_script_filename)
         return true;
     if (rawJSD_script_filename[0] == 'h')
         return false;
+    if (rawJSD_script_filename == "XPCSafeJSObjectWrapper.cpp")
+        return true;
     if (fbs.filterSystemURLs)
         return systemURLStem(rawJSD_script_filename);
     for (var i = 0; i < fbs.alwayFilterURLsStarting.length; i++)
