@@ -54,6 +54,7 @@ Firebug 1.1 is Firebug 1.05 by Joe Hewitt with additions by John J. Barton and M
     * Issue 43 Edit CSS behaviour - appending styles to the dom is unexpected. Contribution by  tonygentilcore
     * Issue 56 Enhancement: row distinction in profiler
     * Issue 65 show HTTP Status code on NET response
+    * Issue 73 Can't show function contents in DOM browser. 
     * Issue 165: Profile results table can get too wide for console.
     * Issue 183 Configurable maximum output size
     * Issue 186 Only one line in net monitor for multiple xhr post requests
@@ -85,6 +86,7 @@ Firebug 1.1 is Firebug 1.05 by Joe Hewitt with additions by John J. Barton and M
     * Issue 468 [feature request] fast [enable -> inspect element -> disable] ergonomy
     * Issue 474 base href applied to scripts
     * Issue 475 Show Return Code (HTTP HEADER-Response)
+    * Issue 476 Infinite recursive loop crash firefox, fix the long time it takes to show the stack.
     * Issue 479 pt-BR locale submission, Comment 10 by leandromerces, Jun 21
     * Issue 503 disable doesn't work properly
     * Issue 521 Prototype iterator functions die in console
@@ -122,7 +124,16 @@ Firebug 1.1 is Firebug 1.05 by Joe Hewitt with additions by John J. Barton and M
     * Issue 764 Source code for all scripts not visible on scripts tab without enabling debugger
     * Issue 769 HTML Tab Unresponsive After Dock/Undock
     * Issue 771 Improve the display of the FBTrace buttons contribution by Ken Arnold
-    * Issue 772: de locale for German Firebug, contribution by  benedikt.langens
-    * Issue 785  Update Japanese Locale, contribution by http://code.google.com/u/norahmarinkovic/
+    * Issue 772 de locale for German Firebug, contribution by  benedikt.langens
+    * Issue 784 Breakpoints in scripts included in an iframe don't cause debugger to break. Introduced
+    * Issue 785 Update Japanese Locale, contribution by http://code.google.com/u/norahmarinkovic/
+    * Issue 793 warnings classified as errors
     * Issue 794 Catalan locale ca-AD, contribution by Àlex Corretgé http://bloc.corretge.cat
+    * Issue 831 Clicking HTML select element in panelNode causes option menu items to multiply (contribution by Nathan Mische)
     * Issue 873 alien variable "y=2" in global watch list, contribution of jwitch
+    * Issue 910 Watch window stops responding after invalid JS Entry
+    * Issue 914 View Response of Ajax POST with empty reply displays entire HTML source of page
+    * Issue 920 fbug 1.2.0b4 will not launch in FireFox 3.0 with Danish languageda-DK
+    * Issue 921 Empty script tab when Firebug window is closed
+    * Issue 923 Don't enter breakpoints if Script panel is disabled for the domain
+    
