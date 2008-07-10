@@ -1472,9 +1472,13 @@ ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
     {
         var sourceLink = findSourceForFunction(fn, this.context);
         if (sourceLink)
+        {
             this.showSourceLink(sourceLink);
+        }
         else
+        {
             if (FBTrace.DBG_ERRORS) FBTrace.dumpStack("no sourcelink for function"); // want to avoid the debugger panel if possible
+        }
     },
 
     showSourceLink: function(sourceLink)
