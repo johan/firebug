@@ -3136,12 +3136,7 @@ this.SourceFile.prototype =
         for (var j = 0; j < this.innerScripts.length; j++)
         {
             var script = this.innerScripts[j];
-            if (FBTrace.DBG_LINETABLE && (script instanceof Ci.jsdIScript) && !script.tag)
-            {
-                FBTrace.sysout("getScriptsAtLineNumber bad script for "+j+" vs "+this.toString()+"\n");
-                FBTrace.dumpProperties("getScriptsAtLineNumber script:", script);
-                continue;
-            }
+ 
             if (targetLineNo >= script.baseLineNumber)
             {
                 if ( (script.baseLineNumber + script.lineExtent) >= targetLineNo)
