@@ -10,7 +10,7 @@
 <!ENTITY  firebug.Options               "Možnosti">
 <!ENTITY  firebug.TextSize              "Velikost textu">
 <!ENTITY  firebug.IncreaseTextSize      "Zvětšit velikost textu">
-<!ENTITY  firebug.DecreaseTextSize      "Změnšit velikost textu">
+<!ENTITY  firebug.DecreaseTextSize      "Zmenšit velikost textu">
 <!ENTITY  firebug.NormalTextSize        "Normální velikost textu">
 <!ENTITY  firebug.ShowTooltips          "Zobrazovat náhledové popisky">
 <!ENTITY  firebug.ShadeBoxModel         "Zvýražnovat box model ve výhledu">
@@ -27,7 +27,7 @@
 <!ENTITY  firebug.DetachFirebug         "Otevřít Firebug v novém okně">
 <!ENTITY  firebug.OpenWith              "Otevřít v editoru">
 <!ENTITY  firebug.CloseFirebug          "Zavřít Firebug">
-<!ENTITY  firebug.Permissions           "Sites...">
+<!ENTITY  firebug.Permissions           "Weby...">
 <!ENTITY  firebug.ConfigureEditors      "Nastavení editorů...">
 <!ENTITY  firebug.CommandLine           "Příkazová řádka">
 <!ENTITY  firebug.Search                "Hledat">
@@ -43,7 +43,7 @@
 <!ENTITY  firebug.InspectTooltip        "Kliknutím na prvek na stránce jej můžete prozkoumat">
 
 <!ENTITY  firebug.Edit                  "Upravit">
-<!ENTITY  firebug.EditHTMLTooltip       "Upravit toto HTML">
+<!ENTITY  firebug.EditHTMLTooltip       "Upravit vybrané HTML">
 <!ENTITY  firebug.EditCSSTooltip        "Upravit tuto tabulku stylů">
 
 <!ENTITY  firebug.Profile               "Profilovat">
@@ -51,7 +51,7 @@
 
 <!ENTITY  firebug.Clear                 "Vyčistit">
 <!ENTITY  firebug.ClearConsole          "Vyčistit konzoli">
-<!ENTITY  firebug.ClearTooltip          "Smaže vše z konzoly">
+<!ENTITY  firebug.ClearTooltip          "Smaže vše z konzole">
 
 <!ENTITY  firebug.All                   "Vše">
 <!ENTITY  firebug.Images                "Obrázky">
