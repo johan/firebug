@@ -265,7 +265,7 @@ Firebug.NetMonitor = extend(Firebug.ActivableModule,
 
         monitorContext(context);
 
-        if (context.netProgress && listeners.length)
+        if (context.netProgress)
         {
             var panel = context.getPanel(panelName);
             context.netProgress.activate(panel);
@@ -282,7 +282,7 @@ Firebug.NetMonitor = extend(Firebug.ActivableModule,
         if (deactivatedPanelName != panelName)
             return;
 
-        if (context.netProgress && listeners.length)
+        if (context.netProgress)
             context.netProgress.activate(null);
 
         unmonitorContext(context);
@@ -666,9 +666,6 @@ NetPanel.prototype = domplate(Firebug.Panel,
         if (!this.filterCategory)
             this.setFilter(Firebug.netFilterCategory);
 
-        if (this.context.netProgress && !listeners.length)
-            this.context.netProgress.activate(this);
-
         this.layout();
         this.layoutInterval = setInterval(bindFixed(this.updateLayout, this), layoutInterval);
 
@@ -689,9 +686,6 @@ NetPanel.prototype = domplate(Firebug.Panel,
     hide: function()
     {
         this.showToolbarButtons("fbNetButtons", false);
-
-        if (this.context.netProgress && !listeners.length)
-          this.context.netProgress.activate(null);
 
         this.wasScrolledToBottom = isScrolledToBottom(this.panelNode);
 
@@ -1098,7 +1092,19 @@ NetPanel.prototype = domplate(Firebug.Panel,
         // Remove old requests.
         var removeCount = Math.max(0, filesLength - limit);
         for (var i=0; i<removeCount; i++)
-            this.removeLogEntry(files[0]);
+        {
+            var file = files[0];
+            this.removeLogEntry(file);
+            
+            // Remove the file occurrence from the queue.
+            for (var j=0; j<this.queue.length; j++)
+            {
+                if (this.queue[j] == file) {
+                    this.queue.splice(j, 1);
+                    j--;
+                }
+            }
+        }
     },
 
     removeLogEntry: function(file, noInfo)
@@ -1204,7 +1210,7 @@ Firebug.NetMonitor.NetLimit = domplate(Firebug.Rep,
         openNewTab("about:config");
     },
 
-    updateCounter: function(row, count)
+    updateCounter: function(row)
     {
         removeClass(row, "collapsed");
 
@@ -1253,56 +1259,27 @@ function NetProgress(context)
 {
     this.context = context;
 
-    var queue = null;
-    var requestQueue = null;
     var panel = null;
 
     this.post = function(handler, args)
     {
-        // If the panel is currently active insert the file into it directly
-        // otherwise wait and insert it in to a "queue". It'll be flushed
-        // into the UI when the panel is displayed (see this.flush method).
         if (panel)
         {
             var file = handler.apply(this, args);
             if (file)
             {
                 panel.updateFile(file);
+
+                // If the panel isn't currently visible, make sure the limit is up to date.
+                if (!panel.layoutInterval)
+                    panel.updateLogLimit(maxQueueRequests);
+
                 return file;
             }
         }
         else
         {
-            // The newest request is always inserted into the queue.
-            queue.push(handler, args);
-
-            // Real number of requests (not posts!) is remembered.
-            var request = args[0];
-            if (requestQueue.indexOf(request) == -1)
-              requestQueue.push(request);
-
-            // If number of requests reaches the limit, let's start to remove them.
-            if (requestQueue.length + this.files.length > (maxQueueRequests + this.pending.length))
-            {
-                var hiddenPanel = this.context.getPanel(panelName, false);
-
-                var request = requestQueue.splice(0, 1)[0];
-                for (var i=0; i<queue.length; i+=2)
-                {
-                    if (queue[i+1][0] == request)
-                    {
-                        var file = queue[i].apply(this, queue[i+1]);
-                        if (file) {
-                            hiddenPanel.updateFile(file);
-                        }
-
-                        queue.splice(i, 2);
-                        i -= 2;
-                    }
-                }
-
-                hiddenPanel.layout();
-            }
+            FBTrace.dumpProperties("net.post(" + handler.name + ") get panel failed ***ERROR***", args);
         }
                                                                                                                        /*@explore*/
         if (FBTrace.DBG_NET)                                                                                           /*@explore*/
@@ -1310,32 +1287,9 @@ function NetProgress(context)
                 " "+handler.name, args);                                                                               /*@explore*/
     };
 
-    this.flush = function()
-    {
-        for (var i = 0; i < queue.length; i += 2)
-        {
-            if (FBTrace.DBG_NET)                                                                                       /*@explore*/
-            {                                                                                                          /*@explore*/
-                FBTrace.dumpProperties("net.flush handler("+i+")", queue[i]);                                          /*@explore*/
-                FBTrace.dumpProperties("net.flush args ", queue[i+1]);                                                 /*@explore*/
-            }                                                                                                          /*@explore*/
-                                                                                                                       /*@explore*/
-            var file = queue[i].apply(this, queue[i+1]);
-            if (file)
-                panel.updateFile(file);
-        }
-
-        queue = [];
-        requestQueue = [];
-    };
-
     this.activate = function(activePanel)
     {
-        // As soon as the panel is activated flush all the "queued"
-        // files into the UI.
         this.panel = panel = activePanel;
-        if (panel)
-            this.flush();
     };
 
     this.update = function(file)
