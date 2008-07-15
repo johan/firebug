@@ -199,7 +199,7 @@ var Errors = Firebug.Errors = extend(Firebug.Module,
         {
             var trace = Firebug.errorStackTrace;
             if (trace)
-                correctLineNumbersWithStack(trace, object);
+                trace = correctLineNumbersWithStack(trace, object) ? trace : null;
         }
         else if (checkForUncaughtException(context, object))
         {
@@ -470,12 +470,15 @@ function correctLineNumbersWithStack(trace, object)
     if (FBTrace.DBG_ERRORS)                                                                            /*@explore*/
         FBTrace.dumpProperties("errors.observe showStackTrace trace frames:", trace.frames);                          /*@explore*/
     var stack_frame = trace.frames[0];
-    if (stack_frame)
+    if (stack_frame && (stack_frame.href == object.sourceName))
     {
         sourceName = stack_frame.href;
         lineNumber = stack_frame.lineNo;
+        // XXXjjb Seems to change the message seen in Firefox Error Console
+        var correctedError = object.init(object.errorMessage, sourceName, object.sourceLine,lineNumber, object.columnNumber, object.flags, object.category);
+        return true;
     }
-    var correctedError = object.init(object.errorMessage, sourceName, object.sourceLine,lineNumber, object.columnNumber, object.flags, object.category);
+    return false;
 }
 
 // ************************************************************************************************
