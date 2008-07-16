@@ -2584,7 +2584,9 @@ this.parseURLEncodedText = function(text)
             params.push({name: unescape(parts[0]), value: ""});
     }
 
-    params.sort(function(a, b) { return a.name < b.name ? -1 : 1; });
+    // Fix for Issue #947. 
+    // URL parameters should be displayed in the same order as provided.
+    //params.sort(function(a, b) { return a.name < b.name ? -1 : 1; });
 
     return params;
 };
