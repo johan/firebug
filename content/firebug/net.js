@@ -1260,6 +1260,7 @@ function NetProgress(context)
     this.context = context;
 
     var panel = null;
+    var queue = [];
 
     this.post = function(handler, args)
     {
@@ -1279,7 +1280,8 @@ function NetProgress(context)
         }
         else
         {
-            FBTrace.dumpProperties("net.post(" + handler.name + ") get panel failed ***ERROR***", args);
+            // The first page request is made before the initContext (known problem).
+            queue.push(handler, args);
         }
                                                                                                                        /*@explore*/
         if (FBTrace.DBG_NET)                                                                                           /*@explore*/
@@ -1287,9 +1289,19 @@ function NetProgress(context)
                 " "+handler.name, args);                                                                               /*@explore*/
     };
 
+    this.flush = function()
+    {
+        for (var i=0; i<queue.length; i+=2)
+            this.post(queue[i], queue[i+1]);
+
+        queue = [];
+    };
+
     this.activate = function(activePanel)
     {
         this.panel = panel = activePanel;
+        if (panel)
+            this.flush();
     };
 
     this.update = function(file)
