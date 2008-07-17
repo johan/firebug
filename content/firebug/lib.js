@@ -703,7 +703,7 @@ this.setOuterHTML = function(element, html)
 {
     var doc = element.ownerDocument;
     var range = doc.createRange();
-    range.selectNode(doc.documentElement);
+    range.selectNode(element || doc.documentElement);
 
     var fragment = range.createContextualFragment(html);
     var first = fragment.firstChild;
