@@ -23,7 +23,7 @@
             <children includes="panelTab"/>
             <xul:spacer flex="1"/>
             <children/>
-            <xul:toolbarbutton type="menu" class="toolbar-text-menubutton panelOptionsButton" label="&firebug.Options;">
+            <xul:toolbarbutton type="menu" class="toolbar-text-menubutton panelOptionsButton" label="&firebug.Options;" anonid="panelOptions">
                 <xul:menupopup anonid="optionsPopup"/>
             </xul:toolbarbutton>
         </xul:hbox>
@@ -211,6 +211,10 @@
 
                     var state = Firebug.getPanelState(panel);
                     panel.show(state);
+
+                    var menu = panel.getOptionsMenuItems(FirebugContext);
+                    var panelOptions = document.getAnonymousElementByAttribute(this, "anonid", "panelOptions");
+                    panelOptions.disabled = (!menu || !menu.length);
                 }
             ]]></body>
         </method>
