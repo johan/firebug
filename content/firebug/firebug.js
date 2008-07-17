@@ -2050,6 +2050,7 @@ Firebug.ActivableModule = extend(Firebug.Module,
         var browserURI = FirebugChrome.getBrowserURI(context);
         var prefDomain = this.getPrefDomain();
         var enable = (option.indexOf("enable") == 0) ? true : false;
+        var global = (option.indexOf("site") == -1) ? true : false;
 
         if (FBTrace.DBG_PANELS)
         {
@@ -2057,20 +2058,25 @@ Firebug.ActivableModule = extend(Firebug.Module,
                 prefDomain+" for "+browserURI.spec+"\n");
         }
 
-        if (!browserURI.spec)
+        // The preferences for both system and local pages is three-state. 
+        // So, it's the same logic as for site-permissions, which can 
+        // be set to true/false or not set at all.
+        //
+        // "enable" - enables system/local pages
+        // "disable" - disales system/local pages
+        // "" - if not set the global option is used.
+        if (!browserURI.spec || isSystemURL(browserURI.spec))
+            Firebug.setPref(prefDomain, "enableSystemPages", (global ? "" : option));
+        else if (isLocalURL(browserURI.spec))
+            Firebug.setPref(prefDomain, "enableLocalFiles", (global ? "" : option));
+    
+        if (!browserURI.spec || isSystemURL(browserURI.spec) || isLocalURL(browserURI.spec))
         {
-            Firebug.setPref(prefDomain, "enableSystemPages", enable);
-            return;
-        }
+            // If the global option is set while system or local page is displayed 
+            // not to forget to update the global preference.
+            if (global)
+                Firebug.setPref(prefDomain, "enableSites", enable);
 
-        if (isLocalURL(browserURI.spec))
-        {
-            Firebug.setPref(prefDomain, "enableLocalFiles", enable);
-            return;
-        }
-        else if (isSystemURL(browserURI.spec))
-        {
-            Firebug.setPref(prefDomain, "enableSystemPages", enable);
             return;
         }
 
@@ -2100,14 +2106,20 @@ Firebug.ActivableModule = extend(Firebug.Module,
         var browserURI = FirebugChrome.getBrowserURI(context);
         var prefDomain = this.getPrefDomain();
 
-        if (!browserURI || !browserURI.spec)
-            return Firebug.getPref(prefDomain, "enableSystemPages"); // eg resource://gre/res/hiddenWindow.html
-
         // If it's a local-file or a system-page see preferences.
-        if (isLocalURL(browserURI.spec))
-            return Firebug.getPref(prefDomain, "enableLocalFiles") ? "enable" : "disable";
-        else if (isSystemURL(browserURI.spec))
-            return Firebug.getPref(prefDomain, "enableSystemPages") ? "enable" : "disable";
+        // In case of eg resource://gre/res/hiddenWindow.html the spec can be null.
+        if (!browserURI || !browserURI.spec || isSystemURL(browserURI.spec))
+        {
+            var option = Firebug.getPref(prefDomain, "enableSystemPages");
+
+            // If the preference isn't set use the global option.
+            return option ? option : (this.isAlwaysEnabled() ? "enable" : "disable");
+        }
+        else if (isLocalURL(browserURI.spec))
+        {
+            var option = Firebug.getPref(prefDomain, "enableLocalFiles");
+            return option ? option : (this.isAlwaysEnabled() ? "enable" : "disable");
+        }
 
         switch (permissionManager.testPermission(browserURI, prefDomain))
         {
