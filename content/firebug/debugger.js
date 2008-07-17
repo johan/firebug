@@ -129,6 +129,9 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
         if (context.stopped)
             return RETURN_CONTINUE;
 
+        if (!this.isEnabled(context))
+            return RETURN_CONTINUE;
+
         var executionContext;
         try
         {
@@ -411,7 +414,7 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
 
     startDebugging: function(context)
     {
-        if (FBTrace.DBG_UI_LOOP) FBTrace.sysout("startDebugging enter context.stopped:"+context.stopped+"\n");                                             /*@explore*/
+        if (FBTrace.DBG_UI_LOOP) FBTrace.sysout("startDebugging enter context.stopped:"+context.stopped+" for context: "+context.window.location+"\n");                                             /*@explore*/
         try {
             fbs.lockDebugger();
 
@@ -490,7 +493,11 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
     {
         var chrome = context.chrome;
         if (!chrome)
-            chrome = FirebugChrome;
+        {
+            if (FBTrace.DBG_ERRORS) 
+            	FBTrace.dumpStack("debugger.syncCommand, context with no chrome: "+context.window);
+            return;
+        }
 
         if (context.stopped)
         {
@@ -547,6 +554,10 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
         }
     },
 
+    showPanel: function(browser, panel)
+    {
+        this.syncCommands(panel.context);
+    },
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
