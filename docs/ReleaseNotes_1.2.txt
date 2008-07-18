@@ -90,6 +90,7 @@ Firebug 1.1 is Firebug 1.05 by Joe Hewitt with additions by John J. Barton and M
     * Issue 479 pt-BR locale submission, Comment 10 by leandromerces, Jun 21
     * Issue 503 disable doesn't work properly
     * Issue 521 Prototype iterator functions die in console
+    * Issue 544 Net Panel incorrect rounding of file size
     * Issue 567 Slow script warning in debugger.js on some pages
     * Issue 573 setting css background-color affects layout inspector. Contribution by tonygentilcore
     * Issue 583 Javascript console cannot work with Firefox 3 beta5
@@ -118,6 +119,7 @@ Firebug 1.1 is Firebug 1.05 by Joe Hewitt with additions by John J. Barton and M
     * Issue 724 (Content in console tab is broken when opening firebug in new window)
     * Issue 734 While debugging, click into the console. The execution context is not available
     * Issue 736 Temp disabling breakpoints does not work. 
+    * Issue 749 Hungarian Locale
     * Issue 750 DOM side-panel - variables names overlay actual values
     * Issue 755 New zh-CN locale file for Firebug 1.2, contribution by http://code.google.com/u/shawphy/
     * Issue 762 this.notifyFirebug is not a function error (contribution by zmarties)
@@ -129,11 +131,16 @@ Firebug 1.1 is Firebug 1.05 by Joe Hewitt with additions by John J. Barton and M
     * Issue 785 Update Japanese Locale, contribution by http://code.google.com/u/norahmarinkovic/
     * Issue 793 warnings classified as errors
     * Issue 794 Catalan locale ca-AD, contribution by Àlex Corretgé http://bloc.corretge.cat
+    * Issue 797 Problem with XMLHttpRequest Logs 
+    * Issue 823 Firebug 1.2.0b3 unresponsive in Firefox 3 when opened in own window
     * Issue 831 Clicking HTML select element in panelNode causes option menu items to multiply (contribution by Nathan Mische)
+    * Issue 840 Console links and buttons inactive on popout FF3
     * Issue 873 alien variable "y=2" in global watch list, contribution of jwitch
+    * Issue 884 FB 1.2b4 - en-/disable button missing
     * Issue 910 Watch window stops responding after invalid JS Entry
     * Issue 914 View Response of Ajax POST with empty reply displays entire HTML source of page
     * Issue 920 fbug 1.2.0b4 will not launch in FireFox 3.0 with Danish languageda-DK
     * Issue 921 Empty script tab when Firebug window is closed
     * Issue 923 Don't enter breakpoints if Script panel is disabled for the domain
+    * Issue 926 1.2.0b4 version does not work in hungarian firefox
     
