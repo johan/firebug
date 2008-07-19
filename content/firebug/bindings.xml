@@ -345,7 +345,8 @@
             this.popup.showPopup(this, -1, -1, "popup", "bottomleft", "topleft");
         ]]></handler>
         <handler event="popupshowing"><![CDATA[
-            var items = this.popup.getElementsByTagName("xul:menuitem");
+            // XXXjjb getElementsByTagName("xul:menuitem"); fails 2.0.0.16
+            var items = this.popup.getElementsByTagNameNS("http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul","menuitem");
             var location = FirebugChrome.getBrowserURI(FirebugContext);
             var value = this.module.getHostPermission(FirebugContext);
             
