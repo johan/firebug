@@ -2163,7 +2163,7 @@ ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
         return scripts; // gee I wonder what will happen?
     },
 
-    showInfoTip: function(infoTip, target, x, y)
+    showInfoTip: function(infoTip, target, x, y, rangeParent, rangeOffset)
     {
         var frame = this.context.currentFrame;
         if (!frame)
@@ -2172,12 +2172,13 @@ ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
         var sourceRowText = getAncestorByClass(target, "sourceRowText");
         if (!sourceRowText)
             return;
-        // http://www.w3.org/TR/CSS21/text.html#white-space-prop ....123456789
-        var text = sourceRowText.firstChild.nodeValue.replace("\t", "        ", "g");
-        var offsetX = x-sourceRowText.offsetLeft; // runs from 0 at the left most pixel of the source code line that could have a character
-        var charWidth = sourceRowText.offsetWidth/text.length;
-        var charOffset = Math.floor(offsetX/charWidth); // runs from 0 over the first character spot, 1 over the second...
-        var expr = getExpressionAt(text, charOffset);
+
+        // see http://code.google.com/p/fbug/issues/detail?id=889
+        // idea from: Jonathan Zarate's rikaichan extension (http://www.polarcloud.com/rikaichan/)
+        if (!rangeParent)
+            return;
+        rangeOffset = rangeOffset || 0;
+        var expr = getExpressionAt(rangeParent.data, rangeOffset);
         if (!expr || !expr.expr)
             return;
 
