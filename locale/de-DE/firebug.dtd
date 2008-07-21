@@ -1,4 +1,4 @@
-<!ENTITY firebug.Permissions "Sites...">
+<!ENTITY firebug.Permissions "Seiten...">
 
 <!ENTITY  firebug.Firebug               "Firebug">
 <!ENTITY  firebug.Close                 "Schließen">
@@ -49,8 +49,8 @@
 <!ENTITY  firebug.EditHTMLTooltip       "Dieses HTML bearbeiten">
 <!ENTITY  firebug.EditCSSTooltip        "Dieses Stylesheet bearbeiten">
 
-<!ENTITY  firebug.Profile               "Analysieren">
-<!ENTITY  firebug.ProfileScript         "JavaScript analysieren">
+<!ENTITY  firebug.Profile               "Profilieren">
+<!ENTITY  firebug.ProfileScript         "JavaScript profilieren">
 
 <!ENTITY  firebug.Clear                 "Leeren">
 <!ENTITY  firebug.ClearConsole          "Konsole leeren">
