@@ -521,6 +521,13 @@ var FrameProgressListener = extend(BaseProgressListener,
                 //if (win.parent == win && win.location.href == "about:blank")
                 //    TabWatcher.watchTopWindow(win, win.location);
                 // XXXms check this
+
+                // Fix for Issue #760
+                // Don't call watchTopWindow id the about:document-onload-blocker dummy request is sent.
+                // This request is sent also if the page is modified by DOM Inspector, which
+                // causes to immediately stop the Inspectore mode.
+                // xxxHonza This change should be made after real understanding of 
+                // how this code work.
                 if (win.parent == win && (win.location.href == "about:blank" || safeName == "about:document-onload-blocker"))
                 {
                     TabWatcher.watchTopWindow(win, win.location.href);
