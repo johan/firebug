@@ -193,7 +193,7 @@ FirebugService.prototype =
             do
             {
                 var depth = jsd.exitNestedEventLoop();
-                ddd("FirebugService.shutdown exitNestedEventLoop "+depth+"\n"); // just in case we are not making progress...
+                //ddd("FirebugService.shutdown exitNestedEventLoop "+depth+"\n"); // just in case we are not making progress...
             }
             while(depth > 0);
         }
@@ -204,7 +204,7 @@ FirebugService.prototype =
 
         jsd.off();
         jsd = null;
-        ddd("FirebugService.shutdown\n");
+        //ddd("FirebugService.shutdown\n");
     },
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -2299,10 +2299,10 @@ var QuitApplicationGrantedObserver =
 {
     observe: function(subject, topic, data)
     {
-        //if (fbs.DBG_FBS_ERRORS)
+        if (fbs.DBG_FBS_ERRORS)
             ddd("xxxxxxxxxxxx FirebugService QuitApplicationGrantedObserver start xxxxxxxxxxxxxxx\n");
         fbs.shutdown();
-        //if (fbs.DBG_FBS_ERRORS)
+        if (fbs.DBG_FBS_ERRORS)
             ddd("xxxxxxxxxxxx FirebugService QuitApplicationGrantedObserver end xxxxxxxxxxxxxxxxx\n");
     }
 };
