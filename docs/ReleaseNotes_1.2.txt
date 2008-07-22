@@ -52,6 +52,7 @@ Firebug 1.1 is Firebug 1.05 by Joe Hewitt with additions by John J. Barton and M
     * Issue 14 Programatically disable firebug log from Javascript
     * Issue 38  console.group should allow optional collapse
     * Issue 43 Edit CSS behaviour - appending styles to the dom is unexpected. Contribution by  tonygentilcore
+    * Issue 45 HTML Edit bug when editing <tr> and <td> (contribution by ash.searle)
     * Issue 56 Enhancement: row distinction in profiler
     * Issue 65 show HTTP Status code on NET response
     * Issue 73 Can't show function contents in DOM browser. 
@@ -64,6 +65,7 @@ Firebug 1.1 is Firebug 1.05 by Joe Hewitt with additions by John J. Barton and M
     * Issue 216 Improve network monitor to include server-side processing time
     * Issue 256 Inspect element in context menu always opens fbug in same window regardless of settings and closes inproperly
     * Issue 266 PUT & DELETE requests appear as POST requests in firebug
+    * Issue 268 Firebug adds pt unit when unit not specified (e.g. 0pt) (contribution by ash.searle)
     * Issue 316 Show HTTP request method and request content in Firebugs "Net" tab
     * Issue 321 arguments can no longer be logged
     * Issue 325 PUT operations do not show contained entity in Net tab
@@ -90,7 +92,9 @@ Firebug 1.1 is Firebug 1.05 by Joe Hewitt with additions by John J. Barton and M
     * Issue 479 pt-BR locale submission, Comment 10 by leandromerces, Jun 21
     * Issue 503 disable doesn't work properly
     * Issue 521 Prototype iterator functions die in console
+    * Issue 528 Context menu missing from script dropdown
     * Issue 544 Net Panel incorrect rounding of file size
+    * Issue 549 The Options menu should *not* be displayed if there are no options available (contribution by Ash Searle)
     * Issue 567 Slow script warning in debugger.js on some pages
     * Issue 573 setting css background-color affects layout inspector. Contribution by tonygentilcore
     * Issue 583 Javascript console cannot work with Firefox 3 beta5
@@ -131,16 +135,19 @@ Firebug 1.1 is Firebug 1.05 by Joe Hewitt with additions by John J. Barton and M
     * Issue 785 Update Japanese Locale, contribution by http://code.google.com/u/norahmarinkovic/
     * Issue 793 warnings classified as errors
     * Issue 794 Catalan locale ca-AD, contribution by Àlex Corretgé http://bloc.corretge.cat
-    * Issue 797 Problem with XMLHttpRequest Logs 
+    * Issue 797 Problem with XMLHttpRequest Logs
+    * Issue 810 1.2b3 bloody mess => no syntax error reporting, weird xul errors, and stuff 
     * Issue 823 Firebug 1.2.0b3 unresponsive in Firefox 3 when opened in own window
     * Issue 831 Clicking HTML select element in panelNode causes option menu items to multiply (contribution by Nathan Mische)
     * Issue 840 Console links and buttons inactive on popout FF3
     * Issue 873 alien variable "y=2" in global watch list, contribution of jwitch
     * Issue 884 FB 1.2b4 - en-/disable button missing
+    * Issue 889 variable-value on under the cursor is no longer displayed with Rainbow For Firebug, contributed patch by antonin.hildebrand
+    * Issue 892 firebug hangs up in net.js line 1298 when browsing in framesets
     * Issue 910 Watch window stops responding after invalid JS Entry
     * Issue 914 View Response of Ajax POST with empty reply displays entire HTML source of page
     * Issue 920 fbug 1.2.0b4 will not launch in FireFox 3.0 with Danish languageda-DK
     * Issue 921 Empty script tab when Firebug window is closed
     * Issue 923 Don't enter breakpoints if Script panel is disabled for the domain
     * Issue 926 1.2.0b4 version does not work in hungarian firefox
-    
+    * Issue 947 Ajax request parameters and Arrays
