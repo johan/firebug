@@ -811,7 +811,7 @@ top.FirebugChrome =
         var panel = target ? Firebug.getElementPanel(target) : null;
 
         if (!panel)
-            return false;
+            panel = panelBar1.selectedPanel; // the event must be on our chrome not inside the panel
 
         FBL.eraseNode(popup);
 
@@ -834,6 +834,9 @@ top.FirebugChrome =
         var rep = Firebug.getRep(object);
         var realObject = rep ? rep.getRealObject(object, FirebugContext) : null;
         var realRep = realObject ? Firebug.getRep(realObject) : null;
+
+        if (FBTrace.DBG_OPTIONS)
+            FBTrace.sysout("chrome.onContextShowing object:"+object+" rep: "+rep+" realObject: "+realObject+" realRep:"+realRep+"\n");
 
         if (realObject && realRep)
         {
@@ -1136,8 +1139,8 @@ function onSelectedSidePanel(event)
         }
         else
         {
-        	if (FBTrace.DBG_ERRORS)
-	            FBTrace.dumpProperties("onSelectedSidePanel FirebugContext has no panelName: ",FirebugContext);
+            if (FBTrace.DBG_ERRORS)
+                FBTrace.dumpProperties("onSelectedSidePanel FirebugContext has no panelName: ",FirebugContext);
         }
     }
     if (FBTrace.DBG_PANELS) FBTrace.sysout("chrome.onSelectedSidePanel name="+(sidePanel?sidePanel.name:"undefined")+"\n"); /*@explore*/
