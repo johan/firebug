@@ -94,7 +94,8 @@ function FirebugConsoleHandler(context, win)
             if (FBTrace.DBG_CONSOLE)
                 FBTrace.dumpProperties("FirebugConsoleHandler", this);
 
-            this.log($STRF("console.MethodNotSupported.MethodNotSupported", [methodName]));
+            var methodName = event.target.getAttribute("methodName");
+            Firebug.Console.log($STRF("console.MethodNotSupported", [methodName]));
         }
     };
 

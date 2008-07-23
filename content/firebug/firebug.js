@@ -1400,13 +1400,13 @@ Firebug.Panel =
 
         if (forceUpdate || object != this.selection)
         {
-            this.previousSelection = this.selection;
             this.selection = object;
             this.updateSelection(object);
 
             // XXXjoe This is kind of cheating, but, feh.
             this.context.chrome.onPanelSelect(object, this);
-            if (uiListeners.length > 0) dispatch(uiListeners, "onPanelSelect", [object, this]);  // TODO: make this.context.chrome a uiListener
+            if (uiListeners.length > 0) 
+                dispatch(uiListeners, "onPanelSelect", [object, this]);  // TODO: make this.context.chrome a uiListener
         }
     },
 
