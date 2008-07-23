@@ -535,9 +535,12 @@ FirebugService.prototype =
                     var bp = urlBreakpoints[i];
                     if (bp.type & BP_NORMAL)
                     {
-                        var rc = cb.call(url, bp.lineNo, bp.scriptWithBreakpoint, bp);
-                        if (rc)
-                            return [bp];
+                        for (var j = 0; j < bp.scriptsWithBreakpoint.length; j++)
+                        {
+                            var rc = cb.call(url, bp.lineNo, bp.scriptsWithBreakpoint[j], bp);
+                            if (rc)
+                                return [bp];
+                        }
                     }
                 }
             }
@@ -1094,7 +1097,7 @@ FirebugService.prototype =
             }
         }
 
-        fbs.nestedScriptStack.clear();
+        fbs.clearNestedScripts();
         if (fbs.DBG_FBS_CREATION || fbs.DBG_FBS_SRCUNITS) ddd("onEventScriptCreated frame.script.tag:"+frame.script.tag+" href: "+(sourceFile?sourceFile.href:"no sourceFile")+"\n");  /*@explore*/
 
         return sourceFile;
@@ -1136,7 +1139,7 @@ FirebugService.prototype =
             }
         }
 
-        fbs.nestedScriptStack.clear();
+        fbs.clearNestedScripts();
         if (fbs.DBG_FBS_CREATION || fbs.DBG_FBS_SRCUNITS) ddd("onEvalScriptCreated outerScript.tag:"+outerScript.tag+" href: "+(sourceFile?sourceFile.href:"no sourceFile")+"\n");  /*@explore*/
         return sourceFile;
     },
@@ -1180,10 +1183,26 @@ FirebugService.prototype =
             ERROR("onTopLevelScriptCreated Fails: "+exc);
         }
 
-        fbs.nestedScriptStack.clear();
+        fbs.clearNestedScripts();
         if (fbs.DBG_FBS_CREATION || fbs.DBG_FBS_SRCUNITS) ddd("fbs.onTopLevelScriptCreated script.tag:"+frame.script.tag+" href: "+(sourceFile?sourceFile.href:"no sourceFile")+"\n");  /*@explore*/
 
         return sourceFile;
+    },
+
+    clearNestedScripts: function()
+    {
+        var innerScripts = fbs.nestedScriptStack.enumerate();
+        while (innerScripts.hasMoreElements())
+        {
+            var script = innerScripts.getNext();
+            if (script.isValid && script.baseLineNumber == 1)
+            {
+                script.clearBreakpoint(0);
+                if (this.onXScriptCreatedByTag[script.tag])
+                    delete this.onXScriptCreatedByTag[script.tag];
+            }
+        }
+        fbs.nestedScriptStack.clear();
     },
 
     onScriptCreated: function(script)
@@ -1351,7 +1370,7 @@ FirebugService.prototype =
 
         if (global)
         {
-            try 
+            try
             {
                 if (global.location)  // then we have a window, it will be an nsIDOMWindow, right?
                 {
@@ -1566,18 +1585,20 @@ FirebugService.prototype =
                 bp.type &= ~type;
                 if (!bp.type)
                 {
-                    var script = bp.scriptWithBreakpoint;
-                    if (script && script.isValid)
+                    for (var j = 0; j < bp.scriptsWithBreakpoint.length; j++)
                     {
-                        try
+                        var script = bp.scriptsWithBreakpoint[j];
+                        if (script && script.isValid)
                         {
-                            var pc = script.lineToPc(lineNo, bp.pcmap);
-                            script.clearBreakpoint(pc);
-                            if (fbs.DBG_FBS_BP) ddd("removeBreakpoint in tag="+script.tag+" at "+lineNo+"@"+url+"\n");/*@explore*/
-                        }
-                        catch (exc)
-                        {
-                            ddd("Firebug service failed to remove breakpoint in "+script.tag+" at lineNo="+lineNo+" pcmap:"+bp.pcmap+"\n");
+                            try
+                            {
+                                script.clearBreakpoint(bp.pc[j]);
+                                if (fbs.DBG_FBS_BP) ddd("removeBreakpoint in tag="+script.tag+" at "+lineNo+"@"+url+"\n");/*@explore*/
+                            }
+                            catch (exc)
+                            {
+                                ddd("Firebug service failed to remove breakpoint in "+script.tag+" at lineNo="+lineNo+" pcmap:"+bp.pcmap+"\n");
+                            }
                         }
                     }
                     // else this was a future breakpoint that never hit or a script that was GCed
@@ -1592,6 +1613,7 @@ FirebugService.prototype =
                     {
                         --conditionCount;
                     }
+
 
                     if (!urlBreakpoints.length)
                         delete breakpoints[url];
@@ -1631,13 +1653,16 @@ FirebugService.prototype =
                 for (var i = 0; i < urlBreakpoints.length; ++i)
                 {
                     var bp = urlBreakpoints[i];
-                    if (fbs.DBG_FBS_BP)
+                    for (var j = 0; j < bp.scriptsWithBreakpoint.length; j++)
                     {
-                        var vs = (bp.scriptWithBreakpoint ? bp.scriptWithBreakpoint.tag :"future")+"@"+bp.pc+" on "+url;
-                        ddd("findBreakpointByScript["+i+"]"+" looking for "+script.tag+"@"+pc+" vs "+vs+"\n"); /*@explore*/
+                        if (fbs.DBG_FBS_BP)
+                        {
+                            var vs = (bp.scriptsWithBreakpoint[j] ? bp.scriptsWithBreakpoint[j].tag+"@"+bp.pc[j]:"future")+" on "+url;
+                            ddd("findBreakpointByScript["+i+"]"+" looking for "+script.tag+"@"+pc+" vs "+vs+"\n"); /*@explore*/
+                        }
+                        if ( bp.scriptsWithBreakpoint[j] && (bp.scriptsWithBreakpoint[j].tag == script.tag) && (bp.pc[j] == pc) )
+                            return bp;
                     }
-                    if ( bp.scriptWithBreakpoint && (bp.scriptWithBreakpoint.tag == script.tag) && (bp.pc == pc) )
-                        return bp;
                 }
             }
         }
@@ -1690,6 +1715,9 @@ FirebugService.prototype =
              }
              scripts = [sourceFile.outerScript];
         }
+
+        bp.scriptsWithBreakpoint = [];
+        bp.pc = [];
         for (var i = 0; i < scripts.length; i++)
         {
             var script = scripts[i];
@@ -1702,16 +1730,25 @@ FirebugService.prototype =
             var jsdLine = bp.lineNo + sourceFile.getBaseLineOffset();
             // test script.isLineExecutable(jsdLineNo, pcmap) ??
             var pc = script.lineToPc(jsdLine, pcmap);
-            script.setBreakpoint(pc);
-            bp.scriptWithBreakpoint = script; // TODO may need array?
-            bp.pcmap = pcmap;
-            bp.pc = pc;
-            bp.jsdLine = jsdLine;
+            var pcToLine = script.pcToLine(pc, pcmap);
+            try {
+                var isExecutable = script.isLineExecutable(jsdLine, pcmap);
+            } catch(e) {
+                // guess not then...
+            }
+            if (pcToLine == jsdLine && isExecutable)
+            {
+                script.setBreakpoint(pc);
 
-            if (pc == 0)  // signal the breakpoint handler to break for user
-                sourceFile.breakOnZero = script.tag;
+                bp.scriptsWithBreakpoint.push(script);
+                bp.pc.push(pc);
+                bp.pcmap = pcmap;
+                bp.jsdLine = jsdLine;
 
-            if (fbs.DBG_FBS_BP) ddd("setJSDBreakpoint tag: "+bp.scriptWithBreakpoint.tag+" line.pc@url="+bp.lineNo +"."+bp.pc+"@"+sourceFile.href+" using offset:"+sourceFile.getBaseLineOffset()+"\n");                         /*@explore*/
+                if (pc == 0)  // signal the breakpoint handler to break for user
+                    sourceFile.breakOnZero = script.tag;
+            }
+            if (fbs.DBG_FBS_BP) ddd("setJSDBreakpoint tag: "+script.tag+" line.pc@url="+bp.lineNo +"."+pc+"@"+sourceFile.href+" using offset:"+sourceFile.getBaseLineOffset()+" jsdLine: "+jsdLine+" pcToLine: "+pcToLine+(isExecutable?" isExecuable":"notExecutable")+"\n");                         /*@explore*/
          }
     },
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
