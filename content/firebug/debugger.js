@@ -754,11 +754,11 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
 
             if (FBTrace.DBG_EVAL)                                                                                      /*@explore*/
             {                                                                                                          /*@explore*/
-                FBTrace.sysout("debugger.onEval url="+sourceFile.href+"\n");                                           /*@explore*/
+                FBTrace.sysout("debugger.onEvalScriptCreated url="+sourceFile.href+"\n");                                           /*@explore*/
                 FBTrace.sysout( traceToString(FBL.getStackTrace(frame, context))+"\n" );                               /*@explore*/
             }                                                                                                          /*@explore*/
 
-            dispatch(listeners,"onEval",[context, frame, sourceFile.href]);
+            dispatch(listeners,"onEvalScriptCreated",[context, frame, sourceFile.href]);
             return sourceFile;
         }
         catch (e)
@@ -804,7 +804,7 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
     // We just compiled a bunch of JS, eg a script tag in HTML.  We are about to run the outerScript.
     onTopLevelScriptCreated: function(frame, outerScript, innerScripts)
     {
-        if (FBTrace.DBG_TOPLEVEL) FBTrace.sysout("debugger("+this.debuggerName+").onTopLevelScript script.fileName="+outerScript.fileName+"\n");     /*@explore*/
+        if (FBTrace.DBG_TOPLEVEL) FBTrace.sysout("debugger("+this.debuggerName+").onTopLevelScriptCreated script.fileName="+outerScript.fileName+"\n");     /*@explore*/
         var context = this.breakContext;
         delete this.breakContext;
 
@@ -2560,6 +2560,10 @@ BreakpointsPanel.prototype = extend(Firebug.Panel,
 Firebug.DebuggerListener =
 {
     onJSDActivate: function(jsd)
+    {
+
+    },
+    onJSDDeactivate: function(jsd)
     {
 
     },
