@@ -494,8 +494,8 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
         var chrome = context.chrome;
         if (!chrome)
         {
-            if (FBTrace.DBG_ERRORS) 
-            	FBTrace.dumpStack("debugger.syncCommand, context with no chrome: "+context.window);
+            if (FBTrace.DBG_ERRORS)
+                FBTrace.dumpStack("debugger.syncCommand, context with no chrome: "+context.window);
             return;
         }
 
@@ -2082,7 +2082,7 @@ ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
                 list.push(allSources[i]);
         }
 
-        if (FBTrace.DBG_SOURCEFILES) FBTrace.dumpProperties("debugger getLocationList BEFORE iterateWindows ", list); /*@explore*/
+        if (FBTrace.DBG_SOURCEFILES) FBTrace.dumpProperties("debugger.getLocationList BEFORE iterateWindows ", list); /*@explore*/
 
        iterateWindows(context.window, function(win) {
             if (FBTrace.DBG_SOURCEFILES)                                                                                                /*@explore*/
@@ -2095,10 +2095,10 @@ ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
                 if (context.sourceFileMap.hasOwnProperty(url))
                     return;
                 list.push(new NoScriptSourceFile(context, url));
-                if (FBTrace.DBG_SOURCEFILES) FBTrace.dumpStack("Created NoScriptSourceFile for URL:"+url);
+                if (FBTrace.DBG_SOURCEFILES) FBTrace.sysout("debugger.getLocationList created NoScriptSourceFile for URL:"+url);
             }
         });
-        if (FBTrace.DBG_SOURCEFILES) FBTrace.dumpProperties("debugger getLocationList ", list); /*@explore*/
+        if (FBTrace.DBG_SOURCEFILES) FBTrace.dumpProperties("debugger.getLocationList ", list); /*@explore*/
         return list;
     },
 

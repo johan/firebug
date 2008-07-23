@@ -2052,7 +2052,7 @@ Firebug.ActivableModule = extend(Firebug.Module,
         var enable = (option.indexOf("enable") == 0) ? true : false;
         var global = (option.indexOf("site") == -1) ? true : false;
 
-        if (FBTrace.DBG_PANELS)
+        if (FBTrace.DBG_OPTIONS)
         {
             FBTrace.sysout("firebug.setHostPermission option:"+option+" prefDomain:"+
                 prefDomain+" for "+browserURI.spec+"\n");
@@ -2470,14 +2470,14 @@ Firebug.ModuleManagerPage = domplate(Firebug.Rep,
 
     show: function(panel, module)
     {
-        try 
+        try
         {
             this.module = module;
             this.context = panel.context;
             this.panelNode = panel.panelNode;
             this.refresh();
-        } 
-        catch(e) 
+        }
+        catch(e)
         {
             if (FBTrace.DBG_ERRORS)
                 FBTrace.dumpProperties("firebug moduleManager show", e);

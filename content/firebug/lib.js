@@ -1740,7 +1740,15 @@ this.findScriptForFunctionInContext = function(context, fn)
                 var unwrapped = testFunctionObject.getWrappedValue();
                 if (!unwrapped.toString)
                     return;
-                var tfs = unwrapped.toString();
+                try {
+                    var tfs = unwrapped.toString();
+                } catch (etfs) {
+                    FBTrace.dumpProperties("unwrapped.toString fails for unwrapped: "+etfs, unwrapped);
+                }
+
+                if (!fn.toString)
+                    return;
+
                 var fns = fn.toString();
                 if (tfs == fns)
                     found = script;
@@ -2505,6 +2513,11 @@ this.getPrettyDomain = function(url)
 
 this.absoluteURL = function(url, baseURL)
 {
+    return this.absoluteURLWithDots(url, baseURL).replace("/./", "/", "g");
+};
+
+this.absoluteURLWithDots = function(url, baseURL)
+{
     if (url[0] == "?")
         return baseURL + url;
 
@@ -2584,7 +2597,7 @@ this.parseURLEncodedText = function(text)
             params.push({name: unescape(parts[0]), value: ""});
     }
 
-    // Fix for Issue #947. 
+    // Fix for Issue #947.
     // URL parameters should be displayed in the same order as provided.
     //params.sort(function(a, b) { return a.name < b.name ? -1 : 1; });
 
@@ -3138,7 +3151,7 @@ this.SourceFile.prototype =
         for (var j = 0; j < this.innerScripts.length; j++)
         {
             var script = this.innerScripts[j];
- 
+
             if (targetLineNo >= script.baseLineNumber)
             {
                 if ( (script.baseLineNumber + script.lineExtent) >= targetLineNo)
