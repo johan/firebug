@@ -427,15 +427,24 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
             this.syncCommands(context);
             this.syncListeners(context);
 
-            Firebug.toggleBar(true);
+            const updateViewOnShowHook = function()
+            {
+                Firebug.toggleBar(true);
 
-            FirebugChrome.select(context.currentFrame, "script");
+                FirebugChrome.select(context.currentFrame, "script");
 
-            var stackPanel = context.getPanel("callstack");
-            if (stackPanel)
-                stackPanel.refresh(context);
+                var stackPanel = context.getPanel("callstack");
+                if (stackPanel)
+                    stackPanel.refresh(context);
 
-            context.chrome.focus();
+                context.chrome.focus();
+            }
+            if ( !context.hideDebuggerUI || (FirebugChrome.getCurrentBrowser() && FirebugChrome.getCurrentBrowser().showFirebug))
+                 updateViewOnShowHook();
+            else {
+                 context.chrome.updateViewOnShowHook = updateViewOnShowHook;
+                 if (FBTrace.DBG_PANELS) FBTrace.sysout("startDebugging: set updateViewOnShowHook \n");                          /*@explore*/
+            }
 
         }
         catch(exc)
@@ -462,6 +471,9 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
                 var chrome = context.chrome;
                 if (!chrome)
                     chrome = FirebugChrome;
+
+                if ( chrome.updateViewOnShowHook )
+                    delete chrome.updateViewOnShowHook;
 
                 this.syncCommands(context);
                 this.syncListeners(context);
@@ -556,6 +568,14 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
 
     showPanel: function(browser, panel)
     {
+        var chrome =  browser.chrome;
+        if (chrome.updateViewOnShowHook)
+        {
+            if (FBTrace.DBG_PANELS) FBTrace.sysout("debugger.showPanel: call updateViewOnShowHook \n");                          /*@explore*/
+            var updateViewOnShowHook = chrome.updateViewOnShowHook;
+            delete chrome.updateViewOnShowHook;
+            updateViewOnShowHook();
+        }
         this.syncCommands(panel.context);
     },
 
