@@ -87,7 +87,8 @@ const COMPONENTS_FILTERS = [
     new RegExp("^(file:/.*/extensions/)\\w+@mozilla\\.org/components/.*\\.js$"),
     new RegExp("^(file:/.*/components/)ns[A-Z].*\\.js$"),
     new RegExp("^(file:/.*/components/)firebug-service\\.js$"),
-    new RegExp("^(file:/.*/Contents/MacOS/extensions/.*/components/).*\\.js$")
+    new RegExp("^(file:/.*/Contents/MacOS/extensions/.*/components/).*\\.js$"),
+    new RegExp("^(file:/.*/modules/).*\\.jsm$"),
     ];
 
 const COMPONENTS_RE =  new RegExp("/components/[^/]*\\.js$");
@@ -117,7 +118,7 @@ var stepMode = 0;
 var stepFrame;
 var stepFrameLineId;
 var stepFrameCount;
-var hookFrameCount;
+var hookFrameCount = 0;
 
 var haltDebugger = null;
 
@@ -1157,7 +1158,7 @@ FirebugService.prototype =
                 {
                     delete  fbs.onXScriptCreatedByTag[firstScript.tag];
                     firstScript.clearBreakpoint(0);
-                    if (fbs.DBG_FBS_SRCUNITS) ddd("fbs.onTopLevelScript clear bp@0 for firstScript.tag: "+firstScript.tag+"\n")
+                    if (fbs.DBG_FBS_SRCUNITS) ddd("fbs.onTopLevelScriptCreated clear bp@0 for firstScript.tag: "+firstScript.tag+"\n")
                 }
             }
 
@@ -1168,13 +1169,13 @@ FirebugService.prototype =
             if (debuggr)
             {
                 var sourceFile = debuggr.onTopLevelScriptCreated(frame, frame.script, fbs.nestedScriptStack.enumerate());
-                if (fbs.DBG_FBS_SRCUNITS) ddd("fbs.onTopLevelScript got sourceFile:"+sourceFile+" using "+fbs.nestedScriptStack.length+" nestedScripts\n");
+                if (fbs.DBG_FBS_SRCUNITS) ddd("fbs.onTopLevelScriptCreated got sourceFile:"+sourceFile+" using "+fbs.nestedScriptStack.length+" nestedScripts\n");
                 fbs.resetBreakpoints(sourceFile);
             }
             else
             {
                 if (fbs.DBG_FBS_SRCUNITS)
-                    ddd("FBS.onTopLevelScript no debuggr for "+frame.script.tag+"\n");
+                    ddd("FBS.onTopLevelScriptCreated no debuggr for "+frame.script.tag+"\n");
             }
         }
         catch (exc)
@@ -1268,8 +1269,11 @@ FirebugService.prototype =
             {
                 fbs.nestedScriptStack.appendElement(script, false);
                 if (fbs.DBG_FBS_CREATION) ddd("onScriptCreated: nested function named: "+script.functionName+"\n");                                         /*@explore*/
-                if (script.functionName == "anonymous") // not no-name
+                if (script.functionName == "anonymous") { // not no-name
                     fbs.hookInterruptsToTrackScripts();  // if the hook is taken, then its not a eval- or top-, must be Function or ?
+                } else {
+                    dispatch(scriptListeners,"onScriptCreated",[script, fileName, script.baseLineNumber]);
+                }
             }
         }
         catch(exc)
@@ -1922,13 +1926,16 @@ FirebugService.prototype =
 
     clearHookInterruptsToTrackScripts: function()
     {
-        if (fbs.saveInterruptHook)
+        if (fbs.trackingScriptsHookSet)
         {
-            jsd.interruptHook = fbs.saveInterruptHook;
-            fbs.saveInterruptHook = null;
+            if (fbs.saveInterruptHook)
+            {
+                jsd.interruptHook = fbs.saveInterruptHook;
+                fbs.saveInterruptHook = null;
+            }
+            else
+                jsd.interruptHook = null;
         }
-        else
-            jsd.interruptHook = null;
 
         fbs.trackingScriptsHookSet = false;
         if (fbs.DBG_FBS_FUNCTION) ddd("clearHookInterruptsToTrackScripts \n");
@@ -1946,13 +1953,16 @@ FirebugService.prototype =
 
     clearHookInterruptsToTrapErrors: function()
     {
-        if (fbs.saveInterruptHook)
+        if (fbs.trappingErrorsHookSet)
         {
-            jsd.interruptHook = fbs.saveInterruptHook;
-            fbs.saveInterruptHook = null;
+            if (fbs.saveInterruptHook)
+            {
+                jsd.interruptHook = fbs.saveInterruptHook;
+                fbs.saveInterruptHook = null;
+            }
+            else
+                jsd.interruptHook = null;
         }
-        else
-            jsd.interruptHook = null;
 
         fbs.trappingErrorsHookSet = false;
         if (fbs.DBG_FBS_FUNCTION) ddd("clearHookInterruptsToTrapErrors \n");
@@ -1986,6 +1996,9 @@ function handleTrackingScriptsInterrupt(frame, type, rv)
         if (fbs.DBG_FBS_CREATION) ddd("handleTrackingScriptsInterrupt FAILS: "+exc);                              /*@explore*/
     }
     fbs.clearHookInterruptsToTrackScripts();
+    // call restored interruptHook if present
+    if (jsd.interruptHook)
+        jsd.interruptHook.onExecute(frame, type, rv);
     return RETURN_CONTINUE;
 }
 
@@ -2007,6 +2020,9 @@ function handleTrappingErrorsInterrupt(frame, type, rv)
         if (fbs.DBG_FBS_CREATION) dumpToFileWithStack("handleTrappingErrorsInterrupt FAILS: "+exc);                              /*@explore*/
     }
     fbs.clearHookInterruptsToTrapErrors();
+    // call restored interruptHook if present
+    if (jsd.interruptHook)
+        jsd.interruptHook.onExecute(frame, type, rv);
     return RETURN_CONTINUE;
 }
 // ************************************************************************************************
