@@ -31,7 +31,7 @@
 <!ENTITY  firebug.CloseFirebug          "Firebug bezárása">
 <!ENTITY  firebug.DisableFirebug        "Firebug tiltása">
 <!ENTITY  firebug.AllowedSites          "Engedélyezett oldalak...">
-<!ENTITY  firebug.ConfigureEditors      "Szerkesztők beállítása...">
+<!ENTITY  firebug.ConfigureEditors      "Szerkesztők beállítása">
 <!ENTITY  firebug.CommandLine           "Parancs sor">
 <!ENTITY  firebug.Search                "Keresés">
 

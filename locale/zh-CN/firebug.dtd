@@ -28,7 +28,7 @@
 <!ENTITY  firebug.OpenWith              "打开编辑器">
 <!ENTITY  firebug.CloseFirebug          "关闭 Firebug">
 <!ENTITY  firebug.Permissions           "站点...">
-<!ENTITY  firebug.ConfigureEditors      "配置编辑器...">
+<!ENTITY  firebug.ConfigureEditors      "配置编辑器">
 <!ENTITY  firebug.CommandLine           "命令行">
 <!ENTITY  firebug.Search                "搜索">
 

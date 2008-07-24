@@ -31,7 +31,7 @@
 <!ENTITY  firebug.CloseFirebug          "Firebug schließen">
 <!ENTITY  firebug.DisableFirebug        "Firebug deaktivieren">
 <!ENTITY  firebug.AllowedSites          "Erlaubte Seiten...">
-<!ENTITY  firebug.ConfigureEditors      "Editoren konfigurieren...">
+<!ENTITY  firebug.ConfigureEditors      "Editoren konfigurieren">
 <!ENTITY  firebug.CommandLine           "Befehlszeile">
 <!ENTITY  firebug.Search                "Suche">
 

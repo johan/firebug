@@ -65,7 +65,7 @@
     <popup id="contentAreaContextMenu">
         <menu label="&firebug.OpenWith;" insertbefore="context-viewsource">
             <menupopup id="menu_firebugOpenWith" onpopupshowing="return FirebugChrome.onEditorsShowing(this);">
-                <menuitem label="&firebug.ConfigureEditors;" command="cmd_openFirebugEditors"/>
+                <menuitem label="&firebug.ConfigureEditors;..." command="cmd_openFirebugEditors"/>
             </menupopup>
     </menu>
         <menuseparator/>
@@ -91,7 +91,7 @@
 
                 <menu label="&firebug.OpenWith;">
                     <menupopup id="menu_firebugOpenWith" onpopupshowing="return FirebugChrome.onEditorsShowing(this);">
-                                <menuitem label="&firebug.ConfigureEditors;" command="cmd_openFirebugEditors"/>
+                                <menuitem label="&firebug.ConfigureEditors;..." command="cmd_openFirebugEditors"/>
                     </menupopup>
                 </menu>
                 <menuseparator/>
@@ -133,7 +133,7 @@
 
                             <menu label="&firebug.OpenWith;" id="FirebugMenu_OpenWith">
                                 <menupopup id="fbFirebugMenu_OpenWith" onpopupshowing="return FirebugChrome.onEditorsShowing(this);">
-                                        <menuitem label="&firebug.ConfigureEditors;" command="cmd_openFirebugEditors"/>
+                                        <menuitem label="&firebug.ConfigureEditors;..." command="cmd_openFirebugEditors"/>
                                 </menupopup>
                             </menu>
 

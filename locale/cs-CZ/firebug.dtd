@@ -28,7 +28,7 @@
 <!ENTITY  firebug.OpenWith              "Otevřít v editoru">
 <!ENTITY  firebug.CloseFirebug          "Zavřít Firebug">
 <!ENTITY  firebug.Permissions           "Weby...">
-<!ENTITY  firebug.ConfigureEditors      "Nastavení editorů...">
+<!ENTITY  firebug.ConfigureEditors      "Nastavení editorů">
 <!ENTITY  firebug.CommandLine           "Příkazová řádka">
 <!ENTITY  firebug.Search                "Hledat">
 

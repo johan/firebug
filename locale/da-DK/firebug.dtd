@@ -1,7 +1,7 @@
 <!ENTITY firebug.About "Om...">
 <!ENTITY firebug.OpenWith "Åben med editor">
 <!ENTITY firebug.Permissions "Domæner...">
-<!ENTITY firebug.ConfigureEditors "Konfigurer programmer...">
+<!ENTITY firebug.ConfigureEditors "Konfigurer programmer">
 
 <!ENTITY  firebug.Firebug               "Firebug">
 <!ENTITY  firebug.Close                 "Luk">
