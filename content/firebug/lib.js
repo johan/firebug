@@ -2470,6 +2470,8 @@ this.isLocalURL = function(url)
 {
     if (url.substr(0, 5) == "file:")
         return true;
+    else if (url.substr(0, 8) == "wyciwyg:")
+        return true;
     else
         return false;
 };
