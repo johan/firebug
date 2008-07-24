@@ -734,6 +734,8 @@ FirebugService.prototype =
             jsd.on();
             jsd.flags |= DISABLE_OBJECT_TRACE;
             this.hookScripts();
+            if (!this.showEvalSources)
+                this.hookTopLevel();
 
             jsd.debuggerHook = { onExecute: hook(this.onDebugger, RETURN_CONTINUE) };
             jsd.debugHook = { onExecute: hook(this.onDebug, RETURN_CONTINUE) };
@@ -753,6 +755,7 @@ FirebugService.prototype =
             enabledDebugger = false;
 
             jsd.pause();
+            fbs.unhookTopLevel();
             fbs.unhookScripts();
         }}, 1000, TYPE_ONE_SHOT);
 
@@ -1726,6 +1729,44 @@ FirebugService.prototype =
 
         if (fbs.DBG_STEP) ddd("set functionHook\n");                                                                   /*@explore*/
         jsd.functionHook = { onCall: functionHook };
+    },
+
+    hookTopLevel: function()
+    {
+        function topLevelHook(frame, type)
+        {
+            if(!fbs) return;
+            if ( isSystemURL(frame.script.fileName) )
+                return;
+
+            switch (type)
+            {
+                case TYPE_TOPLEVEL_START:
+                {
+                    var debuggr = fbs.findDebugger(frame);
+                    if (debuggr) {
+                        try {
+                            debuggr.QueryInterface(nsIFireBugURLProvider);
+                        } catch (exc) {
+                            break ;
+                        }
+                        debuggr.onTopLevel(frame);
+                    }
+                    break;
+                }
+                case TYPE_TOPLEVEL_END:
+                    break;
+            }
+        }
+
+        if (fbs.DBG_STEP) ddd("set topLevelHook\n");                                                                   /*@explore*/
+        jsd.topLevelHook = { onCall: topLevelHook };
+    },
+
+    unhookTopLevel: function()
+    {
+        jsd.topLevelHook = null;
+        if (fbs.DBG_STEP) ddd("unset topLevelHook\n");                                                                 /*@explore*/
     },
 
     hookInterrupts: function()

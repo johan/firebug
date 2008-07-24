@@ -149,7 +149,7 @@ Firebug.Debugger = extend(Firebug.Module,
         context.debugFrame = frame;
         context.stopped = true;
 
-        const hookReturn = dispatch2(listeners,"onStop",[context,type,rv]);
+        var hookReturn = dispatch2(listeners,"onStop",[context,type,rv]);
         if ( hookReturn && hookReturn >= 0 )
         {
             delete context.stopped;
