@@ -536,9 +536,16 @@ FirebugService.prototype =
                     var bp = urlBreakpoints[i];
                     if (bp.type & BP_NORMAL)
                     {
-                        for (var j = 0; j < bp.scriptsWithBreakpoint.length; j++)
+                        if (bp.scriptsWithBreakpoint && bp.scriptsWithBreakpoint.length > 0)
                         {
-                            var rc = cb.call(url, bp.lineNo, bp.scriptsWithBreakpoint[j], bp);
+                            for (var j = 0; j < bp.scriptsWithBreakpoint.length; j++)
+                            {
+                                var rc = cb.call(url, bp.lineNo, bp.scriptsWithBreakpoint[j], bp);
+                                if (rc)
+                                    return [bp];
+                            }
+                        } else {
+                            var rc = cb.call(url, bp.lineNo, null, bp);
                             if (rc)
                                 return [bp];
                         }
@@ -1170,7 +1177,7 @@ FirebugService.prototype =
             {
                 var sourceFile = debuggr.onTopLevelScriptCreated(frame, frame.script, fbs.nestedScriptStack.enumerate());
                 if (fbs.DBG_FBS_SRCUNITS) ddd("fbs.onTopLevelScriptCreated got sourceFile:"+sourceFile+" using "+fbs.nestedScriptStack.length+" nestedScripts\n");
-                fbs.resetBreakpoints(sourceFile);
+                fbs.resetBreakpoints(sourceFile, frame.script.baseLineNumber+frame.script.lineExtent);
             }
             else
             {
@@ -1589,19 +1596,22 @@ FirebugService.prototype =
                 bp.type &= ~type;
                 if (!bp.type)
                 {
-                    for (var j = 0; j < bp.scriptsWithBreakpoint.length; j++)
+                    if (bp.scriptsWithBreakpoint)
                     {
-                        var script = bp.scriptsWithBreakpoint[j];
-                        if (script && script.isValid)
+                        for (var j = 0; j < bp.scriptsWithBreakpoint.length; j++)
                         {
-                            try
+                            var script = bp.scriptsWithBreakpoint[j];
+                            if (script && script.isValid)
                             {
-                                script.clearBreakpoint(bp.pc[j]);
-                                if (fbs.DBG_FBS_BP) ddd("removeBreakpoint in tag="+script.tag+" at "+lineNo+"@"+url+"\n");/*@explore*/
-                            }
-                            catch (exc)
-                            {
-                                ddd("Firebug service failed to remove breakpoint in "+script.tag+" at lineNo="+lineNo+" pcmap:"+bp.pcmap+"\n");
+                                try
+                                {
+                                    script.clearBreakpoint(bp.pc[j]);
+                                    if (fbs.DBG_FBS_BP) ddd("removeBreakpoint in tag="+script.tag+" at "+lineNo+"@"+url+"\n");/*@explore*/
+                                }
+                                catch (exc)
+                                {
+                                    ddd("Firebug service failed to remove breakpoint in "+script.tag+" at lineNo="+lineNo+" pcmap:"+bp.pcmap+"\n");
+                                }
                             }
                         }
                     }
@@ -1674,7 +1684,7 @@ FirebugService.prototype =
         return null;
     },
 
-    resetBreakpoints: function(sourceFile) // the sourcefile has just been created after compile
+    resetBreakpoints: function(sourceFile, lastLineNumber) // the sourcefile has just been created after compile
     {
         // If the new script is replacing an old script with a breakpoint still
         var url = sourceFile.href;
@@ -1699,7 +1709,14 @@ FirebugService.prototype =
 
             for (var i = 0; i < urlBreakpoints.length; ++i)
             {
-                fbs.setJSDBreakpoint(sourceFile, urlBreakpoints[i]);
+                var bp = urlBreakpoints[i];
+                fbs.setJSDBreakpoint(sourceFile, bp);
+                if (lastLineNumber && !bp.jsdLine && !(bp.disabled & BP_NORMAL) && (bp.lineNo < lastLineNumber))
+                {
+                     if (fbs.DBG_FBS_BP)
+                        ddd("resetBreakpoints:  mark breakpoint disabled: "+bp.lineNo+"@"+sourceFile+"\n");
+                     fbs.disableBreakpoint(url, bp.lineNo);
+                }
             }
         }
     },
