@@ -195,11 +195,10 @@ var Errors = Firebug.Errors = extend(Firebug.Module,
         if (errorContext)
             context = errorContext;
 
-        if (Firebug.showStackTrace)
+        if (Firebug.showStackTrace && Firebug.errorStackTrace)
         {
             var trace = Firebug.errorStackTrace;
-            if (trace)
-                trace = correctLineNumbersWithStack(trace, object) ? trace : null;
+            trace = correctLineNumbersWithStack(trace, object) ? trace : null;
         }
         else if (checkForUncaughtException(context, object))
         {
@@ -418,13 +417,13 @@ function checkForUncaughtException(context, object)
             if (context.thrownStackTrace)
             {
                 Firebug.errorStackTrace = context.thrownStackTrace;
-                return true;
                 if (FBTrace.DBG_ERRORS) FBTrace.dumpProperties("errors.observe trace.frames", context.thrownStackTrace.frames);
             }
             else
             {
                  if (FBTrace.DBG_ERRORS) FBTrace.sysout("errors.observe NO context.thrownStackTrace\n");
             }
+            return true;
         }
         else
         {
