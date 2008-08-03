@@ -2058,8 +2058,8 @@ Firebug.ActivableModule = extend(Firebug.Module,
                 prefDomain+" for "+browserURI.spec+"\n");
         }
 
-        // The preferences for both system and local pages is three-state. 
-        // So, it's the same logic as for site-permissions, which can 
+        // The preferences for both system and local pages is three-state.
+        // So, it's the same logic as for site-permissions, which can
         // be set to true/false or not set at all.
         //
         // "enable" - enables system/local pages
@@ -2069,7 +2069,7 @@ Firebug.ActivableModule = extend(Firebug.Module,
             Firebug.setPref(prefDomain, "enableSystemPages", (global ? "" : option));
         else if (isLocalURL(browserURI.spec))
             Firebug.setPref(prefDomain, "enableLocalFiles", (global ? "" : option));
-    
+
         if (!browserURI.spec || isSystemURL(browserURI.spec) || isLocalURL(browserURI.spec))
         {
             // If the global option is set while system or local page is displayed 

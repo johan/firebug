@@ -478,7 +478,7 @@ top.FirebugChrome =
             FirebugContext = context;  // the other place the FirebugContext is set is in firebug.js
 
             if (FBTrace.DBG_DISPATCH || FBTrace.DBG_ERRORS)
-                FBTrace.sysout("chrome.showContext context: "+(context?context.window.location:"null ")+"\n");
+                FBTrace.sysout("chrome.showContext set FirebugContext to: "+(context?context.window.location:"null ")+"\n");
 
             if (externalBrowser || (context.browser && context.browser.showFirebug) )
                 this.syncPanel();

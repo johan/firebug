@@ -137,6 +137,9 @@ top.TabWatcher =
                                                                                                                        /*@explore*/
             dispatch(listeners, "initContext", [context]);
 
+            if (!FirebugContext)
+                FirebugContext = context; // let's make sure we have something for errors to land on.
+
             win.addEventListener("pagehide", onPageHideTopWindow, true);
             win.addEventListener("pageshow", onLoadWindowContent, true);
             win.addEventListener("DOMContentLoaded", onLoadWindowContent, true);
@@ -185,7 +188,7 @@ top.TabWatcher =
                 // Sometimes context.window is not defined
                 if (context.window)
                     this.watchContext(win, context);  // calls showContext
-                else 
+                else
                 {
                     if(FBTrace.DBG_ERRORS) FBTrace.sysout("tabWatcher watchTopWindow no context.window "+(context.browser? context.browser.currentURI.spec : " and no context.browser")+"\n");
                 }
@@ -344,6 +347,9 @@ top.TabWatcher =
         });
 
         dispatch(listeners, "destroyContext", [context, persistedState]);
+
+        if (FirebugContext == context)
+            FirebugContext = null;
 
         if (FBTrace.DBG_WINDOWS)                                                                                    /*@explore*/
             FBTrace.sysout("-> tabWatcher.unwatchContext *** DESTROY *** context for: "+                                     /*@explore*/
@@ -526,7 +532,7 @@ var FrameProgressListener = extend(BaseProgressListener,
                 // Don't call watchTopWindow id the about:document-onload-blocker dummy request is sent.
                 // This request is sent also if the page is modified by DOM Inspector, which
                 // causes to immediately stop the Inspectore mode.
-                // xxxHonza This change should be made after real understanding of 
+                // xxxHonza This change should be made after real understanding of
                 // how this code work.
                 if (win.parent == win && (win.location.href == "about:blank" || safeName == "about:document-onload-blocker"))
                 {
