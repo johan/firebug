@@ -927,49 +927,9 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
         }
     },
 
-     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-
-    onEventScript: function(frame)
-    {
-        if (FBTrace.DBG_EVENTS) FBTrace.sysout("debugger.onEventScript\n");                                             /*@explore*/
-        var context = this.breakContext;
-        delete this.breakContext;
-
-        if (!context)
-        {
-            if (FBTrace.DBG_EVENTS || FBTrace.DBG_ERRORS)
-                FBTrace.dumpStack("debugger.onEventScript context null");
-            return;
-        }
-
-        try {
-            var script = frame.script;
-
-            var source = "crashes"; // script.functionSource;
-            var url = this.getDynamicURL(frame, source, "event");
-
-            var lines = context.sourceCache.store(url, source);
-            var sourceFile = new FBL.EventSourceFile(url, frame.script, "event:"+script.functionName+"."+script.tag, lines.length);
-            context.sourceFileMap[url] = sourceFile;
-
-            if (FBTrace.DBG_EVENTS) FBTrace.sysout("debugger.onEventScript url="+sourceFile.href+"\n");   /*@explore*/
-            if (FBTrace.DBG_EVENTS) FBTrace.sysout("debugger.onEventScript tag="+sourceFile.tag+"\n");                 /*@explore*/
-
-            if (FBTrace.DBG_EVENTS)                                                                                    /*@explore*/
-                 for (var i = 0; i < lines.length; i++) FBTrace.sysout(i+": "+lines[i]+"\n");                  /*@explore*/
-            if (FBTrace.DBG_SOURCEFILES)                                                                               /*@explore*/
-                FBTrace.sysout("debugger.onEventScript sourcefile="+sourceFile.toString()+" -> "+context.window.location+"\n");                       /*@explore*/
-
-            dispatch(listeners,"onEventScript",[context, frame, url]);
-            return url;
-        }
-        catch(exc)
-        {
-            ERROR("debugger.onEventScript failed: "+exc);
-            return null;
-        }
-    },
-
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    // XXXjjb this code is not called, because I found the scheme for detecting Function too complex.
+    // I'm leaving it here to remind us that we need to support new Function().
     onFunctionConstructor: function(frame, ctor_script)
     {
        try
@@ -992,33 +952,6 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
         {
             ERROR("debugger.onFunctionConstructor failed: "+exc);
             if (FBTrace.DBG_EVAL) FBTrace.dumpProperties("debugger.onFunctionConstructor failed: ",exc);                              /*@explore*/
-            return null;
-        }
-
-    },
-
-    onEval: function(frame)
-    {
-        try
-        {
-            var context = this.breakContext;
-            delete this.breakContext;
-
-            var sourceFile = this.getEvalLevelSourceFile(frame, context);
-
-            if (FBTrace.DBG_EVAL)                                                                                      /*@explore*/
-            {                                                                                                          /*@explore*/
-                FBTrace.sysout("debugger.onEval url="+sourceFile.href+"\n");                                           /*@explore*/
-                FBTrace.sysout( traceToString(FBL.getStackTrace(frame, context))+"\n" );                               /*@explore*/
-            }                                                                                                          /*@explore*/
-                                                                                                                       /*@explore*/
-            dispatch(listeners,"onEval",[context, frame, sourceFile.href]);
-            return sourceFile.href;
-        }
-        catch(exc)
-        {
-            ERROR("debugger.onEval failed: "+exc);
-            if (FBTrace.DBG_EVAL || true) FBTrace.dumpProperties("debugger.onEval failed: ",exc);                              /*@explore*/
             return null;
         }
 
@@ -1071,6 +1004,8 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
         }
         return null;
     },
+    // end of guilt trip
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 // Called by debugger.onEval() to store eval() source.
 // The frame has the blank-function-name script and it is not the top frame.
