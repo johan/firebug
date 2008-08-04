@@ -594,7 +594,10 @@
             <parameter name="event"/>
             <body><![CDATA[
                 if (event.keyCode == 13) // Return
+                {
                     this.enterActiveItem();
+                    this.searchString = '';
+                }
                 else if (event.keyCode == 8) // Backspace
                 {
                     this.searchString = this.searchString.substr(0, this.searchString.length-2);
