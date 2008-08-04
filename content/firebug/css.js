@@ -993,8 +993,9 @@ CSSElementPanel.prototype = extend(Firebug.CSSStyleSheetPanel.prototype,
                 var rule = QI(inspectedRules.GetElementAt(i), nsIDOMCSSStyleRule);
 
                 var href = rule.parentStyleSheet.href;  // Null means inline
-                if (href && Firebug.filterSystemURLs && isSystemURL(href))
-                    continue;
+                // This removes user agent rules, which we dont want to do.
+                //if (href && Firebug.filterSystemURLs && isSystemURL(href))
+                //    continue;
                 if (!href)
                     href = element.ownerDocument.location.href; // http://code.google.com/p/fbug/issues/detail?id=452
 
@@ -1370,7 +1371,7 @@ StyleSheetEditor.prototype = domplate(Firebug.BaseEditor,
 function rgbToHex(value)
 {
     return value.replace(/\brgb\((\d{1,3}),\s*(\d{1,3}),\s*(\d{1,3})\)/gi, function(_, r, g, b) {
-	return '#' + ((1 << 24) + (r << 16) + (g << 8) + (b << 0)).toString(16).substr(-6).toUpperCase();
+    return '#' + ((1 << 24) + (r << 16) + (g << 8) + (b << 0)).toString(16).substr(-6).toUpperCase();
     });
 }
 
@@ -1378,7 +1379,7 @@ function stripUnits(value)
 {
     // remove units from '0px', '0em' etc. leave non-zero units in-tact.
     return value.replace(/(url\(.*?\)|[^0]\S*\s*)|0(%|em|ex|px|in|cm|mm|pt|pc)(\s|$)/gi, function(_, skip, remove, whitespace) {
-	return skip || ('0' + whitespace);
+    return skip || ('0' + whitespace);
     });
 }
 
