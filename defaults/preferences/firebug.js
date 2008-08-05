@@ -10,6 +10,10 @@ pref("extensions.firebug.openInWindow", false);
 pref("extensions.firebug.showErrorCount", true);
 pref("extensions.firebug.viewPanelOrient", "vertical");
 
+pref("extensions.firebug.preferEnabled.Console", false);
+pref("extensions.firebug.preferEnabled.Script", false);
+pref("extensions.firebug.preferEnabled.Net", false);
+
 // Console
 pref("extensions.firebug.showJSErrors", true);
 pref("extensions.firebug.showJSWarnings", false);

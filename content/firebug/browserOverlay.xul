@@ -69,7 +69,7 @@
             item.hidden = (popupNode instanceof HTMLInputElement
                                 || popupNode instanceof HTMLIFrameElement
                                 || popupNode instanceof HTMLTextAreaElement
-				|| Firebug.registeredEditors.length == 0);
+                || Firebug.registeredEditors.length == 0);
         }
         const onLoad = function(event) {
             window.removeEventListener("load", onLoad, false);
@@ -222,8 +222,8 @@
                 label="&firebug.DetachFirebug;" command="cmd_toggleDetachFirebug" type="checkbox"/>
             <menuseparator/>
             <menuitem label="&firebug.ClearConsole;" command="cmd_clearConsole"/>
-            <!-- <menuseparator/>
-            <menuitem label="Save Panels to File" command="cmd_savePanels"/>  NLS -->
+            <menuseparator/>
+            <menuitem id="menu_turnOffFirebug" label="Turn Off Firebug" command="cmd_turnOffFirebug"/>
         </menupopup>
     </statusbar>
 
