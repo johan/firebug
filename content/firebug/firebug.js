@@ -1986,22 +1986,42 @@ Firebug.ActivableModule = extend(Firebug.Module,
     resetTooltip: function()
     {
         var tooltip = "Firebug "+ Firebug.getVersion();
-        var n = this.activeContexts.length;
-        if (n > 0) tooltip += " activated by";
-        for (var i = 0; i < n; i++)
+        var urls = this.getURLsForAllActiveContexts();
+        if (urls.length > 0)
         {
-            try
-            {
-                var url = this.activeContexts[i].window.location.toString();
-                tooltip += "\n"+url;
-            }
-            catch(e)
-            {
-                if (FBTrace.DBG_ERRORS)
-                    FBTrace.dumpProperties("firebug.resetTooltip could not get window.location for a context", e);
-            }
+            tooltip += " activated by";
+            for (var i = 0; i < urls.length; i++)
+                tooltip += "\n"+urls[i];
         }
         $('fbStatusIcon').setAttribute("tooltiptext", tooltip);
+
+    },
+
+    getURLsForAllActiveContexts: function()
+    {
+        var contextURLSet = [];  // create a list of all unique activeContexts in all modules
+        for (var i = 0; i < modules.length; i++)
+        {
+            var module = modules[i];
+            if (module.activeContexts)
+            {
+                for (var ic = 0; ic < module.activeContexts.length; ic++)
+                {
+                    try
+                    {
+                        var url = module.activeContexts[ic].window.location.toString();
+                        if (contextURLSet.indexOf(url) == -1)
+                            contextURLSet.push(url);
+                    }
+                    catch(e)
+                    {
+                        if (FBTrace.DBG_ERRORS)
+                            FBTrace.dumpProperties("firebug.resetTooltip could not get window.location for a context", e);
+                    }
+                }
+            }
+        }
+        return contextURLSet;
     },
     // ---------------------------------------------------------------------------------------
 
