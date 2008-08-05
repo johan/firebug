@@ -483,17 +483,20 @@ function correctLineNumbersOnExceptions(context, object)
 
 function correctLineNumbersWithStack(trace, object)
 {
-    if (FBTrace.DBG_ERRORS)                                                                            /*@explore*/
-        FBTrace.dumpProperties("errors.observe showStackTrace trace frames:", trace.frames);                          /*@explore*/
     var stack_frame = trace.frames[0];
-    if (stack_frame && (stack_frame.href == object.sourceName))
+    if (stack_frame)
     {
         sourceName = stack_frame.href;
         lineNumber = stack_frame.lineNo;
         // XXXjjb Seems to change the message seen in Firefox Error Console
         var correctedError = object.init(object.errorMessage, sourceName, object.sourceLine,lineNumber, object.columnNumber, object.flags, object.category);
+        if (FBTrace.DBG_ERRORS)                                                                            /*@explore*/
+            FBTrace.dumpProperties("errors.correctLineNumbersWithStack corrected message with frame:", stack_frame);                          /*@explore*/
         return true;
     }
+    if (FBTrace.DBG_ERRORS)                                                                            /*@explore*/
+        FBTrace.dumpProperties("errors.correctLineNumbersWithStack fails for object.sourceName "+object.sourceName+" and frame:", stack_frame);                          /*@explore*/
+
     return false;
 }
 
