@@ -1276,11 +1276,9 @@ FirebugService.prototype =
             {
                 fbs.nestedScriptStack.appendElement(script, false);
                 if (fbs.DBG_FBS_CREATION) ddd("onScriptCreated: nested function named: "+script.functionName+"\n");                                         /*@explore*/
-                if (script.functionName == "anonymous") { // not no-name
+                if (script.functionName == "anonymous")  // not no-name
                     fbs.hookInterruptsToTrackScripts();  // if the hook is taken, then its not a eval- or top-, must be Function or ?
-                } else {
-                    dispatch(scriptListeners,"onScriptCreated",[script, fileName, script.baseLineNumber]);
-                }
+                dispatch(scriptListeners,"onScriptCreated",[script, fileName, script.baseLineNumber]);
             }
         }
         catch(exc)
