@@ -491,7 +491,7 @@ function correctLineNumbersWithStack(trace, object)
         // XXXjjb Seems to change the message seen in Firefox Error Console
         var correctedError = object.init(object.errorMessage, sourceName, object.sourceLine,lineNumber, object.columnNumber, object.flags, object.category);
         if (FBTrace.DBG_ERRORS)                                                                            /*@explore*/
-            FBTrace.dumpProperties("errors.correctLineNumbersWithStack corrected message with frame:", stack_frame);                          /*@explore*/
+            FBTrace.sysout("errors.correctLineNumbersWithStack corrected message with frame:",stack_frame.toString());                          /*@explore*/
         return true;
     }
     if (FBTrace.DBG_ERRORS)                                                                            /*@explore*/
