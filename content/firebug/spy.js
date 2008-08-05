@@ -136,7 +136,7 @@ Firebug.Spy = extend(Firebug.Module,
 
     initContext: function(context)
     {
-        context.spies = [];  // MAY NOT BE CALLED FOR CHROMEBUG??
+        context.spies = [];
 
         if (Firebug.showXMLHttpRequests  && Firebug.Console.isEnabled(context))
             this.attachSpy(context, context.window);
@@ -227,12 +227,12 @@ Firebug.Spy.XHR = domplate(Firebug.Rep,
                 )
             )
         ),
-        
+
     getCaption: function(spy)
     {
         return spy.method.toUpperCase() + " " + cropString(spy.getURL(), 100);
     },
-    
+
     getFullUri: function(spy)
     {
         return spy.getURL();
