@@ -1166,8 +1166,9 @@ CSSEditor.prototype = domplate(Firebug.InlineEditor.prototype,
                     if (FBTrace.DBG_CSS)
                         FBTrace.sysout("CSSEditor.saveEdit previousProperty: "+this.previousPropertyName+"->"+this.newPropertyName+" = "+this.previousPropertyValue+"\n");
                 }
-
             }
+            else if (!value) // name of the property has been deleted, so remove the property.
+                style.removeProperty(previousValue);
         }
         else if (getAncestorByClass(target, "cssPropValue"))
         {
