@@ -1336,14 +1336,14 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
 
     onSuspendFirebug: function(context)
     {
-        fbs.suspend();  // can be called multiple times.
+        fbs.pause();  // can be called multiple times.
         $('fbStatusIcon').setAttribute("jsd", "off");  // signal user we are off
         if (FBTrace.DBG_PANELS) FBTrace.sysout("debugger.onSuspendFirebug isEnabled " +Firebug.Debugger.isEnabled(context)+ " for "+context.window.location+"\n");
     },
 
     onResumeFirebug: function(context)
     {
-        fbs.resume();
+        fbs.unPause();
         if (Firebug.Debugger.isEnabled(context))
             $('fbStatusIcon').setAttribute("jsd", "on");
         if (FBTrace.DBG_PANELS) FBTrace.sysout("debugger.onResumeFirebug isEnabled " +Firebug.Debugger.isEnabled(context)+ " for "+context.window.location+"\n");

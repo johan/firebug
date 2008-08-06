@@ -835,14 +835,14 @@ FirebugService.prototype =
         waitingForTimer = true;
     },
 
-    suspend: function()  // must support multiple calls
+    pause: function()  // must support multiple calls
     {
         if (!this.suspended)  // marker only UI in debugger.js
             this.suspended = jsd.pause();
         return this.suspended;
     },
 
-    resume: function()
+    unPause: function()
     {
         if (this.suspended)
         {
@@ -1325,6 +1325,9 @@ FirebugService.prototype =
     {
         if (script.tag in fbs.onXScriptCreatedByTag)
             delete  fbs.onXScriptCreatedByTag[script.tag];
+
+        if (fbs.DBG_FBS_CREATION)
+            ddd('fbs.onScriptDestroyed '+script.tag+"\n");
 
         dispatch(scriptListeners,"onScriptDestroyed",[script]);
     },
