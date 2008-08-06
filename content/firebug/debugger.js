@@ -1247,6 +1247,9 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
 
     reattachContext: function(browser, context)
     {
+        var chrome = context ? context.chrome : FirebugChrome;
+        this.filterButton = chrome.$("fbScriptFilterMenu");  // connect to the button in the new window, not 'window'
+        this.filterMenuUpdate();
         Firebug.ActivableModule.reattachContext.apply(this, arguments);
     },
 
@@ -1415,10 +1418,10 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
     {
         var value = Firebug.getPref("extensions.firebug-service", "scriptsFilter");
         this.filterButton.value = value;
-
         this.filterButton.label = this.menuShortLabel[value];
         this.filterButton.removeAttribute("disabled");
         this.filterButton.setAttribute("value", value);
+        FBTrace.sysout("debugger.filterMenuUpdate value: "+value+" label:"+this.filterButton.label+'\n');
     },
 
     //----------------------------------------------------------------------------------
