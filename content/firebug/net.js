@@ -201,8 +201,7 @@ Firebug.NetMonitor = extend(Firebug.ActivableModule,
 
         // Register HTTP observer for all net-request monitoring and time measuring.
         // This is done as soon as the FB UI is loaded.
-        observerService.addObserver(HttpObserver, "http-on-modify-request", false);
-        observerService.addObserver(HttpObserver, "http-on-examine-response", false);
+        HttpObserver.registerObserver();
 
         prefs.addObserver(Firebug.prefDomain, NetLimit, false);
     },
@@ -218,8 +217,7 @@ Firebug.NetMonitor = extend(Firebug.ActivableModule,
     shutdown: function()
     {
         // Unregister HTTP observer. This is done when the FB UI is closed.
-        observerService.removeObserver(HttpObserver, "http-on-modify-request");
-        observerService.removeObserver(HttpObserver, "http-on-examine-response");
+        HttpObserver.unregisterObserver();
 
         prefs.removeObserver(Firebug.prefDomain, this, false);
     },
@@ -295,14 +293,17 @@ Firebug.NetMonitor = extend(Firebug.ActivableModule,
     
     onSuspendFirebug: function(context)
     {
-        // TODO remove listeners, save for resume?
+        HttpObserver.unregisterObserver();  // safe for multiple calls
+        context.browser.removeProgressListener(context.netProgress, NOTIFY_ALL);
+
         $('fbStatusIcon').removeAttribute("net");
     },
     
     onResumeFirebug: function(context)
     {
-        // TODO restore listeners
-        
+        HttpObserver.registerObserver();  // safe for multiple calls
+        context.browser.addProgressListener(context.netProgress, NOTIFY_ALL);
+       
         if (Firebug.NetMonitor.isEnabled(this.context))
             $('fbStatusIcon').setAttribute("net", "on");
     },
@@ -2552,6 +2553,44 @@ function isURLEncodedFile(file, text)
 
 var HttpObserver =
 {
+    registered: false,
+
+    registerObserver: function()  
+    {
+        if (this.registered)
+            return;
+
+        try
+        {
+            observerService.addObserver(HttpObserver, "http-on-modify-request", false);
+            observerService.addObserver(HttpObserver, "http-on-examine-response", false);
+            this.registered = true;
+        }
+        catch (err)
+        {
+            if (FBTrace.DBG_ERRORS) 
+                FBTrace.dumpProperties("net.HttpObserver.registerObserver: ", err);
+        }
+    },
+
+    unregisterObserver: function()  
+    {
+        if (!this.registered)
+            return;
+
+        try
+        {
+            observerService.removeObserver(HttpObserver, "http-on-modify-request");
+            observerService.removeObserver(HttpObserver, "http-on-examine-response");
+            this.registered = false;
+        }
+        catch (err)
+        {
+            if (FBTrace.DBG_ERRORS) 
+                FBTrace.dumpProperties("net.HttpObserver.unregisterObserver: ", err);
+        }
+    },
+
   // nsIObserver
   observe: function(aSubject, aTopic, aData)
   {
