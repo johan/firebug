@@ -97,20 +97,24 @@ var Errors = Firebug.Errors = extend(Firebug.Module,
 
     startObserving: function()
     {
-        consoleService.registerListener(this);
-        $('fbStatusIcon').setAttribute("errors", "on");
-
-        if (statusBar)
-            statusBar.setAttribute("disabled", "true");
-
+        var errorsOn = $('fbStatusIcon').getAttribute("errors"); // signal user and be a marker.
+        if (!errorsOn) // need to be safe to multiple calls
+        {
+            consoleService.registerListener(this);
+            $('fbStatusIcon').setAttribute("errors", "on");
+        }
     },
 
     stopObserving: function()
     {
-        if (FBTrace.DBG_ERRORS)
-            FBTrace.sysout("errors.disable unregisterListener\n");
-        consoleService.unregisterListener(this);
-         $('fbStatusIcon').removeAttribute("errors");
+        var errorsOn = $('fbStatusIcon').getAttribute("errors");
+        if (errorsOn)  // need to be safe to multiple calls
+        {
+            if (FBTrace.DBG_ERRORS)
+                FBTrace.sysout("errors.disable unregisterListener\n");
+            consoleService.unregisterListener(this);
+            $('fbStatusIcon').removeAttribute("errors");
+        }
     },
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -251,9 +255,6 @@ var Errors = Firebug.Errors = extend(Firebug.Module,
 
     showContext: function(browser, context)
     {
-        if (statusBar)
-            statusBar.setAttribute("disabled", !context);
-
         this.showCount(context ? context.errorCount : 0);
     }
 });

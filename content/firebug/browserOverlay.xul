@@ -223,7 +223,7 @@
             <menuseparator/>
             <menuitem label="&firebug.ClearConsole;" command="cmd_clearConsole"/>
             <menuseparator/>
-            <menuitem id="menu_turnOffFirebug" label="Turn Off Firebug" command="cmd_turnOffFirebug"/>
+            <menuitem id="menu_toggleSuspendFirebug" label="Suspend Firebug" command="cmd_toggleSuspendFirebug"/>
         </menupopup>
     </statusbar>
 

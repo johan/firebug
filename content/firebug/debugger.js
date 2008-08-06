@@ -1319,7 +1319,7 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
 
     onPanelDeactivate: function(context, destroy, panelName)
     {
-        if (FBTrace.DBG_ERRORS) FBTrace.sysout("debugger.onPanelDeactivate destroy: "+destroy+" for "+context.window+"\n");
+        if (FBTrace.DBG_PANELS) FBTrace.sysout("debugger.onPanelDeactivate destroy: "+destroy+" for "+context.window.location+"\n");
 
         if (!destroy)  // then the user is saying no to debugging
             this.clearAllBreakpoints(context);
@@ -1332,6 +1332,21 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
             FBTrace.sysout("debugger.onLastPanelDeactivate for "+this.debuggerName+" with destroy:"+destroy+" on"+context.window.location+"\n"); /*@explore*/
 
         fbs.unregisterDebugger(this);
+    },
+
+    onSuspendFirebug: function(context)
+    {
+        fbs.suspend();  // can be called multiple times.
+        $('fbStatusIcon').setAttribute("jsd", "off");  // signal user we are off
+        if (FBTrace.DBG_PANELS) FBTrace.sysout("debugger.onSuspendFirebug isEnabled " +Firebug.Debugger.isEnabled(context)+ " for "+context.window.location+"\n");
+    },
+
+    onResumeFirebug: function(context)
+    {
+        fbs.resume();
+        if (Firebug.Debugger.isEnabled(context))
+            $('fbStatusIcon').setAttribute("jsd", "on");
+        if (FBTrace.DBG_PANELS) FBTrace.sysout("debugger.onResumeFirebug isEnabled " +Firebug.Debugger.isEnabled(context)+ " for "+context.window.location+"\n");
     },
 
     //---------------------------------------------------------------------------------------------

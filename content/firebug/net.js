@@ -292,6 +292,20 @@ Firebug.NetMonitor = extend(Firebug.ActivableModule,
     {
         $('fbStatusIcon').removeAttribute("net");
     },
+    
+    onSuspendFirebug: function(context)
+    {
+        // TODO remove listeners, save for resume?
+        $('fbStatusIcon').removeAttribute("net");
+    },
+    
+    onResumeFirebug: function(context)
+    {
+        // TODO restore listeners
+        
+        if (Firebug.NetMonitor.isEnabled(this.context))
+            $('fbStatusIcon').setAttribute("net", "on");
+    },
 
     addListener: function(listener)
     {
@@ -2721,6 +2735,7 @@ Firebug.registerPanel(NetPanel);
 // ************************************************************************************************
 
 }});
+
 
 
 

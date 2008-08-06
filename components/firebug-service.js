@@ -804,8 +804,6 @@ FirebugService.prototype =
             this.DBG_FBS_ERRORS = prefs.getBoolPref("extensions.firebug-service.DBG_FBS_ERRORS");                                      /*@explore*/
             this.DBG_FBS_STEP = prefs.getBoolPref("extensions.firebug-service.DBG_FBS_STEP");
             this.DBG_FBS_FUNCTION = prefs.getBoolPref("extensions.firebug-service.DBG_FBS_FUNCTION");                                          /*@explore*/
-            ddd("FirebugService.obeyPrefs fbs.DBG_FBS_CREATION: "+fbs.DBG_FBS_CREATION+" fbs.DBG_FBS_BP:"+fbs.DBG_FBS_BP+                            /*@explore*/
-                " fbs.DBG_FBS_ERRORS:"+fbs.DBG_FBS_ERRORS+" fbs.DBG_FBS_STEP:"+fbs.DBG_FBS_STEP+" fbs.DBG_FBS_FUNCTION:"+fbs.DBG_FBS_FUNCTION+"\n");                                     /*@explore*/
         }                                                                                                                  /*@explore*/
         catch (exc)                                                                                                        /*@explore*/
         {                                                                                                                  /*@explore*/
@@ -835,6 +833,26 @@ FirebugService.prototype =
         }}, 1000, TYPE_ONE_SHOT);
 
         waitingForTimer = true;
+    },
+
+    suspend: function()  // must support multiple calls
+    {
+        if (!this.suspended)  // marker only UI in debugger.js
+            this.suspended = jsd.pause();
+        return this.suspended;
+    },
+
+    resume: function()
+    {
+        if (this.suspended)
+        {
+            var depth = jsd.unPause();
+            if ( (this.suspended !=  1 || depth != 0) && fbs.DBG_FBS_ERRORS)
+                ddd("fbs.resume unpause mismatch this.suspended "+this.suspended+" unpause depth "+depth+"\n");
+            delete this.suspended;
+            return depth;
+        }
+        return null;
     },
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *

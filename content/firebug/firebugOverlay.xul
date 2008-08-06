@@ -21,7 +21,7 @@
 
         <command id="cmd_clearConsole" oncommand="Firebug.Console.clear(FirebugContext)"/>
         <command id="cmd_clearNet" oncommand="Firebug.NetMonitor.clear(FirebugContext)"/>
-        <command id="cmd_turnOffFirebug" oncommand="Firebug.turnOff()"/>
+        <command id="cmd_toggleSuspendFirebug" oncommand="Firebug.toggleSuspend()"/>
 
         <command id="cmd_toggleInspecting" oncommand="Firebug.Inspector.toggleInspecting(FirebugContext)"
                  checked="false"/>

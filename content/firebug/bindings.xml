@@ -174,7 +174,7 @@
                     if (sel)
                         sel.removeAllRanges();
 
-                    this.showSelectedPanel();
+                    this.showSelectedPanel();  // sets active attribute true
 
                     if (!noRefresh && panel.needsRefresh)
                     {
@@ -241,7 +241,7 @@
 
     <handlers>
         <handler event="popupshowing"><![CDATA[
-            if (!this.selectedPanel || (event.target != this)) 
+            if (!this.selectedPanel || (event.target != this))
                 return;
 
             var menu = this.selectedPanel.getOptionsMenuItems(FirebugContext);
@@ -349,7 +349,7 @@
             var items = this.popup.getElementsByTagNameNS("http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul","menuitem");
             var location = FirebugChrome.getBrowserURI(FirebugContext);
             var value = this.module.getHostPermission(FirebugContext);
-            
+
             for (var i=0; i<items.length; i++)
             {
                 var option = items[i].value;

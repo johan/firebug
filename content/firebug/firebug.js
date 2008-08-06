@@ -37,6 +37,7 @@ const toggleCommand = $("cmd_toggleFirebug");
 const detachCommand = $("cmd_toggleDetachFirebug");
 const tabBrowser = $("content");
 
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 const prefs = PrefService.getService(nsIPrefBranch2);
@@ -246,40 +247,89 @@ top.Firebug =
         if (FBTrace.DBG_INITIALIZE) FBTrace.sysout("firebug.shutdown exited\n");                                       /*@explore*/
     },
 
-    turnOff: function()
+    // ----------------------------------------------------------------------------------------------------------------
+
+    getSuspended: function()
     {
-        var firstContext = null;
+        var suspendMenuItem = $("menu_toggleSuspendFirebug");
+        if (suspendMenuItem.hasAttribute("suspended"))
+            return suspendMenuItem.getAttribute("suspended");
+        return null;
+    },
+
+    setSuspended: function(value)
+    {
+        var suspendMenuItem = $("menu_toggleSuspendFirebug");
+        if (FBTrace.DBG_OPTIONS)
+            FBTrace.sysout("Firebug.setSuspended to "+value+"\n");
+
+        if (value)
+            suspendMenuItem.setAttribute("suspended", value);
+        else
+            suspendMenuItem.removeAttribute("suspended");
+
+        Firebug.ActivableModule.resetTooltip();
+    },
+
+    toggleSuspend: function()
+    {
+        if (this.getSuspended())         // then we should not be visible,
+        {
+            this.toggleBar(true);   // become visible and call resume()
+        }
+        else
+        {
+            this.suspend();
+            this.syncBar();  // pull down the visible UI
+        }
+    },
+
+    suspend: function() // dispatch onSuspendFirebug to all modules
+    {
+        this.setSuspended("suspending");
         TabWatcher.iterateContexts(
-            function turnOffContext(context)
+            function suspendContext(context)
             {
                 try
                 {
-                    if (!firstContext)
-                    {
-                        // Store the global settings for the check boxes.
-                        for (var i = 0; i < activableModules.length; i++)
-                        {
-                            var preferEnabled = activableModules[i].isAlwaysEnabled();
-                            var prefName = "preferEnabled."+Firebug.ModuleManagerPage.getModuleName(activableModules[i]);
-                            Firebug.setPref(Firebug.prefDomain, prefName, preferEnabled);
-                        }
-                        firstContext = context;
-                    }
                     // turn every activable module off.
                     for (var i = 0; i < activableModules.length; i++)
-                        activableModules[i].panelDeactivate(context, true);
-                    // don't show Firebug panel as another hint we are turned off.
+                        activableModules[i].onSuspendFirebug(context);
+                    // don't show Firebug panel as another hint we are suspended.
                     context.browser.showFirebug = false;
                 }
                 catch (e)
                 {
                     if (FBTrace.DBG_ERRORS)
-                        FBTrace.dumpProperties("Firebug.turnOff FAILS to unwatch context: "+context.window.location, e);
+                        FBTrace.dumpProperties("Firebug.suspend FAILS for context: "+context.window.location, e);
                 }
             }
         );
-        // Bring down the visible page Firebug.
-        Firebug.syncBar();
+
+        this.setSuspended("suspended");
+    },
+
+    resume: function()  // dispatch onResumeFirebug to all modules
+    {
+        this.setSuspended("resuming");
+        TabWatcher.iterateContexts
+        (
+            function suspendContext(context)
+            {
+                try
+                {
+                    // turn every activable module off.
+                    for (var i = 0; i < activableModules.length; i++)
+                        activableModules[i].onResumeFirebug(context);
+                }
+                catch (e)
+                {
+                    if (FBTrace.DBG_ERRORS)
+                        FBTrace.dumpProperties("Firebug.suspend FAILS for context: "+context.window.location, e);
+                }
+            }
+        );
+        this.setSuspended(null);
     },
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -700,6 +750,9 @@ top.Firebug =
         if (toggleOff == contentBox.collapsed)
             return;
 
+        if (this.getSuspended())
+            this.resume();
+
         if (panelName)
             browser.chrome.selectPanel(panelName);
 
@@ -730,7 +783,7 @@ top.Firebug =
 
     detachBar: function()
     {
-        var browser = FirebugChrome.getCurrentBrowser(); // XXXjjb Joe check tabBrowser.selectedBrowser;
+        var browser = FirebugChrome.getCurrentBrowser();
         if (!browser.chrome)
             return;
 
@@ -1986,15 +2039,19 @@ Firebug.ActivableModule = extend(Firebug.Module,
     resetTooltip: function()
     {
         var tooltip = "Firebug "+ Firebug.getVersion();
-        var urls = this.getURLsForAllActiveContexts();
-        if (urls.length > 0)
+        if (Firebug.getSuspended())
+            tooltip += ": " + Firebug.getSuspended();
+        else
         {
-            tooltip += " activated by";
-            for (var i = 0; i < urls.length; i++)
-                tooltip += "\n"+urls[i];
+            var urls = Firebug.ActivableModule.getURLsForAllActiveContexts();
+            if (urls.length > 0)
+            {
+                tooltip += " activated by "+urls.length+" page(s)";
+                for (var i = 0; i < urls.length; i++)
+                    tooltip += "\n"+urls[i];
+            }
         }
         $('fbStatusIcon').setAttribute("tooltiptext", tooltip);
-
     },
 
     getURLsForAllActiveContexts: function()
@@ -2044,6 +2101,17 @@ Firebug.ActivableModule = extend(Firebug.Module,
     {
         // Just after onPanelDeactivate, no remaining activecontext
     },
+
+    onSuspendFirebug: function(context)
+    {
+        // When the user requests Suspend Firebug. Modules should remove listeners, disable function that takes resources
+    },
+
+    onResumeFirebug: function(context)
+    {
+        // When the user requests Resume Firebug Modules should undo the work done in onSuspendFirebug
+    },
+    // ---------------------------------------------------------------------------------------
 
     isEnabled: function(context)
     {
@@ -2564,14 +2632,6 @@ Firebug.ModuleManagerPage = domplate(Firebug.Rep,
 
     show: function(panel, module)
     {
-        if (module.wasEnabled(panel.context))
-        {
-            // show() is called on this enablement panel, but the module was previously enabled.
-            // This happens when we turnOff firebug then open the Firebug again. Lets show the old state.
-            this.hide(panel);
-            return;
-        }
-
         try
         {
             this.module = module;
