@@ -71,13 +71,13 @@
                                 || popupNode instanceof HTMLTextAreaElement
                 || Firebug.registeredEditors.length == 0);
         }
-        const onLoad = function(event) {
-            window.removeEventListener("load", onLoad, false);
+        function addOpenEditorSHowHide(event) {
+            window.removeEventListener("load", addOpenEditorSHowHide, false);
             var contextMenu = document.getElementById("contentAreaContextMenu");
             if (contextMenu)
                 contextMenu.addEventListener("popupshowing", OpenEditorShowHide, false);
         };
-        window.addEventListener("load", onLoad, false);
+        window.addEventListener("load", addOpenEditorSHowHide, false);
     </script>
 
     <popup id="contentAreaContextMenu">
