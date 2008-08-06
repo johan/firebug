@@ -2602,8 +2602,11 @@ Firebug.ModuleManagerPage = domplate(Firebug.Rep,
                 continue;
 
             var model = Firebug.getRepObject(input);
-            if (input.checked)
-                needReload = needReload || this.enableModule(model);
+            if (input.checked) 
+            {
+                var oneReload = this.enableModule(model);
+                needReload = needReload || oneReload;
+            }
             else
                 this.disableModule(model);
         }
