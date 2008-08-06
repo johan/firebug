@@ -138,6 +138,7 @@ Firebug 1.1 is Firebug 1.05 by Joe Hewitt with additions by John J. Barton and M
     * Issue 769 HTML Tab Unresponsive After Dock/Undock
     * Issue 771 Improve the display of the FBTrace buttons contribution by Ken Arnold
     * Issue 772 de locale for German Firebug, contribution by  benedikt.langens
+    * Issue 775 Deleting font-family from the Style tab doesn't delete it but sets it to 'null'
     * Issue 784 Breakpoints in scripts included in an iframe don't cause debugger to break. Introduced
     * Issue 785 Update Japanese Locale, contribution by http://code.google.com/u/norahmarinkovic/
     * Issue 793 warnings classified as errors
