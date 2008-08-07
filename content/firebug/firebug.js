@@ -1181,8 +1181,22 @@ top.Firebug =
             if (FBTrace.DBG_DISPATCH || FBTrace.DBG_ERRORS)
                 FBTrace.sysout("firebug.showContext set FirebugContext: "+context.window.location+"\n");
 
+            if (this.isDisabledFor(FirebugContext))
+            {
+                    var browser = FirebugChrome.getCurrentBrowser();
+                    if (browser && !browser.showFirebug)
+                        this.suspend();
+            }
+
             this.syncBar();
         }
+    },
+
+    isDisabledFor: function(context)
+    {
+        for (var i = 0; i < activableModules.length; i++)
+            if (activableModules[i].isEnabled(context)) return false;
+        return true;
     },
 
     watchWindow: function(context, win)
@@ -2602,7 +2616,7 @@ Firebug.ModuleManagerPage = domplate(Firebug.Rep,
                 continue;
 
             var model = Firebug.getRepObject(input);
-            if (input.checked) 
+            if (input.checked)
             {
                 var oneReload = this.enableModule(model);
                 needReload = needReload || oneReload;
