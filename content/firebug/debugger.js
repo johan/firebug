@@ -872,6 +872,8 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
         else
         {
             if (FBTrace.DBG_SOURCEFILES) FBTrace.sysout("debugger.onTopLevelScriptCreated reuse sourcefile="+sourceFile.toString()+" -> "+context.window.location+" ("+context.uid+")"+"\n"); /*@explore*/
+            if (!sourceFile.outerScript.isValid)
+                sourceFile.outerScript = outerScript;
             FBL.addScriptsToSourceFile(sourceFile, outerScript, innerScripts);
         }
 
