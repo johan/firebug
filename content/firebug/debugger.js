@@ -907,8 +907,8 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
                     row.setAttribute("breakpoint", isSet);
                     if (isSet && props)
                     {
-                        row.setAttribute("condition", props.condition ? true : false);
-                        row.setAttribute("disabledBreakpoint", props.disabled);
+                        row.setAttribute("condition", props.condition ? "true" : "false");
+                        row.setAttribute("disabledBreakpoint", new Boolean(props.disabled).toString());
                     } else
                     {
                         row.removeAttribute("condition");
