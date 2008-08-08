@@ -581,24 +581,51 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
     },
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    // These are XUL window level call backs and should be moved into Firebug where is says nsIFirebugClient
 
     onJSDActivate: function(jsd)  // just before hooks are set
     {
-        if (FBTrace.DBG_INITIALIZE)
-            FBTrace.dumpStack("debugger.onJSDActivate");
-
         // this is just to get the timing right.
         // we called by fbs as a "debuggr", (one per window) and we are re-dispatching to our listeners,
         // Firebug.DebugListeners.
-        $('fbStatusIcon').setAttribute("jsd", "on");
+        var active = this.setIsJSDActive();
+
+        if (FBTrace.DBG_INITIALIZE)
+            FBTrace.sysout("debugger.onJSDActivate "+active+"\n");
+
         dispatch2(listeners,"onJSDActivate",[fbs]);
     },
 
     onJSDDeactivate: function(jsd)
     {
-        $('fbStatusIcon').setAttribute("jsd", "off");
+        this.setIsJSDActive();
         dispatch2(listeners,"onJSDDeactivate",[fbs]);
     },
+
+    setIsJSDActive: function()
+    {
+        var active = fbs.isJSDActive();
+        if (active)
+            $('fbStatusIcon').setAttribute("jsd", "on");
+        else
+            $('fbStatusIcon').setAttribute("jsd", "off");
+
+        if (FBTrace.DBG_INITIALIZE)
+            FBTrace.sysout("debugger.setIsJSDActive "+active+"\n");
+
+        return active;
+    },
+
+    suspendFirebug: function()
+    {
+        Firebug.suspendFirebug();
+    },
+
+    resumeFirebug: function()
+    {
+        Firebug.resumeFirebug();
+    },
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
     supportsWindow: function(win)
     {
@@ -1230,6 +1257,13 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
         this.panelName = "script";
         this.description = $STR("script.modulemanager.description");
 
+        // This is a service operation, a way of encapsulating fbs which is in turn implementing this
+        // simple service. We could implment a whole component for this service, but it hardly makes sense.
+        Firebug.broadcast = function encapsulateFBSBroadcast(message, args)
+        {
+            fbs.broadcast(message, args);
+        }
+
         Firebug.ActivableModule.initialize.apply(this, arguments);
     },
 
@@ -1341,16 +1375,19 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
     onSuspendFirebug: function(context)
     {
         fbs.pause();  // can be called multiple times.
-        $('fbStatusIcon').setAttribute("jsd", "off");  // signal user we are off
-        if (FBTrace.DBG_PANELS) FBTrace.sysout("debugger.onSuspendFirebug isEnabled " +Firebug.Debugger.isEnabled(context)+ " for "+context.window.location+"\n");
+        var active = this.setIsJSDActive();  // update ui
+
+        if (FBTrace.DBG_PANELS)
+            FBTrace.sysout("debugger.onSuspendFirebug active:"+active+" isEnabled " +Firebug.Debugger.isEnabled(context)+ " for "+context.window.location+"\n");
     },
 
     onResumeFirebug: function(context)
     {
         fbs.unPause();
-        if (Firebug.Debugger.isEnabled(context))
-            $('fbStatusIcon').setAttribute("jsd", "on");
-        if (FBTrace.DBG_PANELS) FBTrace.sysout("debugger.onResumeFirebug isEnabled " +Firebug.Debugger.isEnabled(context)+ " for "+context.window.location+"\n");
+        var active = this.setIsJSDActive();  // update ui
+
+        if (FBTrace.DBG_PANELS)
+            FBTrace.sysout("debugger.onResumeFirebug active:"+active+" isEnabled " +Firebug.Debugger.isEnabled(context)+ " for "+context.window.location+"\n");
     },
 
     //---------------------------------------------------------------------------------------------
@@ -1891,7 +1928,7 @@ ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
         this.showToolbarButtons("fbDebuggerButtons", enabled);
 
         this.obeyPreferences();
-        
+
         // The default page with description and enable button is
         // visible only if debugger is disabled.
         if (enabled)
@@ -1930,13 +1967,13 @@ ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
         if (Firebug.omitObjectPathStack)  // User does not want the toolbar stack
             FBL.hide(panelStatus, true);
     },
-    
+
     hide: function()
     {
         this.showToolbarButtons("fbDebuggerButtons", false);
         this.showToolbarButtons("fbScriptButtons", false);
         FBL.hide(panelStatus, false);
-        
+
         delete this.infoTipExpr;
 
         var sourceBox = this.selectedSourceBox;
@@ -2540,11 +2577,11 @@ BreakpointsPanel.prototype = extend(Firebug.Panel,
 
 Firebug.DebuggerListener =
 {
-    onJSDActivate: function(jsd)
+    onJSDActivate: function(jsd)  // start or unPause
     {
 
     },
-    onJSDDeactivate: function(jsd)
+    onJSDDeactivate: function(jsd) // stop or pause
     {
 
     },
@@ -2600,7 +2637,7 @@ CallstackPanel.prototype = extend(Firebug.Panel,
         if (FBTrace.DBG_STACK) {                                                                                       /*@explore*/
             this.uid = FBL.getUniqueId();                                                                              /*@explore*/
             FBTrace.sysout("CallstackPanel.initialize:"+this.uid+"\n");                                                /*@explore*/
-        }                               
+        }
         Firebug.Panel.initialize.apply(this, arguments);
     },
 
@@ -2627,13 +2664,13 @@ CallstackPanel.prototype = extend(Firebug.Panel,
 
     refresh: function()
     {
-        if (FBTrace.DBG_STACK) 
+        if (FBTrace.DBG_STACK)
             FBTrace.sysout("debugger.callstackPanel.refresh uid="+this.uid+"\n");                   /*@explore*/
         var mainPanel = this.context.getPanel("script", true);
         if (mainPanel.selection instanceof jsdIStackFrame)
             this.showStackFrame(mainPanel.selection);
     },
-    
+
     showStackFrame: function(frame)
     {
         clearNode(this.panelNode);
@@ -2657,7 +2694,7 @@ CallstackPanel.prototype = extend(Firebug.Panel,
                     div.label = label;
                     FBL.setClass(div, "objectLink");
                     FBL.setClass(div, "objectLink-stackFrame");
-                    
+
                     div.addEventListener("click", function(event)
                     {
                         var revent = document.createEvent("MouseEvents");
@@ -2672,12 +2709,12 @@ CallstackPanel.prototype = extend(Firebug.Panel,
             }
         }
     },
-    
-    highlightFrame: function(frame) 
+
+    highlightFrame: function(frame)
     {
         if (FBTrace.DBG_STACK)
             FBTrace.dumpProperties("debugger.callstackPanel.highlightFrame", frame);
-        
+
         var frameViews = this.panelNode.childNodes
         for (var child = this.panelNode.firstChild; child; child = child.nextSibling)
         {
@@ -2700,7 +2737,7 @@ CallstackPanel.prototype = extend(Firebug.Panel,
         if (item)
             item.setAttribute("selected", "true");
     },
-    
+
     getOptionsMenuItems: function()
     {
         var items = [

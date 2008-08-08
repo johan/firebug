@@ -150,7 +150,7 @@ top.Firebug =
         {
             this.version = version;
             $('fbStatusIcon').setAttribute("tooltiptext", "Firebug "+version);
-            $('fbStatusIcon').setAttribute("jsd", "off");
+
             var about = $('Firebug_About');
             if (about)
             {
@@ -209,6 +209,11 @@ top.Firebug =
         }
     },
 
+    broadcast: function(message, args)
+    {
+        // dispatch message to all XUL windows registered to firebug service.
+        // Implemented in Firebug.Debugger.
+    },
     /**
      * Called when the UI is ready to be initialized, once the panel browsers are loaded,
      * but before any contexts are created.
@@ -284,24 +289,31 @@ top.Firebug =
         }
     },
 
-    suspend: function() // dispatch onSuspendFirebug to all modules
+    suspend: function()  // dispatch suspendFirebug to all windows
+    {
+        this.broadcast('suspendFirebug', []);
+    },
+
+    suspendFirebug: function() // dispatch onSuspendFirebug to all modules
     {
         this.setSuspended("suspending");
         TabWatcher.iterateContexts(
             function suspendContext(context)
             {
-                try
+                // turn every activable module off.
+                for (var i = 0; i < activableModules.length; i++)
                 {
-                    // turn every activable module off.
-                    for (var i = 0; i < activableModules.length; i++)
+                    try
+                    {
                         activableModules[i].onSuspendFirebug(context);
+                    }
+                    catch (e)
+                    {
+                        if (FBTrace.DBG_ERRORS)
+                            FBTrace.dumpProperties("Firebug.suspend FAILS for "+activableModules[i].paneName+" context: "+context.window.location, e);
+                    }
                     // don't show Firebug panel as another hint we are suspended.
                     context.browser.showFirebug = false;
-                }
-                catch (e)
-                {
-                    if (FBTrace.DBG_ERRORS)
-                        FBTrace.dumpProperties("Firebug.suspend FAILS for context: "+context.window.location, e);
                 }
             }
         );
@@ -309,7 +321,12 @@ top.Firebug =
         this.setSuspended("suspended");
     },
 
-    resume: function()  // dispatch onResumeFirebug to all modules
+    resume: function()
+    {
+        this.broadcast('resumeFirebug', []);
+    },
+
+    resumeFirebug: function()  // dispatch onResumeFirebug to all modules
     {
         this.setSuspended("resuming");
         TabWatcher.iterateContexts
@@ -1081,7 +1098,7 @@ top.Firebug =
     },
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-    // nsIFireBugClient
+    // nsIFireBugClient  These are per XUL window callbacks
 
     enable: function()  // Called by firebug-service when the first context is created.
     {
@@ -2080,9 +2097,13 @@ Firebug.ActivableModule = extend(Firebug.Module,
                 {
                     try
                     {
-                        var url = module.activeContexts[ic].window.location.toString();
-                        if (contextURLSet.indexOf(url) == -1)
-                            contextURLSet.push(url);
+                        var cw = module.activeContexts[ic].window;
+                        if (cw.location && cw.location.toString)
+                        {
+                            var url = cw.location.toString();
+                            if (contextURLSet.indexOf(url) == -1)
+                                contextURLSet.push(url);
+                        }
                     }
                     catch(e)
                     {

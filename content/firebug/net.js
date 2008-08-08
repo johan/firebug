@@ -192,7 +192,7 @@ Firebug.NetMonitor = extend(Firebug.ActivableModule,
     initializeUI: function()
     {
         Firebug.ActivableModule.initializeUI.apply(this, arguments);
-        
+
         // Initialize max limit for logged requests.
         NetLimit.updateMaxLimit();
 
@@ -290,20 +290,28 @@ Firebug.NetMonitor = extend(Firebug.ActivableModule,
     {
         $('fbStatusIcon').removeAttribute("net");
     },
-    
+
     onSuspendFirebug: function(context)
     {
         HttpObserver.unregisterObserver();  // safe for multiple calls
-        context.browser.removeProgressListener(context.netProgress, NOTIFY_ALL);
+        try
+        {
+            context.browser.removeProgressListener(context.netProgress, NOTIFY_ALL);
+        }
+        catch (e)
+        {
+            if (FBTrace.DBG_ERRORS)
+                FBTrace.sysout("net.onSuspendFirebug could not removeProgressListener: ", e);
+        }
 
         $('fbStatusIcon').removeAttribute("net");
     },
-    
+
     onResumeFirebug: function(context)
     {
         HttpObserver.registerObserver();  // safe for multiple calls
         context.browser.addProgressListener(context.netProgress, NOTIFY_ALL);
-       
+
         if (Firebug.NetMonitor.isEnabled(this.context))
             $('fbStatusIcon').setAttribute("net", "on");
     },
@@ -1110,7 +1118,7 @@ NetPanel.prototype = domplate(Firebug.Panel,
         {
             var file = files[0];
             this.removeLogEntry(file);
-            
+
             // Remove the file occurrence from the queue.
             for (var j=0; j<this.queue.length; j++)
             {
@@ -2555,7 +2563,7 @@ var HttpObserver =
 {
     registered: false,
 
-    registerObserver: function()  
+    registerObserver: function()
     {
         if (this.registered)
             return;
@@ -2568,12 +2576,12 @@ var HttpObserver =
         }
         catch (err)
         {
-            if (FBTrace.DBG_ERRORS) 
+            if (FBTrace.DBG_ERRORS)
                 FBTrace.dumpProperties("net.HttpObserver.registerObserver: ", err);
         }
     },
 
-    unregisterObserver: function()  
+    unregisterObserver: function()
     {
         if (!this.registered)
             return;
@@ -2586,7 +2594,7 @@ var HttpObserver =
         }
         catch (err)
         {
-            if (FBTrace.DBG_ERRORS) 
+            if (FBTrace.DBG_ERRORS)
                 FBTrace.dumpProperties("net.HttpObserver.unregisterObserver: ", err);
         }
     },

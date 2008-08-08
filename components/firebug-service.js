@@ -839,6 +839,7 @@ FirebugService.prototype =
     {
         if (!this.suspended)  // marker only UI in debugger.js
             this.suspended = jsd.pause();
+        dispatch(clients, "onJSDDeactivate", [jsd]);
         return this.suspended;
     },
 
@@ -850,9 +851,22 @@ FirebugService.prototype =
             if ( (this.suspended !=  1 || depth != 0) && fbs.DBG_FBS_ERRORS)
                 ddd("fbs.resume unpause mismatch this.suspended "+this.suspended+" unpause depth "+depth+"\n");
             delete this.suspended;
+            dispatch(clients, "onJSDActivate", [jsd]);
             return depth;
         }
         return null;
+    },
+
+    isJSDActive: function()
+    {
+        return (jsd && jsd.isOn && (jsd.pauseDepth == 0) );
+    },
+
+    broadcast: function(message, args)  // re-transmit the message (string) with args [objs] to XUL windows.
+    {
+        dispatch(clients, message, args);
+        if (fbs.DBG_FBS_ERRORS)
+            ddd("fbs.broadcast "+message+" to "+clients.length+" windows\n");
     },
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
