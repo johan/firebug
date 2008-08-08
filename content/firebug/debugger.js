@@ -38,6 +38,7 @@ const reEval =  /\s*eval\s*\(([^)]*)\)/m;        // eval ( $1 )
 const reHTM = /\.[hH][tT][mM]/;
 const reFunction = /\s*Function\s*\(([^)]*)\)/m;
 
+const panelStatus = $("fbPanelStatus");
 
 // ************************************************************************************************
 
@@ -1565,7 +1566,7 @@ ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
         if (lineNode)
             lineNode.setAttribute("exeLine", "true");
                                                                                                                        /*@explore*/
-        if (FBTrace.DBG_BP) FBTrace.sysout("debugger.setExecutionLine to lineNo: "+lineNo+" lineNode="+lineNode+"\n"); /*@explore*/
+        if (FBTrace.DBG_BP || FBTrace.DBG_STACK) FBTrace.sysout("debugger.setExecutionLine to lineNo: "+lineNo+" lineNode="+lineNode+"\n"); /*@explore*/
     },
 
     toggleBreakpoint: function(lineNo)
@@ -1889,6 +1890,8 @@ ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
         this.showToolbarButtons("fbLocationSeparator", enabled);
         this.showToolbarButtons("fbDebuggerButtons", enabled);
 
+        this.obeyPreferences();
+        
         // The default page with description and enable button is
         // visible only if debugger is disabled.
         if (enabled)
@@ -1922,11 +1925,18 @@ ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
         }
     },
 
+    obeyPreferences: function()
+    {
+        if (Firebug.omitObjectPathStack)  // User does not want the toolbar stack
+            FBL.hide(panelStatus, true);
+    },
+    
     hide: function()
     {
         this.showToolbarButtons("fbDebuggerButtons", false);
         this.showToolbarButtons("fbScriptButtons", false);
-
+        FBL.hide(panelStatus, false);
+        
         delete this.infoTipExpr;
 
         var sourceBox = this.selectedSourceBox;
@@ -2163,8 +2173,6 @@ ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
 
     getObjectPath: function(frame)
     {
-        if (Firebug.omitObjectPathStack)
-            return null;
         frame = this.context.debugFrame;
 
         var frames = [];
@@ -2592,7 +2600,7 @@ CallstackPanel.prototype = extend(Firebug.Panel,
         if (FBTrace.DBG_STACK) {                                                                                       /*@explore*/
             this.uid = FBL.getUniqueId();                                                                              /*@explore*/
             FBTrace.sysout("CallstackPanel.initialize:"+this.uid+"\n");                                                /*@explore*/
-        }                                                                                                              /*@explore*/
+        }                               
         Firebug.Panel.initialize.apply(this, arguments);
     },
 
@@ -2614,33 +2622,85 @@ CallstackPanel.prototype = extend(Firebug.Panel,
     updateSelection: function(object)
     {
         if (object instanceof jsdIStackFrame)
-            this.showStackFrame(object);
+            this.highlightFrame(object);
     },
 
     refresh: function()
     {
-        if (FBTrace.DBG_STACK) FBTrace.sysout("debugger.callstackPanel.refresh uid="+this.uid+"\n");                   /*@explore*/
+        if (FBTrace.DBG_STACK) 
+            FBTrace.sysout("debugger.callstackPanel.refresh uid="+this.uid+"\n");                   /*@explore*/
+        var mainPanel = this.context.getPanel("script", true);
+        if (mainPanel.selection instanceof jsdIStackFrame)
+            this.showStackFrame(mainPanel.selection);
     },
-
+    
     showStackFrame: function(frame)
     {
         clearNode(this.panelNode);
-        var panel = this.context.getPanel("script", true);
+        var mainPanel = this.context.getPanel("script", true);
 
-        if (panel && frame)
+        if (mainPanel && frame)
         {
-            if (FBTrace.DBG_STACK)                                                                                     /*@explore*/
-                FBTrace.dumpStack("debugger.callstackPanel.showStackFrame  uid="+this.uid+" frame:", frame);      /*@explore*/
-                                                                                                                       /*@explore*/
             FBL.setClass(this.panelNode, "objectBox-stackTrace");
-            trace = FBL.getStackTrace(frame, this.context);
-            if (FBTrace.DBG_STACK)                                                                                     /*@explore*/
-                FBTrace.dumpProperties("debugger.callstackPanel.showStackFrame trace:", trace.frames);                        /*@explore*/
-                                                                                                                       /*@explore*/
-            FirebugReps.StackTrace.tag.append({object: trace}, this.panelNode);
+            // The panelStatus has the stack, lets reuse it to give the same UX as that control.
+            var labels = panelStatus.getElementsByTagName("label");
+            var doc = this.panelNode.ownerDocument;
+            for (var i = 0; i < labels.length; i++)
+            {
+                if (FBL.hasClass(labels[i], "panelStatusLabel"))
+                {
+                    var div = doc.createElement("div");
+                    var label = labels[i];
+                    div.innerHTML = label.getAttribute('value');
+                    if (label.repObject instanceof jsdIStackFrame)  // causes a downcast
+                        div.frame = label.repObject;
+                    div.label = label;
+                    FBL.setClass(div, "objectLink");
+                    FBL.setClass(div, "objectLink-stackFrame");
+                    
+                    div.addEventListener("click", function(event)
+                    {
+                        var revent = document.createEvent("MouseEvents");
+                        revent.initMouseEvent("mousedown", true, true, window,
+                                0, 0, 0, 0, 0, false, false, false, false, 0, null);
+                        event.target.label.dispatchEvent(revent);
+                        if (FBTrace.DBG_STACK && event.target.label.repObject instanceof jsdIStackFrame)
+                            FBTrace.sysout("debugger.showStackFrame click on "+event.target.label.repObject);
+                    }, false);
+                    this.panelNode.appendChild(div);
+                }
+            }
         }
     },
+    
+    highlightFrame: function(frame) 
+    {
+        if (FBTrace.DBG_STACK)
+            FBTrace.dumpProperties("debugger.callstackPanel.highlightFrame", frame);
+        
+        var frameViews = this.panelNode.childNodes
+        for (var child = this.panelNode.firstChild; child; child = child.nextSibling)
+        {
+            if (child.label && child.label.repObject && child.label.repObject == frame)
+            {
+                this.selectItem(child);
+                return true;
+            }
+        }
+        return false;
+    },
 
+    selectItem: function(item)
+    {
+        if (this.selectedItem)
+            this.selectedItem.removeAttribute("selected");
+
+        this.selectedItem = item;
+
+        if (item)
+            item.setAttribute("selected", "true");
+    },
+    
     getOptionsMenuItems: function()
     {
         var items = [

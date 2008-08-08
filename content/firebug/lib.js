@@ -1838,7 +1838,7 @@ this.getFunctionName = function(script, context, frame)
         var analyzer = FBL.getScriptAnalyzer(context, script);
         if (analyzer)
         {
-            if (FBTrace.DBG_STACK) FBTrace.dumpProperties("getFunctionName analyzer:", analyzer);     /*@explore*/
+            if (FBTrace.DBG_STACK) FBTrace.sysout("getFunctionName analyzer.sourceFile:", analyzer.sourceFile);     /*@explore*/
             var functionSpec = analyzer.getFunctionDescription(script, context, frame);
             name = functionSpec.name +"("+functionSpec.args.join(',')+")";
         }
