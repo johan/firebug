@@ -86,11 +86,12 @@ Firebug 1.1 is Firebug 1.05 by Joe Hewitt with additions by John J. Barton and M
     * Issue 421 onLoad of XHRSpyListener does not fire correctly
     * Issue 427 fix configure editor localization
     * Issue 430 about:blank pages always show firebug as enabled
-    * Issue 438 hide "Open With Editor" menu item for input/iframe/textarea elements or none editors configured
+    * Issue 438 hide "Open With Editor" menu item for input/iframe/textarea elements
     * Issue 440 Scripts included with relative paths appear twice in script list
     * Issue 445 http header content-type missing disables network monitoring
     * Issue 455 Firebug and iMacros Incompatibility    
     * Issue 468 [feature request] fast [enable -> inspect element -> disable] ergonomy
+    * Issue 469 hide "open with editor" when no editors configured
     * Issue 474 base href applied to scripts
     * Issue 475 Show Return Code (HTTP HEADER-Response)
     * Issue 476 Infinite recursive loop crash firefox, fix the long time it takes to show the stack.
@@ -149,6 +150,7 @@ Firebug 1.1 is Firebug 1.05 by Joe Hewitt with additions by John J. Barton and M
     * Issue 831 Clicking HTML select element in panelNode causes option menu items to multiply (contribution by Nathan Mische)
     * Issue 840 Console links and buttons inactive on popout FF3
     * Issue 873 alien variable "y=2" in global watch list, contribution of jwitch
+    * Issue 881 "open with editor" not working on Linux
     * Issue 883 "undefined" appears in the search box after selecting a script to show with the Enter key (contribution by splintor)
     * Issue 884 FB 1.2b4 - en-/disable button missing
     * Issue 889 variable-value on under the cursor is no longer displayed with Rainbow For Firebug, contributed patch by antonin.hildebrand
