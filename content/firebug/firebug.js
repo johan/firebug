@@ -1469,6 +1469,8 @@ Firebug.Panel =
     {
         try
         {
+            if (!this.context.browser) // XXXjjb this is bug. Somehow the panel context is not FirebugContext.
+                return;
             var buttons = this.context.browser.chrome.$(buttonsId);
             if (buttons)
                 collapse(buttons, show ? "false" : "true");
