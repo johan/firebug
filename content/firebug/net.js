@@ -296,7 +296,8 @@ Firebug.NetMonitor = extend(Firebug.ActivableModule,
         HttpObserver.unregisterObserver();  // safe for multiple calls
         try
         {
-            context.browser.removeProgressListener(context.netProgress, NOTIFY_ALL);
+            if (context.browser.removeProgressListener)  // XXXjjb often false?
+                context.browser.removeProgressListener(context.netProgress, NOTIFY_ALL);
         }
         catch (e)
         {
