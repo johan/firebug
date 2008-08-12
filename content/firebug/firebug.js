@@ -2048,6 +2048,10 @@ Firebug.ActivableModule = extend(Firebug.Module,
     {
         if (FBTrace.DBG_PANELS)
             FBTrace.sysout("panelActivate "+this.getPrefDomain()+" isEnabled:"+this.isEnabled(context)+"\n");
+
+        if (Firebug.getSuspended())
+            Firebug.resume();  // This will cause onResumeFirebug for every context including this one.
+
         if (this.isEnabled(context))
             return;
 
