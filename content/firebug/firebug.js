@@ -280,7 +280,15 @@ top.Firebug =
     {
         if (this.getSuspended())         // then we should not be visible,
         {
-            this.toggleBar(true);   // become visible and call resume()
+            if (FirebugContext.detached)
+            {
+                if (FBTrace.DBG_INITIALIZE)
+                    FBTrace.sysout("firebug.toggleSuspend detached\n");
+                FirebugContext.chrome.focus();
+                this.resume();
+            }
+            else
+                this.toggleBar(true);   // become visible and call resume()
         }
         else
         {
@@ -309,11 +317,29 @@ top.Firebug =
                     }
                     catch (e)
                     {
-                        if (FBTrace.DBG_ERRORS)
-                            FBTrace.dumpProperties("Firebug.suspend FAILS for "+activableModules[i].paneName+" context: "+context.window.location, e);
+                        try
+                        {
+                            var url = (context.window && context.window.location)? context.window.location : "no context.window.location";
+
+                            if (FBTrace.DBG_ERRORS)
+                                FBTrace.dumpProperties("Firebug.suspend FAILS for "+activableModules[i].paneName+" context: "+url, e);
+                        }
+                        catch (e2)
+                        {
+                            if (FBTrace.DBG_ERRORS)
+                                FBTrace.dumpProperties("Firebug.suspend FAILS (no context) for "+activableModules[i].paneName, e);
+                        }
                     }
                     // don't show Firebug panel as another hint we are suspended.
                     context.browser.showFirebug = false;
+                    if (context.browser.detached)
+                    {
+                        if (FBTrace.DBG_INITIALIZE)
+                            FBTrace.sysout("suspendFirebug detached "+window.location+"\n");
+                        context.chrome.setChromeDocumentAttribute("fbToolbox", "collapsed", "true");
+                        context.chrome.setChromeDocumentAttribute("fbResumeBox", "collapsed", "false");
+                        context.chrome.setChromeDocumentAttribute("fbContentBox", "collapsed", "true");
+                    }
                 }
             }
         );
@@ -331,7 +357,7 @@ top.Firebug =
         this.setSuspended("resuming");
         TabWatcher.iterateContexts
         (
-            function suspendContext(context)
+            function resumeContext(context)
             {
                 try
                 {
@@ -342,10 +368,20 @@ top.Firebug =
                 catch (e)
                 {
                     if (FBTrace.DBG_ERRORS)
-                        FBTrace.dumpProperties("Firebug.suspend FAILS for context: "+context.window.location, e);
+                        FBTrace.dumpProperties("Firebug.resumeFirebug FAILS for context: "+context.window.location, e);
+                }
+
+                if (context.browser.detached && context.originalChrome)
+                {
+                    if (FBTrace.DBG_INITIALIZE)
+                        FBTrace.sysout("resumeFirebug detached "+context.chrome.window.location+"\n");
+                    context.chrome.setChromeDocumentAttribute("fbToolbox", "collapsed", "false");
+                    context.chrome.setChromeDocumentAttribute("fbContentBox", "collapsed", "false");
+                    context.chrome.setChromeDocumentAttribute("fbResumeBox", "collapsed", "true");
                 }
             }
         );
+
         this.setSuspended(null);
     },
 
@@ -1201,7 +1237,7 @@ top.Firebug =
             if (this.isDisabledFor(FirebugContext))
             {
                     var browser = FirebugChrome.getCurrentBrowser();
-                    if (browser && !browser.showFirebug)
+                    if (browser && !browser.detached && !browser.showFirebug)
                         this.suspend();
             }
 

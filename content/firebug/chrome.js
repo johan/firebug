@@ -690,6 +690,15 @@ top.FirebugChrome =
             FirebugContext.originalChrome.setGlobalAttribute(id, name, value);
     },
 
+
+    setChromeDocumentAttribute: function(id, name, value)
+    {
+        // Call as context.browser.chrome.setChromeDocumentAttribute() to set attributes in another window.
+        var elt = $(id);
+        if (elt)
+            elt.setAttribute(name, value);
+    },
+
     keyCodeListen: function(key, filter, listener, capture)
     {
         if (!filter)

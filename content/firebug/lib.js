@@ -2191,7 +2191,7 @@ this.dispatch = function(listeners, name, args)
         if (FBTrace.DBG_ERRORS)
         {
             FBTrace.dumpProperties(" Exception in lib.dispatch "+ name, exc);
-            FBTrace.dumpProperties(" Exception in lib.dispatch listener", listener);
+            //FBTrace.dumpProperties(" Exception in lib.dispatch listener", listener);
         }
     }
 };
