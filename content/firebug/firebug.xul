@@ -164,7 +164,7 @@
         <spacer flex="1"/>
         <hbox>
             <spacer flex="1"/>
-            <button label="Resume Firebug" command="cmd_toggleSuspendFirebug" />
+            <button id="fbResumeBoxButton" label="Resume Firebug" command="cmd_toggleSuspendFirebug" />
             <spacer flex="1"/>
         </hbox>
         <spacer flex="1"/>

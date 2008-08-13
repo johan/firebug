@@ -275,11 +275,11 @@ this.addScript = function(doc, id, src)
 // ************************************************************************************************
 // Localization
 
-function $STR(name)
+function $STR(name) // name with _ in place of spaces is the key in the firebug.properties file.
 {
     try
     {
-        return document.getElementById("strings_firebug").getString(name);
+        return document.getElementById("strings_firebug").getString(name.replace(' ', '_'));
     }
     catch (err)
     {
@@ -297,7 +297,7 @@ function $STRF(name, args)
 {
     try
     {
-        return document.getElementById("strings_firebug").getFormattedString(name, args);
+        return document.getElementById("strings_firebug").getFormattedString(name.replace(' ', '_'), args);
     }
     catch (err)
     {
@@ -313,6 +313,14 @@ function $STRF(name, args)
 
 this.$STR = $STR;
 this.$STRF = $STRF;
+
+this.internationalize = function(eltID, attr, args)  // Use the current value of the attribute as a key to look up the localized value
+{
+    var elt = document.getElementById(eltID);
+    var xulString = elt.getAttribute(attr);
+    var localized = args ? $STRF(xulString, args) : $STR(xulString);
+    elt.setAttribute(attr, localized);    
+}
 
 // ************************************************************************************************
 // Visibility

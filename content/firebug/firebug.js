@@ -164,6 +164,8 @@ top.Firebug =
         for (var i = 0; i < servicePrefNames.length; ++i)
             this[servicePrefNames[i]] = this.getPref("extensions.firebug-service", servicePrefNames[i]);
 
+        this.internationalizeUI();
+        
         this.loadExternalEditors();
         prefs.addObserver(this.prefDomain, this, false);
         prefs.addObserver("extensions.firebug-service", this, false);
@@ -209,6 +211,11 @@ top.Firebug =
         }
     },
 
+    internationalizeUI: function()  // Substitute strings in the UI with fall back to en-US
+    {
+        FBL.internationalize('menu_toggleSuspendFirebug', 'label');
+    },
+    
     broadcast: function(message, args)
     {
         // dispatch message to all XUL windows registered to firebug service.
@@ -269,9 +276,15 @@ top.Firebug =
             FBTrace.sysout("Firebug.setSuspended to "+value+"\n");
 
         if (value)
+        {
             suspendMenuItem.setAttribute("suspended", value);
-        else
+            $('menu_toggleSuspendFirebug').setAttribute("label", $STR("Resume Firebug"));
+        }
+        else 
+        {
             suspendMenuItem.removeAttribute("suspended");
+            $('menu_toggleSuspendFirebug').setAttribute("label", $STR("Suspend Firebug"));
+        }
 
         Firebug.ActivableModule.resetTooltip();
     },
@@ -338,6 +351,7 @@ top.Firebug =
                         if (FBTrace.DBG_INITIALIZE)
                             FBTrace.sysout("suspendFirebug detached "+window.location+"\n");
                         context.chrome.setChromeDocumentAttribute("fbToolbox", "collapsed", "true");
+                        context.chrome.setChromeDocumentAttribute("fbResumeBoxButton", "label", "Resume Firebug");
                         context.chrome.setChromeDocumentAttribute("fbResumeBox", "collapsed", "false");
                         context.chrome.setChromeDocumentAttribute("fbContentBox", "collapsed", "true");
                     }
