@@ -1234,12 +1234,15 @@ top.Firebug =
             if (FBTrace.DBG_DISPATCH || FBTrace.DBG_ERRORS)
                 FBTrace.sysout("firebug.showContext set FirebugContext: "+context.window.location+"\n");
 
+            /* XXXjjb this implements "auto-suspend", but it has at least one side effect see issue 1073.
+               reconsider for 1.3
             if (this.isDisabledFor(FirebugContext))
             {
                     var browser = FirebugChrome.getCurrentBrowser();
                     if (browser && !browser.detached && !browser.showFirebug)
                         this.suspend();
             }
+            */
 
             this.syncBar();
         }
