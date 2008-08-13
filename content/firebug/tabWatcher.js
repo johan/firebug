@@ -111,10 +111,11 @@ top.TabWatcher =
         {
             if (!this.owner.enableContext(win,uri))
             {
-                return this.watchContext(win, null);
+                this.watchContext(win, null);
+                return false;  // we did not create a context
             }
 
-            var browser = this.getBrowserByWindow(win);
+            var browser = this.getBrowserByWindow(win);  // sets browser.chrome to FirebugChrome
             //if (!fbs.countContext(true))
             //    return;
 
@@ -178,7 +179,7 @@ top.TabWatcher =
             if (FBTrace.DBG_WINDOWS)                                                                     /*@explore*/
                 FBTrace.sysout("-> watchTopWindow: Do not show context as it's not active: " +         /*@explore*/
                     context.browser.currentURI.spec + "\n");                                                    /*@explore*/
-            return;
+            return context;  // we did create or find a context
         }
 
         if (context && !context.loaded)  // then it really is still loading, we want to showContext but not too agressively
@@ -196,6 +197,8 @@ top.TabWatcher =
         }
         else
             this.watchContext(win, context);  // calls showContext
+
+        return context;  // we did create or find a context
     },
 
     /**
@@ -297,6 +300,7 @@ top.TabWatcher =
 
     /**
      * Attaches to the window inside a browser because of user-activation
+     * returns false if no context was created by the attach attempt, eg extension rejected page
      */
     watchBrowser: function(browser)
     {
@@ -306,7 +310,7 @@ top.TabWatcher =
             FBTrace.sysout("-> tabWatcher.watchBrowser for: " + (uri instanceof nsIURI?uri.spec:uri) + "\n");         /*@explore*/
         }                                                                                               /*@explore*/
                                                                                                         /*@explore*/
-        this.watchTopWindow(browser.contentWindow, safeGetURI(browser));
+        return this.watchTopWindow(browser.contentWindow, safeGetURI(browser));
     },
 
     unwatchBrowser: function(browser)
@@ -412,7 +416,7 @@ top.TabWatcher =
             if (browser.contentWindow == win)
             {
                 if (!browser.chrome)
-                    registerFrameListener(browser);
+                    registerFrameListener(browser);  // sets browser.chrome to FirebugChrome
 
                 return browser;
             }
@@ -602,13 +606,11 @@ var HttpObserver = extend(Object,
         // request (win == win.parent) or embedded iframe request.
         if (request.loadFlags & Ci.nsIHttpChannel.LOAD_DOCUMENT_URI)
         {
-            //#ifdef explore
             if (FBTrace.DBG_WINDOWS && win == win.parent)
             {
                 FBTrace.sysout("-> tabWatcher HttpObserver *** START *** " +
                     "document request for: " + request.URI.spec + "\n");
             }
-            //#endif explore
 
             // Make sure the frame listener is registered for top level window so,
             // we can get all onStateChange events and init context for all opened tabs.

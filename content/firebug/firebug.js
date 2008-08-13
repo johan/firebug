@@ -334,6 +334,7 @@ top.Firebug =
                     context.browser.showFirebug = false;
                     if (context.browser.detached)
                     {
+                        // Pulls down the UI and put up a cover showing a resume button.
                         if (FBTrace.DBG_INITIALIZE)
                             FBTrace.sysout("suspendFirebug detached "+window.location+"\n");
                         context.chrome.setChromeDocumentAttribute("fbToolbox", "collapsed", "true");
@@ -361,7 +362,7 @@ top.Firebug =
             {
                 try
                 {
-                    // turn every activable module off.
+                    // turn every activable module on.
                     for (var i = 0; i < activableModules.length; i++)
                         activableModules[i].onResumeFirebug(context);
                 }
@@ -373,6 +374,7 @@ top.Firebug =
 
                 if (context.browser.detached && context.originalChrome)
                 {
+                    // Pull down the "resume" button covering the UI, bring up the UI
                     if (FBTrace.DBG_INITIALIZE)
                         FBTrace.sysout("resumeFirebug detached "+context.chrome.window.location+"\n");
                     context.chrome.setChromeDocumentAttribute("fbToolbox", "collapsed", "false");
@@ -796,10 +798,16 @@ top.Firebug =
             return this.toggleDetachBar(true);
 
         var browser = FirebugChrome.getCurrentBrowser();
-        if (!browser.chrome)
-            return;
+        if (!browser.chrome) // then a page without a context
+        {
+            // Check to see if the context was skipped while suspended.
+            if (this.getSuspended() && TabWatcher.watchBrowser(browser))
+                this.resume();
+            else
+                return;
+        }
 
-        var toggleOff = forceOpen == undefined ? !contentBox.collapsed : !forceOpen;
+        var toggleOff = (forceOpen == undefined) ? !contentBox.collapsed : !forceOpen;
         if (toggleOff == contentBox.collapsed)
             return;
 
@@ -1159,6 +1167,8 @@ top.Firebug =
         if ( dispatch2(extensions, "declineContext", [win, uri]) )
             return false;
 
+        if (Firebug.getSuspended())  // during suspend we will not create new contexts
+            return false;
         return true;
     },
 
