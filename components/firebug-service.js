@@ -1700,15 +1700,18 @@ FirebugService.prototype =
                 for (var i = 0; i < urlBreakpoints.length; ++i)
                 {
                     var bp = urlBreakpoints[i];
-                    for (var j = 0; j < bp.scriptsWithBreakpoint.length; j++)
+                    if (bp.scriptsWithBreakpoint)
                     {
-                        if (fbs.DBG_FBS_BP)
-                        {
-                            var vs = (bp.scriptsWithBreakpoint[j] ? bp.scriptsWithBreakpoint[j].tag+"@"+bp.pc[j]:"future")+" on "+url;
-                            ddd("findBreakpointByScript["+i+"]"+" looking for "+script.tag+"@"+pc+" vs "+vs+"\n"); /*@explore*/
-                        }
-                        if ( bp.scriptsWithBreakpoint[j] && (bp.scriptsWithBreakpoint[j].tag == script.tag) && (bp.pc[j] == pc) )
-                            return bp;
+	                    for (var j = 0; j < bp.scriptsWithBreakpoint.length; j++)
+	                    {
+	                        if (fbs.DBG_FBS_BP)
+	                        {
+	                            var vs = (bp.scriptsWithBreakpoint[j] ? bp.scriptsWithBreakpoint[j].tag+"@"+bp.pc[j]:"future")+" on "+url;
+	                            ddd("findBreakpointByScript["+i+"]"+" looking for "+script.tag+"@"+pc+" vs "+vs+"\n"); /*@explore*/
+	                        }
+	                        if ( bp.scriptsWithBreakpoint[j] && (bp.scriptsWithBreakpoint[j].tag == script.tag) && (bp.pc[j] == pc) )
+	                            return bp;
+	                    }
                     }
                 }
             }
@@ -1738,7 +1741,7 @@ FirebugService.prototype =
 
         if (urlBreakpoints)
         {
-            if (fbs.DBG_FBS_BP) ddd("resetBreakpoints total bp="+urlBreakpoints.length+" for url="+url+"\n");              /*@explore*/
+            if (fbs.DBG_FBS_BP) ddd("resetBreakpoints total bp="+urlBreakpoints.length+" for url="+url+" lastLineNumber="+lastLineNumber+"\n");              /*@explore*/
 
             for (var i = 0; i < urlBreakpoints.length; ++i)
             {
