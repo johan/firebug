@@ -1337,13 +1337,26 @@ FirebugService.prototype =
 
     onScriptDestroyed: function(script)
     {
+        if (!fbs)
+             return;
         if (script.tag in fbs.onXScriptCreatedByTag)
             delete  fbs.onXScriptCreatedByTag[script.tag];
 
-        if (fbs.DBG_FBS_CREATION)
-            ddd('fbs.onScriptDestroyed '+script.tag+"\n");
+        try
+        {
+            var fileName = script.fileName;
+            if (isFilteredURL(fileName))
+                return;
+	        if (fbs.DBG_FBS_CREATION)
+	            ddd('fbs.onScriptDestroyed '+script.tag+"\n");
 
-        dispatch(scriptListeners,"onScriptDestroyed",[script]);
+	        dispatch(scriptListeners,"onScriptDestroyed",[script]);
+        }
+        catch(exc)
+        {
+            ERROR("onScriptDestroyed failed: "+exc);
+            dumpProperties("onScriptDestroyed failed: ", exc);
+        }
     },
 
     dumpContexts: function()
