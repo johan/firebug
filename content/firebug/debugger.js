@@ -1397,7 +1397,8 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
 
     onScriptFilterMenuTooltipShowing: function(tooltip, context)
     {
-        FBTrace.dumpStack("onScriptFilterMenuTooltipShowing");
+        if (FBTrace.DBG_OPTIONS)
+        	FBTrace.dumpStack("onScriptFilterMenuTooltipShowing not implemented");
     },
 
     onScriptFilterMenuCommand: function(event, context)
@@ -1461,7 +1462,8 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
         this.filterButton.label = this.menuShortLabel[value];
         this.filterButton.removeAttribute("disabled");
         this.filterButton.setAttribute("value", value);
-        FBTrace.sysout("debugger.filterMenuUpdate value: "+value+" label:"+this.filterButton.label+'\n');
+        if (FBTrace.DBG_OPTIONS)
+            FBTrace.sysout("debugger.filterMenuUpdate value: "+value+" label:"+this.filterButton.label+'\n');
     },
 
     //----------------------------------------------------------------------------------
