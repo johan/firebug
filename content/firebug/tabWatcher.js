@@ -536,7 +536,8 @@ var FrameProgressListener = extend(BaseProgressListener,
                 // causes to immediately stop the Inspectore mode.
                 // xxxHonza This change should be made after real understanding of
                 // how this code work.
-                if (win.parent == win && (win.location.href == "about:blank" || safeName == "about:document-onload-blocker"))
+                // xxxJJB, too many bugs by the dummy request, lose it.
+                if (win.parent == win && (win.location.href == "about:blank"))
                 {
                     TabWatcher.watchTopWindow(win, win.location.href);
                     return;  // new one under our thumb
