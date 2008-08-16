@@ -165,7 +165,7 @@ top.Firebug =
             this[servicePrefNames[i]] = this.getPref("extensions.firebug-service", servicePrefNames[i]);
 
         this.internationalizeUI();
-        
+
         this.loadExternalEditors();
         prefs.addObserver(this.prefDomain, this, false);
         prefs.addObserver("extensions.firebug-service", this, false);
@@ -215,7 +215,7 @@ top.Firebug =
     {
         FBL.internationalize('menu_toggleSuspendFirebug', 'label');
     },
-    
+
     broadcast: function(message, args)
     {
         // dispatch message to all XUL windows registered to firebug service.
@@ -280,7 +280,7 @@ top.Firebug =
             suspendMenuItem.setAttribute("suspended", value);
             $('menu_toggleSuspendFirebug').setAttribute("label", $STR("Resume Firebug"));
         }
-        else 
+        else
         {
             suspendMenuItem.removeAttribute("suspended");
             $('menu_toggleSuspendFirebug').setAttribute("label", $STR("Suspend Firebug"));
@@ -2177,7 +2177,7 @@ Firebug.ActivableModule = extend(Firebug.Module,
                     catch(e)
                     {
                         if (FBTrace.DBG_ERRORS)
-                            FBTrace.dumpProperties("firebug.resetTooltip could not get window.location for a context", e);
+                            FBTrace.dumpProperties("firebug.getURLsForAllActiveContexts could not get window.location for a context", e);
                     }
                 }
             }

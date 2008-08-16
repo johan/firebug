@@ -1347,10 +1347,10 @@ FirebugService.prototype =
             var fileName = script.fileName;
             if (isFilteredURL(fileName))
                 return;
-	        if (fbs.DBG_FBS_CREATION)
-	            ddd('fbs.onScriptDestroyed '+script.tag+"\n");
+            if (fbs.DBG_FBS_CREATION)
+                ddd('fbs.onScriptDestroyed '+script.tag+"\n");
 
-	        dispatch(scriptListeners,"onScriptDestroyed",[script]);
+            dispatch(scriptListeners,"onScriptDestroyed",[script]);
         }
         catch(exc)
         {
@@ -1715,16 +1715,16 @@ FirebugService.prototype =
                     var bp = urlBreakpoints[i];
                     if (bp.scriptsWithBreakpoint)
                     {
-	                    for (var j = 0; j < bp.scriptsWithBreakpoint.length; j++)
-	                    {
-	                        if (fbs.DBG_FBS_BP)
-	                        {
-	                            var vs = (bp.scriptsWithBreakpoint[j] ? bp.scriptsWithBreakpoint[j].tag+"@"+bp.pc[j]:"future")+" on "+url;
-	                            ddd("findBreakpointByScript["+i+"]"+" looking for "+script.tag+"@"+pc+" vs "+vs+"\n"); /*@explore*/
-	                        }
-	                        if ( bp.scriptsWithBreakpoint[j] && (bp.scriptsWithBreakpoint[j].tag == script.tag) && (bp.pc[j] == pc) )
-	                            return bp;
-	                    }
+                        for (var j = 0; j < bp.scriptsWithBreakpoint.length; j++)
+                        {
+                            if (fbs.DBG_FBS_BP)
+                            {
+                                var vs = (bp.scriptsWithBreakpoint[j] ? bp.scriptsWithBreakpoint[j].tag+"@"+bp.pc[j]:"future")+" on "+url;
+                                ddd("findBreakpointByScript["+i+"]"+" looking for "+script.tag+"@"+pc+" vs "+vs+"\n"); /*@explore*/
+                            }
+                            if ( bp.scriptsWithBreakpoint[j] && (bp.scriptsWithBreakpoint[j].tag == script.tag) && (bp.pc[j] == pc) )
+                                return bp;
+                        }
                     }
                 }
             }
@@ -1817,8 +1817,12 @@ FirebugService.prototype =
 
                 if (pc == 0)  // signal the breakpoint handler to break for user
                     sourceFile.breakOnZero = script.tag;
+
+                if (fbs.DBG_FBS_BP)
+                    ddd("setJSDBreakpoint tag: "+script.tag+" line.pc@url="+bp.lineNo +"."+pc+"@"+sourceFile.href+" using offset:"+sourceFile.getBaseLineOffset()+" jsdLine: "+jsdLine+" pcToLine: "+pcToLine+(isExecutable?" isExecuable":"notExecutable")+" sourceFile.breakOnZero: "+sourceFile.breakOnZero+"\n");                         /*@explore*/
             }
-            if (fbs.DBG_FBS_BP) ddd("setJSDBreakpoint tag: "+script.tag+" line.pc@url="+bp.lineNo +"."+pc+"@"+sourceFile.href+" using offset:"+sourceFile.getBaseLineOffset()+" jsdLine: "+jsdLine+" pcToLine: "+pcToLine+(isExecutable?" isExecuable":"notExecutable")+"\n");                         /*@explore*/
+            else
+                if (fbs.DBG_FBS_BP) ddd("setJSDBreakpoint NO tag: "+script.tag+" line.pc@url="+bp.lineNo +"."+pc+"@"+sourceFile.href+" using offset:"+sourceFile.getBaseLineOffset()+" jsdLine: "+jsdLine+" pcToLine: "+pcToLine+(isExecutable?" isExecuable":"notExecutable")+"\n");                         /*@explore*/
          }
     },
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -2248,7 +2252,7 @@ function hook(fn, rv)
         }
         catch (exc)
         {
-            var msg = "Error in hook: " + exc +" fn="+fn+" stack=";
+            var msg = dumpProperties("Error in hook: ", exc) +" fn=\n"+fn+"\n stack=\n";
             for (var frame = Components.stack; frame; frame = frame.caller)
                 msg += frame.filename + "@" + frame.line + ";\n";
                ERROR(msg);

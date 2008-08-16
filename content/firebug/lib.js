@@ -319,7 +319,7 @@ this.internationalize = function(eltID, attr, args)  // Use the current value of
     var elt = document.getElementById(eltID);
     var xulString = elt.getAttribute(attr);
     var localized = args ? $STRF(xulString, args) : $STR(xulString);
-    elt.setAttribute(attr, localized);    
+    elt.setAttribute(attr, localized);
 }
 
 // ************************************************************************************************
@@ -3159,22 +3159,11 @@ this.SourceFile.prototype =
         for (var j = 0; j < this.innerScripts.length; j++)
         {
             var script = this.innerScripts[j];
-
-            if (targetLineNo >= script.baseLineNumber)
-            {
-                if ( (script.baseLineNumber + script.lineExtent) >= targetLineNo)
-                {
-                    if (mustBeExecutableLine && (!script.isValid || !script.isLineExecutable(targetLineNo, this.pcmap_type) ))
-                    {
-                        if (FBTrace.DBG_LINETABLE)
-                            FBTrace.sysout("getScriptsAtLineNumber["+j+"] trying "+script.tag+", isValid: "+script.isValid+" targetLineNo:"+targetLineNo+" isLineExecutable: "+script.isLineExecutable(targetLineNo, this.pcmap_type)+"\n");
-                        continue;
-                    }
-                    scripts.push(script);
-                }
-            }
-            if (FBTrace.DBG_LINETABLE) FBTrace.sysout("getScriptsAtLineNumber["+j+"] trying "+script.tag+", is "+script.baseLineNumber+" <= "+targetLineNo +" <= "+ (script.baseLineNumber + script.lineExtent)+"? using offset = "+offset+"\n");
+            if (mustBeExecutableLine && !script.isValid) continue;
+            this.addScriptAtLineNumber(scripts, script, targetLineNo, mustBeExecutableLine, offset);
         }
+        if (this.outerScript && !(mustBeExecutableLine && !this.outerScript.isValid) )
+            this.addScriptAtLineNumber(scripts, this.outerScript, targetLineNo, mustBeExecutableLine, offset);
 
         if (FBTrace.DBG_LINETABLE && scripts.length < 1)
         {
@@ -3183,6 +3172,45 @@ this.SourceFile.prototype =
         }
 
         return (scripts.length > 0) ? scripts : false;
+    },
+
+    addScriptAtLineNumber: function(scripts, script, targetLineNo, mustBeExecutableLine, offset)
+    {
+        // script.isValid will be true.
+        if (FBTrace.DBG_LINETABLE)
+            FBTrace.sysout("getScriptsAtLineNumber trying "+script.tag+", is "+script.baseLineNumber+" <= "+targetLineNo +" <= "+ (script.baseLineNumber + script.lineExtent)+"? using offset = "+offset+"\n");
+
+        if (targetLineNo >= script.baseLineNumber)
+        {
+            if ( (script.baseLineNumber + script.lineExtent) >= targetLineNo)
+            {
+                if (mustBeExecutableLine)
+                {
+                    try
+                    {
+                        if (!script.isLineExecutable(targetLineNo, this.pcmap_type) )
+                        {
+                            if (FBTrace.DBG_LINETABLE)
+                                FBTrace.sysout("getScriptsAtLineNumber tried "+script.tag+", not executable at targetLineNo:"+targetLineNo+"\n");
+                            return;
+                        }
+                    }
+                    catch (e)
+                    {
+                        // Component returned failure code: 0x80040111 (NS_ERROR_NOT_AVAILABLE) [jsdIScript.isLineExecutable]
+                        return;
+                    }
+                }
+                scripts.push(script);
+                if (FBTrace.DBG_LINETABLE)
+                {
+                    var checkExecutable = "";
+                    if (mustBeExecutableLine)
+                        var checkExecutable = " isLineExecutable: "+script.isLineExecutable(targetLineNo, this.pcmap_type);
+                    FBTrace.sysout("getScriptsAtLineNumber found "+script.tag+", isValid: "+script.isValid+" targetLineNo:"+targetLineNo+checkExecutable+"\n");
+                }
+            }
+        }
     },
 
     scriptsIfLineCouldBeExecutable: function(lineNo)  // script may not be valid
