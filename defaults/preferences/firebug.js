@@ -14,6 +14,8 @@ pref("extensions.firebug.preferEnabled.Console", false);
 pref("extensions.firebug.preferEnabled.Script", false);
 pref("extensions.firebug.preferEnabled.Net", false);
 
+pref("extensions.firebug.allowDoublePost", false);
+
 // Console
 pref("extensions.firebug.showJSErrors", true);
 pref("extensions.firebug.showJSWarnings", false);
