@@ -100,7 +100,7 @@ top.SourceCache.prototype =
         catch (exc)
         {
             if (FBTrace.DBG_CACHE)                                                                                     /*@explore*/
-                FBTrace.dumpProperties("sourceCache for window="+this.context.window.location.href+" FAILS:", this.cache); /*@explore*/
+                FBTrace.dumpProperties("sourceCache for url:"+url+" window="+this.context.window.location.href+" FAILS:", exc); /*@explore*/
             return;
         }
 
@@ -109,13 +109,13 @@ top.SourceCache.prototype =
             if (FBTrace.DBG_CACHE) FBTrace.sysout("sourceCache.load content window href\n");                                             /*@explore*/
             if (channel instanceof nsIUploadChannel)
             {
-                var allowDoublePost = Firebug.getPref(Firebug.prefDomain, "allowDoublePost");
-                if (!allowDoublePost)
-                    return doublePostForbiddenMessage(url);
-
                 var postData = getPostStream(this.context);
                 if (postData)
                 {
+                    var allowDoublePost = Firebug.getPref(Firebug.prefDomain, "allowDoublePost");
+                    if (!allowDoublePost)
+                        return [doublePostForbiddenMessage(url)];
+
                     var uploadChannel = QI(channel, nsIUploadChannel);
                     uploadChannel.setUploadStream(postData, "", -1);
                     if (FBTrace.DBG_CACHE) FBTrace.sysout("sourceCache.load uploadChannel set\n");                                             /*@explore*/
