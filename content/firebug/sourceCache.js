@@ -130,6 +130,13 @@ top.SourceCache.prototype =
             }
         }
 
+        if (method && method.toUpperCase()!= "GET")
+        {
+            var allowDoublePost = Firebug.getPref(Firebug.prefDomain, "allowDoublePost");
+            if (!allowDoublePost)
+                return [doublePostForbiddenMessage(url)];
+        }
+
         var stream;
         try
         {
@@ -307,7 +314,7 @@ function doublePostForbiddenMessage(url)
     if (FBTrace.DBG_CACHE)
         FBTrace.sysout(msg);
 
-    return msg;
+    return msg.split('\n');
 }
 
 // ************************************************************************************************
