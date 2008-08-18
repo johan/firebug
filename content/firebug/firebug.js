@@ -176,8 +176,6 @@ top.Firebug =
         for (var i = basePrefNames; i < prefNames.length; ++i)
             this[prefNames[i]] = this.getPref(this.prefDomain, prefNames[i]);
 
-        this.setPref(this.prefDomain, "allowDoublePost", false); // see sourceCache
-
         if (FBTrace.DBG_OPTIONS)                                                                                       /*@explore*/
         {                                                                                                              /*@explore*/
              for (var i = 0; i < prefNames.length; ++i)                                                                /*@explore*/

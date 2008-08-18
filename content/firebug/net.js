@@ -644,12 +644,22 @@ NetPanel.prototype = domplate(Firebug.Panel,
 
     copyResponse: function(file)
     {
+        var allowDoublePost = Firebug.getPref(Firebug.prefDomain, "allowDoublePost");
+        if (!allowDoublePost && !file.cacheEntry)
+        {
+            if (!confirm("The response can be re-requested from the server, OK?"))
+                return;
+        }
+
         // The response text can be empty so, test against undefined.
         var text = (file.responseText != undefined)
             ? file.responseText
             : this.context.sourceCache.loadText(file.href);
 
         copyToClipboard(text);
+
+        // Try to update file.cacheEntry flag.
+        getCacheEntry(file, this.context.netProgress);
     },
 
     stopLoading: function(file)
@@ -1916,6 +1926,9 @@ function getCacheEntry(file, netProgress)
             cacheSession.asyncOpenCacheEntry(file.href, ACCESS_READ, {
                 onCacheEntryAvailable: function(descriptor, accessGranted, status)
                 {
+                    if (FBTrace.DBG_NET)
+                        FBTrace.sysout("net.onCacheEntryAvailable for file.href=" + file.href + "\n");
+
                     if (descriptor)
                     {
                         if(file.size == -1)
@@ -2236,7 +2249,10 @@ Firebug.NetMonitor.NetInfoBody = domplate(Firebug.Rep,
                 )
             ),
             DIV({class: "netInfoResponseText netInfoText"},
-                $STR("Loading")
+                DIV({class: "loadResponseMessage"}),
+                BUTTON({onclick: "$onLoadResponse"},
+                    SPAN("Load Response")
+                )
             ),
             DIV({class: "netInfoCacheText netInfoText"},
                 TABLE({class: "netInfoCacheTable", cellpadding: 0, cellspacing: 0},
@@ -2398,29 +2414,35 @@ Firebug.NetMonitor.NetInfoBody = domplate(Firebug.Rep,
             }
         }
 
-
         if (hasClass(tab, "netInfoResponseTab") && file.loaded && !netInfoBox.responsePresented)
         {
-            netInfoBox.responsePresented = true;
-
             var responseTextBox = getChildByClass(netInfoBox, "netInfoResponseText");
             if (file.category == "image")
             {
+                netInfoBox.responsePresented = true;
+    
                 var responseImage = netInfoBox.ownerDocument.createElement("img");
                 responseImage.src = file.href;
                 responseTextBox.replaceChild(responseImage, responseTextBox.firstChild);
             }
             else if (!(binaryCategoryMap.hasOwnProperty(file.category)))
             {
-                // The response text can be empty so, test against undefined.
-                var text = (file.responseText != undefined)
-                    ? file.responseText
-                    : context.sourceCache.loadText(file.href, file.method);
+                var allowDoublePost = Firebug.getPref(Firebug.prefDomain, "allowDoublePost");
 
-                if (text)
-                    insertWrappedText(text, responseTextBox);
+                // If the response is in the cache get it and display it;
+                // otherwise display a button, which can be used by the user
+                // to re-request the response from the server.
+                // xxxHonza this is a workaround, which should be removed 
+                // as soon as the #430155 is fixed.
+                if (allowDoublePost || file.cacheEntry)
+                {
+                    this.setResponseText(file, netInfoBox, responseTextBox, context);
+                }
                 else
-                    insertWrappedText("", responseTextBox);
+                {
+                    var msgBox = getElementByClass(netInfoBox, "loadResponseMessage");
+                    msgBox.innerHTML = doublePostForbiddenMessage(file.href);
+                }
             }
         }
 
@@ -2429,10 +2451,39 @@ Firebug.NetMonitor.NetInfoBody = domplate(Firebug.Rep,
             netInfoBox.cachePresented = true;
 
             var responseTextBox = getChildByClass(netInfoBox, "netInfoCacheText");
-            if(file.cacheEntry) {
-              this.insertHeaderRows(netInfoBox, file.cacheEntry, "Cache");
+            if (file.cacheEntry) {
+                this.insertHeaderRows(netInfoBox, file.cacheEntry, "Cache");
             }
         }
+    },
+
+    setResponseText: function(file, netInfoBox, responseTextBox, context)
+    {
+        // The response text can be empty so, test against undefined.
+        var text = (file.responseText != undefined)
+            ? file.responseText
+            : context.sourceCache.loadText(file.href, file.method);
+
+        if (text)
+            insertWrappedText(text, responseTextBox);
+        else
+            insertWrappedText("", responseTextBox);
+
+        netInfoBox.responsePresented = true;
+
+        // Try to get the data from cache and update file.cacheEntry so,
+        // the response is displayed automatically the next time the
+        // net-entry is expanded again.
+        getCacheEntry(file, context.netProgress);
+    },
+
+    onLoadResponse: function(event)
+    {
+        var file = Firebug.getRepObject(event.target);
+        var netInfoBox = getAncestorByClass(event.target, "netInfoBody");
+        var responseTextBox = getElementByClass(netInfoBox, "netInfoResponseText");
+
+        this.setResponseText(file, netInfoBox, responseTextBox, FirebugContext);
     },
 
     insertHeaderRows: function(netInfoBox, headers, tableName, rowName)
@@ -2450,6 +2501,21 @@ Firebug.NetMonitor.NetInfoBody = domplate(Firebug.Rep,
             setClass(titleRow, "collapsed");
     }
 });
+
+function doublePostForbiddenMessage(url)
+{
+    var msg = "Firebug needs to POST to the server to get this information for url:<br/><b>" + url + "</b><br/><br/>";
+    msg += "This second POST can interfere with some sites.";
+    msg += " If you want to send the POST again, open a new tab in Firefox, use URL 'about:config', ";
+    msg += "set boolean value 'extensions.firebug.allowDoublePost' to true<br/>";
+    msg += " This value is reset every time you restart Firefox";
+    msg += " This problem will disappear when https://bugzilla.mozilla.org/show_bug.cgi?id=430155 is shipped.<br/><br/>";
+
+    if (FBTrace.DBG_CACHE)
+        FBTrace.sysout(msg);
+
+    return msg;
+}
 
 // ************************************************************************************************
 
