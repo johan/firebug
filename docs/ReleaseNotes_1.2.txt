@@ -27,6 +27,8 @@ Firebug 1.1 is Firebug 1.05 by Joe Hewitt with additions by John J. Barton and M
     * Limit for number of requests (configurable in preferences).
     * Additional columns for: request method, status response + text
     * Cache tab has expiration time in Net panel
+    * The Response tab has a hack to prevent extra requests to the server. Users must click on a button to force the request. 
+      The hack will not be needed in the next release of Firebug.
 
 == Console ==
     * Redesigned to use events/attribute passing.
@@ -68,6 +70,7 @@ Firebug 1.1 is Firebug 1.05 by Joe Hewitt with additions by John J. Barton and M
     * Issue 256 Inspect element in context menu always opens fbug in same window regardless of settings and closes inproperly
     * Issue 266 PUT & DELETE requests appear as POST requests in firebug
     * Issue 268 Firebug adds pt unit when unit not specified (e.g. 0pt) (contribution by ash.searle)
+    * Issue 307 Cannot edit HTML
     * Issue 316 Show HTTP request method and request content in Firebugs "Net" tab
     * Issue 321 arguments can no longer be logged
     * Issue 325 PUT operations do not show contained entity in Net tab
@@ -134,6 +137,7 @@ Firebug 1.1 is Firebug 1.05 by Joe Hewitt with additions by John J. Barton and M
     * Issue 749 Hungarian Locale
     * Issue 750 DOM side-panel - variables names overlay actual values
     * Issue 755 New zh-CN locale file for Firebug 1.2, contribution by http://code.google.com/u/shawphy/
+    * Issue 760 Inspect tab looses focus
     * Issue 762 this.notifyFirebug is not a function error (contribution by zmarties)
     * Issue 764 Source code for all scripts not visible on scripts tab without enabling debugger
     * Issue 769 HTML Tab Unresponsive After Dock/Undock
@@ -147,6 +151,7 @@ Firebug 1.1 is Firebug 1.05 by Joe Hewitt with additions by John J. Barton and M
     * Issue 797 Problem with XMLHttpRequest Logs
     * Issue 810 1.2b3 bloody mess => no syntax error reporting, weird xul errors, and stuff 
     * Issue 823 Firebug 1.2.0b3 unresponsive in Firefox 3 when opened in own window
+    * Issue 829 Refreshing Browser while stopped at a breakpoint will lock in an endless blank reload loop
     * Issue 831 Clicking HTML select element in panelNode causes option menu items to multiply (contribution by Nathan Mische)
     * Issue 840 Console links and buttons inactive on popout FF3
     * Issue 873 alien variable "y=2" in global watch list, contribution of jwitch
