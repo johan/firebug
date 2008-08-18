@@ -731,6 +731,7 @@ top.Firebug =
         }
 
         var lpath = href.replace(/^[^:]+:\/*/g, "").replace(/\?.*$/g, "").replace(/[^0-9a-zA-Z\/.]/g, "_");
+        /* dummy comment to workaround eclipse bug */
         if ( !/\.[\w]{1,5}$/.test(lpath) )
         {
             if ( lpath.charAt(lpath.length-1) == '/' )

@@ -112,10 +112,6 @@ top.SourceCache.prototype =
                 var postData = getPostStream(this.context);
                 if (postData)
                 {
-                    var allowDoublePost = Firebug.getPref(Firebug.prefDomain, "allowDoublePost");
-                    if (!allowDoublePost)
-                        return [doublePostForbiddenMessage(url)];
-
                     var uploadChannel = QI(channel, nsIUploadChannel);
                     uploadChannel.setUploadStream(postData, "", -1);
                     if (FBTrace.DBG_CACHE) FBTrace.sysout("sourceCache.load uploadChannel set\n");                                             /*@explore*/
@@ -128,13 +124,6 @@ top.SourceCache.prototype =
                 cacheChannel.cacheKey = getCacheKey(this.context);
                 if (FBTrace.DBG_CACHE) FBTrace.sysout("sourceCache.load cacheChannel key"+cacheChannel.cacheKey+"\n");                                             /*@explore*/
             }
-        }
-
-        if (method && method.toUpperCase()!= "GET")
-        {
-            var allowDoublePost = Firebug.getPref(Firebug.prefDomain, "allowDoublePost");
-            if (!allowDoublePost)
-                return [doublePostForbiddenMessage(url)];
         }
 
         var stream;
