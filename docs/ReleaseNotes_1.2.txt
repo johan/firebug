@@ -104,6 +104,7 @@ Firebug 1.1 is Firebug 1.05 by Joe Hewitt with additions by John J. Barton and M
     * Issue 528 Context menu missing from script dropdown
     * Issue 544 Net Panel incorrect rounding of file size
     * Issue 549 The Options menu should *not* be displayed if there are no options available (contribution by Ash Searle)
+    * Issue 564 Can't "disable for on this site" firebug
     * Issue 567 Slow script warning in debugger.js on some pages
     * Issue 570 User agent stylesheet rules are not shown
     * Issue 573 setting css background-color affects layout inspector. Contribution by tonygentilcore
@@ -118,6 +119,7 @@ Firebug 1.1 is Firebug 1.05 by Joe Hewitt with additions by John J. Barton and M
     * Issue 634 XHR request details not showing up
     * Issue 637 $ FireBug function overwrites existing $ function
     * Issue 659 firebug.js:1473 - "this.context.browser is undefined"
+    * Issue 663 $0 should be a reference to the most recent inspected element
     * Issue 676 Exception in firebug-cache.js when visiting http://www.takebacktheweb.org/CaE.html
     * Issue 679 Firebug 1.2.0a27X blocking most AJAX calls
     * Issue 663 $0 should be a reference to the most recent inspected element
@@ -154,6 +156,7 @@ Firebug 1.1 is Firebug 1.05 by Joe Hewitt with additions by John J. Barton and M
     * Issue 829 Refreshing Browser while stopped at a breakpoint will lock in an endless blank reload loop
     * Issue 831 Clicking HTML select element in panelNode causes option menu items to multiply (contribution by Nathan Mische)
     * Issue 840 Console links and buttons inactive on popout FF3
+    * Issue 869 Net page size info shows up as ? on some sites
     * Issue 873 alien variable "y=2" in global watch list, contribution of jwitch
     * Issue 881 "open with editor" not working on Linux
     * Issue 883 "undefined" appears in the search box after selecting a script to show with the Enter key (contribution by splintor)
