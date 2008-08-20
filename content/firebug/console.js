@@ -167,26 +167,12 @@ Firebug.Console = extend(ActivableConsole,
     getConsoleInjectionScript: function() {
         if (!this.consoleInjectionScript)
         {
-            var ff3 = versionChecker.compare(appInfo.version, "3.0*") >= 0;
-
-            // There is a "console" getter defined for FF3.
             var script = "";
-            if (ff3)
-            {
-                script += "window.__defineGetter__('console', function() {\n";
-                script += " return window.loadFirebugConsole(); })\n\n";
-            }
-
             script += "window.loadFirebugConsole = function() {\n";
             script += " if (window._FirebugConsole) return window._firebug;\n";
             script += " var event = document.createEvent('Events');\n";
             script += " event.initEvent('loadFirebugConsole', true, false);\n"
             script += " window.dispatchEvent(event);\n";
-
-            // If not ff3 initialize "console" property.
-            if (!ff3)
-                script += " window.console = window._firebug;\n";
-
             script += " return window._firebug };\n";
             script += "window.console = window.loadFirebugConsole();";
 
