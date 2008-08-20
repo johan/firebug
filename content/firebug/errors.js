@@ -112,8 +112,18 @@ var Errors = Firebug.Errors = extend(Firebug.Module,
         {
             if (FBTrace.DBG_ERRORS)
                 FBTrace.sysout("errors.disable unregisterListener\n");
-            consoleService.unregisterListener(this);
-            $('fbStatusIcon').removeAttribute("errors");
+            try 
+            {
+                consoleService.unregisterListener(this);
+                $('fbStatusIcon').removeAttribute("errors");
+                if (FBTrace.DBG_ERRORS)
+                    FBTrace.sysout("errors.disable unregisterListener\n");
+            } 
+            catch (e)
+            {
+                if (FBTrace.DBG_ERRORS)
+                    FBTrace.sysout("errors.disable FAILS: ", e);
+            }
         }
     },
 
