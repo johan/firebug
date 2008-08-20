@@ -2566,6 +2566,8 @@ this.absoluteURLWithDots = function(url, baseURL)
 
 this.normalizeURL = function(url)
 {
+    if (!url)
+        return "";
     // Replace one or more characters that are not forward-slash followed by /.., by space.
     url = url.replace(/[^/]+\/\.\.\//, "");
     // For some reason, JSDS reports file URLs like "file:/" instead of "file:///", so they
