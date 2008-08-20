@@ -269,7 +269,14 @@ this.addScript = function(doc, id, src)
     element.firebugIgnore = true;
     element.setAttribute("style", "display:none");
     element.innerHTML = src;
-    doc.documentElement.appendChild(element);
+    if (doc.documentElement)
+        doc.documentElement.appendChild(element);
+    else
+    {
+        // See issue 1079, the svg test case gives this error
+        if (FBTrace.DBG_ERRORS)
+            FBTrace.dumpProperties("lib.addScript doc has no documentElement:", doc);
+    }
 }
 
 // ************************************************************************************************
