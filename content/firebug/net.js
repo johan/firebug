@@ -654,7 +654,7 @@ NetPanel.prototype = domplate(Firebug.Panel,
         // The response text can be empty so, test against undefined.
         var text = (file.responseText != undefined)
             ? file.responseText
-            : this.context.sourceCache.loadText(file.href);
+            : this.context.sourceCache.loadText(file.href, file.method, file);
 
         copyToClipboard(text);
 
@@ -2462,7 +2462,7 @@ Firebug.NetMonitor.NetInfoBody = domplate(Firebug.Rep,
         // The response text can be empty so, test against undefined.
         var text = (file.responseText != undefined)
             ? file.responseText
-            : context.sourceCache.loadText(file.href, file.method);
+            : context.sourceCache.loadText(file.href, file.method, file);
 
         if (text)
             insertWrappedText(text, responseTextBox);
