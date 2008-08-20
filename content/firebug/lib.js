@@ -3074,11 +3074,11 @@ this.SourceFile.prototype =
         if (!this.outerScriptLineMap)
             this.outerScriptLineMap = [];
 
-        var lineCount = script.lineExtent;
+        var lineCount = script.lineExtent + 1;
         var offset = this.getBaseLineOffset();
         if (FBTrace.DBG_LINETABLE)
         {                                                                                     /*@explore*/
-            FBTrace.sysout("lib.SourceFile.addToLineTable script.tag:"+script.tag+" lineCount="+lineCount+" offset="+offset+" for "+this.compilation_unit_type+"\n");  /*@explore*/
+            FBTrace.sysout("lib.SourceFile.addToLineTable script.tag:"+script.tag+" lineExtent="+lineCount+" baseLineNumber="+script.baseLineNumber+" offset="+offset+" for "+this.compilation_unit_type+"\n");  /*@explore*/
             var startTime = new Date().getTime();
         }
         if (lineCount > 100)
@@ -3088,9 +3088,15 @@ this.SourceFile.prototype =
         {
             var scriptLineNo = i + script.baseLineNumber;  // the max is (i + script.baseLineNumber + script.lineExtent)
             var mapLineNo = scriptLineNo - offset;
-
-            if (script.isLineExecutable(scriptLineNo, this.pcmap_type))
-                this.outerScriptLineMap.push(mapLineNo);
+            try
+            {
+                if (script.isLineExecutable(scriptLineNo, this.pcmap_type))
+                    this.outerScriptLineMap.push(mapLineNo);
+            }
+            catch (e)
+            {
+                // I guess not...
+            }
                                                                                                                        /*@explore*/
             if (FBTrace.DBG_LINETABLE)                                                                                 /*@explore*/
             {                                                                                                          /*@explore*/
@@ -3191,7 +3197,7 @@ this.SourceFile.prototype =
                         if (!script.isLineExecutable(targetLineNo, this.pcmap_type) )
                         {
                             if (FBTrace.DBG_LINETABLE)
-                                FBTrace.sysout("getScriptsAtLineNumber tried "+script.tag+", not executable at targetLineNo:"+targetLineNo+"\n");
+                                FBTrace.sysout("getScriptsAtLineNumber tried "+script.tag+", not executable at targetLineNo:"+targetLineNo+" pcmap:"+this.pcmap_type+"\n");
                             return;
                         }
                     }
@@ -3438,7 +3444,7 @@ this.EventSourceFile.prototype.OuterScriptAnalyzer.prototype =
 
 this.EventSourceFile.prototype.getBaseLineOffset = function()
 {
-    return 0;
+    return 1;
 }
 
 this.summarizeSourceLineArray = function(sourceLines, size)
