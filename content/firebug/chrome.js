@@ -1251,7 +1251,7 @@ function onCommandLineFocus(event)
         Firebug.Console.injector.attachConsole(FirebugContext, FirebugContext.window);
 
         if (FBTrace.DBG_CONSOLE)
-            FBTrace.sysout("onCommandLineFocus, added command line support to "+FirebugContext.window.location+"\n");
+            FBTrace.sysout("onCommandLineFocus, attachConsole "+FirebugContext.window.location+"\n");
     }
     else
     {
@@ -1267,6 +1267,20 @@ function onCommandLineFocus(event)
     if (FirebugContext && FirebugContext.window && FirebugContext.window.wrappedJSObject && !FirebugContext.window.wrappedJSObject._FirebugCommandLine)
     {
         Firebug.CommandLine.injector.attachCommandLine(FirebugContext, FirebugContext.window);
+    }
+    else
+    {
+        if (FBTrace.DBG_CONSOLE)
+        {
+            try
+            {
+                var cmdLine = FirebugContext.window.wrappedJSObject._FirebugCommandLine
+            }
+            catch (e)
+            {
+                FBTrace.sysout("onCommandLineFocus, did NOT attachCommandLine ", e);
+            }
+        }
     }
 }
 

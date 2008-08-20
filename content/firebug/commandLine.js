@@ -778,7 +778,7 @@ Firebug.CommandLine.injector = {
         else
         {
             if (FBTrace.DBG_ERRORS)
-                FBTrace.sysout("Commandline.injector, no element " + win.location + "\n");
+                FBTrace.sysout("Commandline.injector, no _firebugConsole element " + win.location + "\n");
         }
     }
 };
