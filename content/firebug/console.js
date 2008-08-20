@@ -188,6 +188,7 @@ Firebug.Console = extend(ActivableConsole,
                 script += " window.console = window._firebug;\n";
 
             script += " return window._firebug };\n";
+            script += "window.console = window.loadFirebugConsole();";
 
             this.consoleInjectionScript = script;
         }
