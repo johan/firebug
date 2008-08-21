@@ -496,11 +496,20 @@ Firebug.ConsolePanel.prototype = extend(Firebug.Panel,
         {
             Firebug.ModuleManagerPage.hide(this);
 
+            FirebugContext.chrome.$("fbCommandBox").collapsed = false;
+            if (Firebug.largeCommandLine)
+                Firebug.CommandLine.setMultiLine(true);
+
             if (this.wasScrolledToBottom)
                 scrollToBottom(this.panelNode);
         }
         else
+        {
+            Firebug.CommandLine.setMultiLine(false);
+            FirebugContext.chrome.$("fbCommandBox").collapsed = true;
+
             Firebug.ModuleManagerPage.show(this, Firebug.Console);
+        }
     },
 
     hide: function()
