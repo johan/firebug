@@ -111,14 +111,14 @@ var Errors = Firebug.Errors = extend(Firebug.Module,
         if (errorsOn)  // need to be safe to multiple calls
         {
             if (FBTrace.DBG_ERRORS)
-                FBTrace.sysout("errors.disable unregisterListener\n");
-            try 
+                FBTrace.sysout("errors.stopObserving try unregisterListener\n");
+            try
             {
                 consoleService.unregisterListener(this);
                 $('fbStatusIcon').removeAttribute("errors");
                 if (FBTrace.DBG_ERRORS)
-                    FBTrace.sysout("errors.disable unregisterListener\n");
-            } 
+                    FBTrace.sysout("errors.stopObserving done unregisterListener\n");
+            }
             catch (e)
             {
                 if (FBTrace.DBG_ERRORS)

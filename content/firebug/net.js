@@ -1917,6 +1917,8 @@ function waitForCacheCompletion(request, file, netProgress)
         var descriptor = cacheSession.openCacheEntry(file.href, ACCESS_READ, false);
         if (descriptor)
             netProgress.post(cacheEntryReady, [request, file, descriptor.dataSize]);
+        if (FBTrace.DBG_NET)
+            FBTrace.sysout("waitForCacheCompletion "+(descriptor?"posted ":"no cache entry ")+file.href+"\n");
     }
     catch (exc)
     {
@@ -1936,11 +1938,13 @@ function getCacheEntry(file, netProgress)
 
     // Pause first because this is usually called from stopFile, at which point
     // the file's cache entry is locked
-    setTimeout(function()
+    setTimeout(function delayGetCacheEntry()
     {
         try
         {
             initCacheSession();
+            if (FBTrace.DBG_NET)
+                FBTrace.sysout("net.delayGetCacheEntry for file.href=" + file.href + "\n");
             cacheSession.asyncOpenCacheEntry(file.href, ACCESS_READ, {
                 onCacheEntryAvailable: function(descriptor, accessGranted, status)
                 {
@@ -2007,7 +2011,7 @@ function getCacheEntry(file, netProgress)
         catch (exc)
         {
             if (FBTrace.DBG_ERRORS)
-                ERROR(exc);
+                FBTrace.dumpProperties("net.delayGetCacheEntry FAILS", exc);
         }
     });
 }
@@ -2438,7 +2442,7 @@ Firebug.NetMonitor.NetInfoBody = domplate(Firebug.Rep,
             if (file.category == "image")
             {
                 netInfoBox.responsePresented = true;
-    
+
                 var responseImage = netInfoBox.ownerDocument.createElement("img");
                 responseImage.src = file.href;
                 responseTextBox.replaceChild(responseImage, responseTextBox.firstChild);
@@ -2450,7 +2454,7 @@ Firebug.NetMonitor.NetInfoBody = domplate(Firebug.Rep,
                 // If the response is in the cache get it and display it;
                 // otherwise display a button, which can be used by the user
                 // to re-request the response from the server.
-                // xxxHonza this is a workaround, which should be removed 
+                // xxxHonza this is a workaround, which should be removed
                 // as soon as the #430155 is fixed.
                 if (allowDoublePost || file.cacheEntry)
                 {
