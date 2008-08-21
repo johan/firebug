@@ -1406,6 +1406,9 @@ NetProgress.prototype =
 
     respondedFile: function respondedFile(request, time, info)
     {
+        if (FBTrace.DBG_NET)
+            FBTrace.sysout("net.respondedFile for: " +  safeGetRequest(request) + "\n");
+
         var file = this.getRequestFile(request);
         if (file)
         {
@@ -1462,6 +1465,9 @@ NetProgress.prototype =
 
     stopFile: function stopFile(request, time, postText, responseText)
     {
+        if (FBTrace.DBG_NET)
+            FBTrace.sysout("net.stopFile for: " + safeGetName(request) + "\n");
+
         var file = this.getRequestFile(request);
         if (file)
         {
@@ -1492,6 +1498,9 @@ NetProgress.prototype =
 
     cacheEntryReady: function cacheEntryReady(request, file, size)
     {
+        if (FBTrace.DBG_NET)
+            FBTrace.sysout("net.cacheEntryReady for file.href: " + file.href + "\n");
+
         if (size != -1)
             file.size = size;
 
@@ -1585,6 +1594,9 @@ NetProgress.prototype =
 
     awaitFile: function(request, file)
     {
+        if (FBTrace.DBG_NET)
+            FBTrace.sysout("net.awaitFile for file.href: " + file.href + "\n");
+
         this.pending.push(file);
 
         // XXXjoe Remove files after they have been checked N times
@@ -1739,7 +1751,7 @@ function NetFile(href, document)
     this.document = document
 
     if (FBTrace.DBG_NET)                                                                                                /*@explore*/
-        FBTrace.dumpProperties("net.NetFile: "+href, this);                                                                        /*@explore*/
+        FBTrace.dumpProperties("net.NetFile (constructor): "+href, this);                                                                        /*@explore*/
 
     this.pendingCount = 0;
 }
@@ -1888,6 +1900,9 @@ function initCacheSession()
 {
     if (!cacheSession)
     {
+        if (FBTrace.DBG_NET)
+            FBTrace.sysout("net.initCacheSession\n");
+
         var cacheService = CacheService.getService(nsICacheService);
         cacheSession = cacheService.createSession("HTTP", STORE_ANYWHERE, true);
         cacheSession.doomEntriesIfExpired = false;
@@ -1916,6 +1931,9 @@ function waitForCacheCompletion(request, file, netProgress)
 
 function getCacheEntry(file, netProgress)
 {
+    if (FBTrace.DBG_NET)
+        FBTrace.sysout("net.getCacheEntry for file.href: " + file.href + "\n");
+
     // Pause first because this is usually called from stopFile, at which point
     // the file's cache entry is locked
     setTimeout(function()
