@@ -373,22 +373,25 @@ this.Arr = domplate(Firebug.Rep,
         }
     },
 
+    // http://code.google.com/p/fbug/issues/detail?id=874
     // BEGIN Yahoo BSD Source (modified here)  YAHOO.lang.isArray, YUI 2.2.2 June 2007
-    isArray: function(obj) { // frames lose type, so test constructor string
-    try {
-        if (obj && obj.constructor &&
-                   obj.constructor.toString().indexOf('Array') > -1) {
-            return true;
-        } else {
-            return ((typeof obj == 'object') || (typeof obj == 'function')) && obj.constructor == Array;
+    isArray: function(obj) {
+        try {
+            if (obj)
+                return isFinite(obj) && typeof obj.splice === 'function';
+            else
+                return false;
         }
-    } catch(exc) {
-        if (FBTrace.DBG_ERRORS)
+        catch(exc)
         {
-            FBTrace.dumpProperties("isArray FAILS:", exc);  /* Something weird: without the try/catch, OOM, with no exception?? */
-            FBTrace.dumpProperties("isArray Fails on obj", obj);
+            if (FBTrace.DBG_ERRORS)
+            {
+                FBTrace.dumpProperties("isArray FAILS:", exc);  /* Something weird: without the try/catch, OOM, with no exception?? */
+                FBTrace.dumpProperties("isArray Fails on obj", obj);
+            }
         }
-    }
+
+        return false;
     },
     // END Yahoo BSD SOURCE See license below.
 

@@ -147,7 +147,7 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
         context.debugFrame = frame;
         context.stopped = true;
 
-        const hookReturn = dispatch2(listeners,"onStop",[context,frame, type,rv]);
+        var hookReturn = dispatch2(listeners,"onStop",[context,frame, type,rv]);
         if ( hookReturn && hookReturn >= 0 )
         {
             delete context.stopped;
@@ -577,7 +577,9 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
             delete chrome.updateViewOnShowHook;
             updateViewOnShowHook();
         }
-        this.syncCommands(panel.context);
+        
+        if (panel)
+        	this.syncCommands(panel.context);
     },
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -630,6 +632,10 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
     supportsWindow: function(win)
     {
         var context = ( (win && TabWatcher) ? TabWatcher.getContextByWindow(win) : null);
+
+        if (!this.isEnabled(context))
+            return false;
+
         this.breakContext = context;
         return !!context;
     },
@@ -637,6 +643,10 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
     supportsGlobal: function(global)
     {
         var context = (TabWatcher ? TabWatcher.getContextByWindow(global) : null);
+
+        if (!this.isEnabled(context))
+            return false;
+
         this.breakContext = context;
         return !!context;
     },
@@ -1296,7 +1306,7 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
         updateScriptFiles(context);
     },
 
-    destroyContext: function(context)
+    destroyContext: function(context, persistedState)
     {
         Firebug.ActivableModule.destroyContext.apply(this, arguments);
 
@@ -1843,6 +1853,7 @@ ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
 
     destroy: function(state)
     {
+        delete this.selection; // We want the location (sourcefile) to persist, not the selection (eg stackFrame).
         persistObjects(this, state);
 
         var sourceBox = this.selectedSourceBox;
@@ -1945,11 +1956,12 @@ ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
         this.panelSplitter.collapsed = !enabled;
         this.sidePanelDeck.collapsed = !enabled;
 
-        // Source box is updated only if debugger is enabled.
-        if (enabled && !this.location)
-        {
-            restoreObjects(this, state);
+        this.selection = this.getDefaultSelection();  // set a selection so restore does not.
 
+        restoreObjects(this, state);
+
+        if (enabled) // Source box is updated only if debugger is enabled.
+        {
             if (state)
             {
                 this.context.throttle(function()
@@ -1972,7 +1984,7 @@ ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
             FBL.hide(panelStatus, true);
     },
 
-    hide: function()
+    hide: function(state)
     {
         this.showToolbarButtons("fbDebuggerButtons", false);
         this.showToolbarButtons("fbScriptButtons", false);
@@ -1982,7 +1994,7 @@ ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
 
         var sourceBox = this.selectedSourceBox;
         if (sourceBox)
-            this.lastScrollTop = sourceBox.scrollTop;
+            state.lastScrollTop = sourceBox.scrollTop;
     },
 
     search: function(text)
@@ -2137,6 +2149,7 @@ ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
                 if (url == sourceFiles[i].href)
                     return sourceFiles[i];
             }
+            return sourceFiles[0];
         }
         else
             return sourceFiles[0];

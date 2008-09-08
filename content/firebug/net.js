@@ -664,11 +664,15 @@ NetPanel.prototype = domplate(Firebug.Panel,
 
     openRequestInTab: function(file)
     {
-        var stringStream = getInputStreamFromString(file.postText);
-        var postData = CCIN("@mozilla.org/network/mime-input-stream;1", "nsIMIMEInputStream");
-        postData.addHeader("Content-Type", "application/x-www-form-urlencoded");
-        postData.addContentLength = true;
-        postData.setData(stringStream);
+        var postData = null;
+        if (file.postText)
+        {
+            var stringStream = getInputStreamFromString(file.postText);
+            postData = CCIN("@mozilla.org/network/mime-input-stream;1", "nsIMIMEInputStream");
+            postData.addHeader("Content-Type", "application/x-www-form-urlencoded");
+            postData.addContentLength = true;
+            postData.setData(stringStream);
+        }
 
         gBrowser.selectedTab = gBrowser.addTab(file.href, null, null, postData);
     },
@@ -731,7 +735,7 @@ NetPanel.prototype = domplate(Firebug.Panel,
     hide: function()
     {
         this.showToolbarButtons("fbNetButtons", false);
-
+        delete this.infoTipURL;  // clear the state that is tracking the infotip so it is reset after next show()
         this.wasScrolledToBottom = isScrolledToBottom(this.panelNode);
 
         clearInterval(this.layoutInterval);
@@ -1418,7 +1422,7 @@ NetProgress.prototype =
     respondedFile: function respondedFile(request, time, info)
     {
         if (FBTrace.DBG_NET)
-            FBTrace.sysout("net.respondedFile for: " +  safeGetRequest(request) + "\n");
+            FBTrace.sysout("net.respondedFile for: " + safeGetName(request) + "\n");
 
         var file = this.getRequestFile(request);
         if (file)
@@ -2008,13 +2012,6 @@ function getCacheEntry(file, netProgress)
                                 return true;
                             }
                         });
-
-                        // Update file category.
-                        if (file.mimeType)
-                        {
-                            file.category = null;
-                            getFileCategory(file);
-                        }
 
                         netProgress.update(file);
                     }
@@ -2810,6 +2807,9 @@ var HttpObserver =
       info.responseStatus = aRequest.responseStatus;
       info.responseStatusText = aRequest.responseStatusText;
       info.postText = readPostTextFromRequest(aRequest, context);
+
+      if (!info.postText)
+        info.postText = readPostTextFromPage(aRequest.name, context);
 
       if (networkContext)
         networkContext.post(respondedFile, [aRequest, now(), info]);

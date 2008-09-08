@@ -286,7 +286,7 @@ function $STR(name) // name with _ in place of spaces is the key in the firebug.
 {
     try
     {
-        return document.getElementById("strings_firebug").getString(name.replace(' ', '_'));
+        return document.getElementById("strings_firebug").getString(name.replace(' ', '_', "g"));
     }
     catch (err)
     {
@@ -304,7 +304,7 @@ function $STRF(name, args)
 {
     try
     {
-        return document.getElementById("strings_firebug").getFormattedString(name.replace(' ', '_'), args);
+        return document.getElementById("strings_firebug").getFormattedString(name.replace(' ', '_', "g"), args);
     }
     catch (err)
     {
@@ -2569,7 +2569,8 @@ this.normalizeURL = function(url)
     if (!url)
         return "";
     // Replace one or more characters that are not forward-slash followed by /.., by space.
-    url = url.replace(/[^/]+\/\.\.\//, "");
+    if (url.length < 255) // guard against monsters.
+        url = url.replace(/[^/]+\/\.\.\//, "");
     // For some reason, JSDS reports file URLs like "file:/" instead of "file:///", so they
     // don't match up with the URLs we get back from the DOM
     return url ? url.replace(/file:\/([^/])/g, "file:///$1") : "";

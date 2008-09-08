@@ -1374,7 +1374,7 @@ Firebug.Module =
     },
 
     /**
-     * Called when a context is destroyed.
+     * Called when a context is destroyed. Module may store info on persistedState for reloaded pages.
      */
     destroyContext: function(context, persistedState)
     {
@@ -1467,7 +1467,7 @@ Firebug.Panel =
         this.initializeNode(this.panelNode);
     },
 
-    destroy: function(state)
+    destroy: function(state) // Panel may store info on state
     {
         if (this.panelNode)
             delete this.panelNode.ownerPanel;
@@ -1504,11 +1504,11 @@ Firebug.Panel =
     {
     },
 
-    show: function(state)
+    show: function(state)  // persistedPanelState plus non-persisted hide() values
     {
     },
 
-    hide: function()
+    hide: function(state)  // store info on state for next show.
     {
     },
 
@@ -1887,8 +1887,7 @@ Firebug.SourceBoxPanel = extend(Firebug.Panel,
             var max = lineNo + visibleRange.after;
 
             this.markVisible(min, max);
-
-            if (highlight)
+            if (highlight && lineNode)
                 setClassTimed(lineNode, "jumpHighlight", this.context);
 
             if (uiListeners.length > 0)
@@ -2541,7 +2540,7 @@ Firebug.ActivableModule = extend(Firebug.Module,
         panel.clear();
     },
 
-    getMenuLabel: function(option, location, shortened)
+    getMenuLabel: function(option, location)
     {
         var label = "";
         var host = "";
@@ -2555,9 +2554,6 @@ Firebug.ActivableModule = extend(Firebug.Module,
                 label = "LocalFilesDisable";
             else
                 label = "HostDisable";
-
-            if (shortened)
-                return $STR("panel.Disabled");
             break;
 
         case "enable-site":
@@ -2567,9 +2563,6 @@ Firebug.ActivableModule = extend(Firebug.Module,
                 label = "LocalFilesEnable";
             else
                 label = "HostEnable";
-
-            if (shortened)
-                return $STR("panel.Enabled");
             break;
 
         case "enable":

@@ -30,6 +30,7 @@
         <xul:deck anonid="deck" flex="1">
             <xul:browser anonid="browser"
                      xbl:inherits="tooltip=paneltooltip,contextmenu=panelcontextmenu"
+                     disablehistory="true"
                      src="chrome://firebug/content/panel.html"/>
         </xul:deck>
     </content>
@@ -225,7 +226,8 @@
                 if (oldPanel)
                 {
                     oldPanel.visible = false;  // xxxjjb Why three ways to un-show the panel?
-                    oldPanel.hide();
+                    var state = Firebug.getPanelState(oldPanel);
+                    oldPanel.hide(state);
                     oldPanel.panelNode.removeAttribute("active");
                 }
             ]]></body>
