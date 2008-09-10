@@ -51,7 +51,7 @@ for ( var num = 1; num <= 8; num *= 2 ) {
     for ( var n = 0; n < num; n++ )
         tmp += tmp;
 
-    tmp += "\n//@ sourceURL=core-eval.js";
+    // tmp += "\n//@ sourceURL=core-eval.js";
 
     test( "Normal eval", num, function(){
         eval(tmp);
