@@ -39,9 +39,12 @@ Firebug 1.1 is Firebug 1.05 by Joe Hewitt with additions by John J. Barton and M
 	* Internationalize via Babelizza; begin moving away from entities to properties.
 	* zh-CN locale update (contribution by lovelywcm)
 	* da-DK locale update (contribution by AlleyKat)
+	* de-DE locale update (contribution by Team erweiterungen.de, ReinekeFux, Monoman)
+	* it-IT locale update (contribution by l0stintranslation, gonzalopirobutirro)
 	* sv-SE new locale (contribution by peter3)
 	* pl-PL locale update (contribution by Teo)
 	* nl-NL locale update (contribution by markh)
+	* cs-CZ locale update (contribution by lordfrikk)
 	* add tranlator names to the about dialog
 
 == Bug Fixes ==
@@ -55,6 +58,7 @@ Firebug 1.1 is Firebug 1.05 by Joe Hewitt with additions by John J. Barton and M
 	* Issue 814:  cd not working correctly
 	* Issue 874:  User object incorrectly identified as arrays
 	* Issue 882:  console.log() reports wrong source file and line number
+	* Issue 903:  Overflow is removed from Style section of Computed tab display when overflow-x differs from overflow-y
 	* Issue 983:  GWT with Firebug on FF3 cause "listener is undefined"
 	* Issue 992: New zh-CN locale file for Firebug 1.2
 	* Issue 1000: console.group doesn't work
@@ -86,3 +90,9 @@ Firebug 1.1 is Firebug 1.05 by Joe Hewitt with additions by John J. Barton and M
 	* Issue 1201: Both code and "script" disabled panel show up.
 	* Issue 1203: Step over causes Firebug to suspend on incorrect line after reload
 	* Issue 1206: showAllSources preference broken; contribution lezekdan
+	* Issue 1205: decodeURI in Firebug.resetTooltip()
+	* Issue 1207: DOMContentLoaded and onLoad vertical lines displayed within the net panel.
+	* Issue 1210: 1.3b1 post message display is screwed up
+	* Issue 1211: Autocomplete broken in 1.3b1
+	* Issue 1212: race condition in XHR reported status in console
+	
