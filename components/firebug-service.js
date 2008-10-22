@@ -911,8 +911,7 @@ FirebugService.prototype =
     onDebug: function(frame, type, rv)
     {
         if (FBTrace.DBG_FBS_ERRORS)                                                                                               /*@explore*/
-            FBTrace.sysout("fbs.onDebug fileName="+frame.script.fileName+ " reportNextError="                							/*@explore*/
-                                 +reportNextError+" breakOnNextError="+breakOnNextError+" breakOnNext:"+this.breakOnErrors);                            /*@explore*/
+            FBTrace.sysout("fbs.onDebug fileName="+frame.script.fileName+ " reportNextError="+reportNextError+" breakOnNextError="+breakOnNextError+" breakOnNext:"+this.breakOnErrors);
         if ( isFilteredURL(frame.script.fileName) )
             return RETURN_CONTINUE;
         try
@@ -1791,7 +1790,9 @@ FirebugService.prototype =
             			FBTrace.sysout("setJSDBreakpoint tag: "+script.tag+" line.pc@url="+bp.lineNo +"."+pc+"@"+sourceFile.href+" using offset:"+sourceFile.getBaseLineOffset()+" jsdLine: "+jsdLine+" pcToLine: "+pcToLine+(isExecutable?" isExecuable":" notExecutable"), sourceFile);
             	}
             	else
+            	{
             		if (FBTrace.DBG_FBS_BP) FBTrace.sysout("setJSDBreakpoint LINE MISMATCH for tag: "+script.tag+" line.pc@url="+bp.lineNo +"."+pc+"@"+sourceFile.href+" using offset:"+sourceFile.getBaseLineOffset()+" jsdLine: "+jsdLine+" pcToLine: "+pcToLine+(isExecutable?" isExecuable":" notExecutable"), sourceFile);
+            	}
             }
             else
             {
