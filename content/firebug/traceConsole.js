@@ -18,7 +18,8 @@ var gFindBar;
 const reDBG = /extensions\.([^\.]*)\.(DBG_.*)/;
 const reDBG_FBS = /DBG_FBS_(.*)/;
 
-// The lib.js isn't included in this window so, define the global here.
+// The lib.js isn't included in this window so, define the global here. 
+// It'll be initialized from window parameters (see initialize method).
 var FBL;
 
 // ************************************************************************************************
@@ -37,7 +38,7 @@ var TraceConsole =
         // Get pref domain is used for message filtering. Only logs that belong
         // to this pref-domain will be displayed.
         this.prefDomain = args.prefDomain; 
-        window.title = "Tracing: " + this.prefDomain;
+        window.title = FBL.$STR("title.Tracing") + ": " + this.prefDomain;
 
         // Initialize root node of the trace-console window.
         var consoleFrame = document.getElementById("consoleFrame");
@@ -52,6 +53,22 @@ var TraceConsole =
         // Notify listeners
         Firebug.TraceModule.onLoadConsole(window, this.consoleNode);
         this.registerModule(Firebug.TraceModule);
+
+        // Make sure the UI is localized.
+        this.internationalizeUI();
+    },
+
+    internationalizeUI: function()
+    {
+        var buttons = ["clearConsole", "findConsole", "separateConsole", 
+            "restartFirefox", "closeFirefox"];
+
+        for (var i=0; i<buttons.length; i++)
+        {
+            var element = document.getElementById(buttons[i]);
+            FBL.internationalize(element, "label");
+            FBL.internationalize(element, "tooltiptext");
+        }
     },
 
     shutdown: function()
