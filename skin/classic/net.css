@@ -152,7 +152,6 @@
     top: 0;
     bottom: 0;
     background: #FFFFFF url(chrome://firebug/skin/netBarConnecting.gif) repeat-x;
-    min-width: 1px;
     z-index:40;
 }
 
@@ -162,7 +161,6 @@
     top: 0;
     bottom: 0;
     background: #FFFFFF url(chrome://firebug/skin/netBarWaiting.gif) repeat-x;
-    min-width: 2px;
     z-index:30;
 }
 
@@ -172,7 +170,6 @@
     top: 0;
     bottom: 0;
     background: #FFFFFF url(chrome://firebug/skin/netBarResponded.gif) repeat-x;
-    min-width: 3px;
     z-index:20;
 }
 

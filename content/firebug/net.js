@@ -1106,7 +1106,7 @@ NetPanel.prototype = domplate(Firebug.AblePanel,
                 timeBar.style.left = this.barOffset + "%";
 
             // Sets width of all bars (using style). The width is computed according to measured timing.
-            connectingBar.style.width = this.barConnectingWidth ? this.barConnectingWidth + "%" : "1px";
+            connectingBar.style.width = this.barConnectingWidth + "%";
             waitingBar.style.width = this.barWaitingWidth + "%";
             respondedBar.style.width = this.barRespondedWidth + "%";
             timeBar.style.width = this.barWidth + "%";
@@ -1195,12 +1195,15 @@ NetPanel.prototype = domplate(Firebug.AblePanel,
             this.phaseElapsed = this.phaseEndTime - phase.startTime;
         }
 
-        this.elapsed = file.loaded ? file.endTime - file.startTime : this.phaseEndTime - file.startTime;
-        this.barWidth = Math.floor((this.elapsed/this.phaseElapsed) * 100);
+        var elapsed = file.loaded ? file.endTime - file.startTime : this.phaseEndTime - file.startTime;
+        this.barWidth = Math.floor((elapsed/this.phaseElapsed) * 100);
         this.barOffset = Math.floor(((file.startTime-this.phaseStartTime)/this.phaseElapsed) * 100);
-        this.barConnectingWidth = Math.floor(((file.connectingTime - file.startTime)/this.phaseElapsed) * 100); 
+        this.barConnectingWidth = 0;//Math.floor(((file.connectingTime - file.startTime)/this.phaseElapsed) * 100); 
         this.barWaitingWidth = Math.floor(((file.waitingForTime - file.startTime)/this.phaseElapsed) * 100); 
-        this.barRespondedWidth = Math.floor(((file.respondedTime - file.startTime)/this.phaseElapsed) * 100); 
+        this.barRespondedWidth = 0;//Math.floor(((file.respondedTime - file.startTime)/this.phaseElapsed) * 100); 
+
+        // Total request time doesn't include the time spent in queue.
+        file.elapsed = this.elapsed = elapsed - (file.waitingForTime - file.connectingTime);
 
         // Compute also offset for the contentLoadBar and windowLoadBar, which are 
         // displayed for the first phase.
@@ -1305,18 +1308,18 @@ Firebug.NetMonitor.TimeInfoTip = domplate(Firebug.Rep,
     tag: 
         TABLE({class: "timeInfoTip"},
             TBODY(
-                TR(
+                /*TR(
                     TD({class: "netConnectingBar timeInfoTipBar"}),
                     TD("$file|getConnectintTime : " + $STR("requestinfo.Connecting"))
-                ),
+                ),*/
                 TR(
                     TD({class: "netWaitingBar timeInfoTipBar"}),
                     TD("$file|getWaitingTime : " + $STR("requestinfo.Queuing"))
                 ),
-                TR(
+                /*TR(
                     TD({class: "netRespondedBar timeInfoTipBar"}),
                     TD("$file|getResponseTime : " + $STR("requestinfo.Waiting For Response"))
-                ),
+                ),*/
                 TR({$loaded: "$file.loaded", 
                     $fromCache: "$file.fromCache"},
                     TD({class: "netTimeBar timeInfoTipBar"}),
@@ -1354,7 +1357,7 @@ Firebug.NetMonitor.TimeInfoTip = domplate(Firebug.Rep,
 
     getLoadingTime: function(file)
     {
-        return formatTime(file.endTime - file.respondedTime);
+        return formatTime(file.elapsed);
     },
 
     getWindowLoadTime: function(file)
