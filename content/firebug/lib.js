@@ -2736,19 +2736,18 @@ this.parseURLEncodedText = function(text)
 
 this.getResource = function(aURL)
 {
-    var ioService=Components.classes["@mozilla.org/network/io-service;1"]
-        .getService(Components.interfaces.nsIIOService);
-    var scriptableStream=Components
-        .classes["@mozilla.org/scriptableinputstream;1"]
-        .getService(Components.interfaces.nsIScriptableInputStream);
-
-    var channel=ioService.newChannel(aURL,null,null);
-    var input=channel.open();
-    scriptableStream.init(input);
-    var str=scriptableStream.read(input.available());
-    scriptableStream.close();
-    input.close();
-    return str;
+    var ioService=Cc["@mozilla.org/network/io-service;1"].getService(Ci.nsIIOService);
+    try 
+    {
+    	var channel=ioService.newChannel(aURL,null,null);
+    	var input=channel.open();
+        return FBL.readFromStream(input);
+    }
+    catch (e)
+    {
+    	if (FBTrace.DBG_ERRORS)
+    		FBTrace.sysout("lib.getResource FAILS for "+aURL, e);
+    }
 };
 
 // ************************************************************************************************

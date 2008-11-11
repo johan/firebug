@@ -201,6 +201,16 @@ Firebug.TabCache.prototype =
             url = localURI.spec;
         }
 
+        // if we get this far then we have either a file: or chrome: url converted to file:
+        var src = getResource(url);
+        if (src)
+        {
+        	var lines = src.split(/\r\n|\r|\n/);
+            this.cache[url] = lines;
+
+            return lines;
+        }  
+
         return null;
     },
 
