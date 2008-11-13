@@ -26,14 +26,20 @@ const NS_BINDING_ABORTED = 0x804b0002;
 
 // ************************************************************************************************
 
-top.SourceCache = function(context)
+top.SourceCache = function(window, context)
 {
+    this.window = window;
     this.context = context;
     this.cache = {};
 };
 
 top.SourceCache.prototype =
 {
+	isCached: function(url)
+	{
+		return this.cache.hasOwnProperty(url);
+	},
+	
     loadText: function(url, method, file)
     {
         var lines = this.load(url, method, file);
@@ -45,10 +51,10 @@ top.SourceCache.prototype =
         if ( this.cache.hasOwnProperty(url) )
             return this.cache[url];
 
-        var d = FBL.reDataURL.exec(url);
+        var d = FBL.splitDataURL(url);  //TODO the RE should not have baseLine
         if (d)
         {
-            var src = url.substring(FBL.reDataURL.lastIndex);
+            var src = d.encodedContent;
             var data = decodeURIComponent(src);
             var lines = data.split(/\r\n|\r|\n/);
             this.cache[url] = lines;
@@ -79,6 +85,24 @@ top.SourceCache.prototype =
             url = localURI.spec;
         }
 
+        // if we get this far then we have either a file: or chrome: url converted to file:
+        var src = getResource(url);
+        if (src)
+        {
+        	var lines = src.split(/\r\n|\r|\n/);
+            this.cache[url] = lines;
+
+            return lines;
+        }  
+
+        // Unfortunately, the URL isn't available so, let's try to use FF cache. 
+        // Notice that additional network request to the server can be made in 
+        // this method (double-load).
+        this.loadFromCache(url, method, file);
+    },
+
+    loadFromCache: function(url, method, file)
+    {
         var doc = this.context.window.document;
         if (doc)
             var charset = doc.characterSet;
@@ -141,11 +165,10 @@ top.SourceCache.prototype =
             }
         }
 
-
         var stream;
         try
         {
-            if (FBTrace.DBG_CACHE) FBTrace.sysout("sourceCache.load url:"+url+"\n");                                             /*@explore*/
+            if (FBTrace.DBG_CACHE) FBTrace.sysout("sourceCache.load url:"+url+" with charset"+charset+"\n");                                             /*@explore*/
             stream = channel.open();
         }
         catch (exc)
@@ -156,9 +179,9 @@ top.SourceCache.prototype =
                 var isUp = (channel instanceof nsIUploadChannel)?"nsIUploadChannel":"NOT nsIUploadChannel";                /*@explore*/
                 FBTrace.sysout(url+" vs "+this.context.browser.contentWindow.location.href+" and "+isCache+" "+isUp+"\n"); /*@explore*/
                 FBTrace.dumpProperties("sourceCache.load fails channel.open for url="+url+ " cause:", exc);                /*@explore*/
-                FBTrace.dumpStack("sourceCache.load fails channel=", channel);                                        /*@explore*/
+                FBTrace.dumpStack("sourceCache.load fails channel=", channel);
             }
-            return;
+            return ["sourceCache.load FAILS for url="+url, exc.toString()];
         }
 
         try
@@ -183,9 +206,16 @@ top.SourceCache.prototype =
     store: function(url, text)
     {
         if (FBTrace.DBG_CACHE)                                                                                         /*@explore*/
-            FBTrace.sysout("sourceCache for window="+this.context.window.location.href+" store url="+url+"\n");        /*@explore*/
+            FBTrace.sysout("sourceCache for window="+this.window.location.href+" store url="+url+"\n");        /*@explore*/
         var lines = splitLines(text);
-        return this.cache[url] = lines;
+        return this.storeSplitLines(url, lines);
+    },
+    
+    storeSplitLines: function(url, lines)  
+    {
+    	if (FBTrace.DBG_CACHE)
+            FBTrace.sysout("sourceCache for window="+this.window.location.href+" store url="+url+"\n");
+    	return this.cache[url] = lines;
     },
 
     invalidate: function(url)
@@ -196,7 +226,15 @@ top.SourceCache.prototype =
     getLine: function(url, lineNo)
     {
         var lines = this.load(url);
-        return lines ? lines[lineNo-1] : null;
+        if (lines)
+        {
+        	if (lineNo <= lines.length)
+        		return lines[lineNo-1];
+        	else
+        		return (lines.length == 1) ? lines[0] : "("+lineNo+" out of range "+lines.length+")";
+        }
+        else
+        	return "(no source for "+url+")";
     }
 };
 
