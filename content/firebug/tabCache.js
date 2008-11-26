@@ -10,27 +10,24 @@ const Ci = Components.interfaces;
 
 const httpObserver = Cc["@joehewitt.com/firebug-http-observer;1"].getService(Ci.nsIObserverService);
 
-// List of text content types.
-const contentTypes =
+// List of text content types. These content-types are cached.
+var contentTypes =
 {
     "text/plain": 1,
     "text/html": 1,
-    "text/html": 1,
-    "text/html": 1,
     "text/xml": 1,
     "text/css": 1,
+    "text/sgml": 1,
+    "text/rtf": 1,
+    "text/richtext": 1,
+    "text/x-setext": 1,
+    "text/rtf": 1,
+    "text/javascript": 1,
+    "text/tab-separated-values": 1,
+    "application/javascript": 1,
     "application/x-javascript": 1,
-    "application/x-javascript": 1,
-    "image/jpeg": 0,
-    "image/jpeg": 0,
-    "image/gif": 0,
-    "image/png": 0,
-    "image/bmp": 0,
-    "application/x-shockwave-flash": 0
+    "application/x-httpd-php": 1,
 };
-
-// Helper array for prematurely created contexts.
-var contexts = new Array();
 
 // ************************************************************************************************
 // Model implementation
@@ -47,6 +44,17 @@ Firebug.TabCacheModel = extend(Firebug.Module,
         if (FBTrace.DBG_CACHE)
             FBTrace.sysout("tabCache. Cache model initialized.");
 
+        // Read additional text mime-types from preferences.
+        var mimeTypes = Firebug.getPref(Firebug.prefDomain, "cache.mimeTypes");
+        if (mimeTypes) {
+            var list = mimeTypes.split(" ");
+            for (var i=0; i<list.length; i++)
+                contentTypes[list[i]] = 1;
+
+            if (FBTrace.DBG_CACHE)
+                FBTrace.sysout("tabCache.initializeUI, custom mime-types added", list);
+        }
+
         // Register for HTTP events.
         if (Ci.nsITraceableChannel)
             httpObserver.addObserver(this, "firebug-http-event", false);
@@ -62,20 +70,6 @@ Firebug.TabCacheModel = extend(Firebug.Module,
     {
         if (FBTrace.DBG_CACHE)
             FBTrace.dumpProperties("tabCache.initContext for: " + context.window.location.href);
-
-        // See if a temp context is available.
-        var tabId = Firebug.getTabIdForWindow(context.window);
-
-        var tempContext = contexts[tabId];
-        if (tempContext)
-        {
-            context.sourceCache.cache = tempContext.sourceCache.cache;
-            delete contexts[tabId];
-
-            if (FBTrace.DBG_CACHE)
-                FBTrace.dumpProperties("tabCache.Temporary context used for: " + 
-                    context.window.location.href, context.sourceCache.cache);
-        }
     },
 
     /* nsIObserver */
@@ -105,36 +99,16 @@ Firebug.TabCacheModel = extend(Firebug.Module,
 
     onModifyRequest: function(request, win, tabId)
     {
-        // Ignore redirects
-        if (request.URI.spec != request.originalURI.spec)
-            return;
-
-        if (request.loadFlags & Ci.nsIHttpChannel.LOAD_DOCUMENT_URI)
-        {
-            if (win == win.parent)
-            {
-                // Create temporary context so no request is missed. The real one is created 
-                // later by tabWatcher. Merge is done in Firebug.TabCacheModel.initContext.
-                var context = {sourceCache: new Firebug.TabCache(win)};
-                contexts[tabId] = context;
-
-                if (FBTrace.DBG_CACHE)
-                    FBTrace.sysout("tabCache.Temporary context created for: " + win.location.href);
-            }
-        }
     },
 
     onExamineResponse: function(request, win, tabId)
     {
-        var context = contexts[tabId];
-        context = context ? context : TabWatcher.getContextByWindow(win);
-
         try 
         {
             // Register traceable channel listener in order to intercept all incoming data for 
             // this context/tab. nsITraceableChannel interface is introduced in Firefox 3.0.4
             request.QueryInterface(Ci.nsITraceableChannel);
-            var newListener = new TracingListener(context);
+            var newListener = new TracingListener(win);
             newListener.listener = request.setNewListener(newListener);
         }
         catch (err)
@@ -142,10 +116,6 @@ Firebug.TabCacheModel = extend(Firebug.Module,
             if (FBTrace.DBG_ERRORS)
                 FBTrace.dumpProperties("tabCache: Register Traceable Listener EXCEPTION", err);
         }
-
-        if (FBTrace.DBG_CACHE)
-            FBTrace.dumpProperties("tabCache:onExamineResponse: Traceable Listener Registered for: " + 
-                safeGetName(request), request);
     },
 });
 
@@ -167,12 +137,60 @@ Firebug.TabCache = function(win)
     if (FBTrace.DBG_CACHE)
         FBTrace.dumpProperties("tabCache.TabCache Created for: " + win.location.href);
 
-    top.SourceCache.call(this, win, null);
+    Firebug.SourceCache.call(this, win, null);
 };
 
-Firebug.TabCache.prototype = extend(top.SourceCache.prototype,
+Firebug.TabCache.prototype = extend(Firebug.SourceCache.prototype,
 {
     listeners: [],
+    requests: [],       // requests in progress.
+
+    storePartialResponse: function(request, responseText)
+    {
+        var url = safeGetName(request);
+
+        if (!this.requests[url])
+        {
+            this.invalidate(url);
+            this.requests[url] = request;
+        }
+
+        // Convert
+        responseText = FBL.convertToUnicode(responseText);
+
+        // Store partial content into the cache.
+        this.store(url, responseText);
+    },
+
+    stopRequest: function(request)
+    {
+        var url = safeGetName(request);
+        delete this.requests[url];
+
+        // Notify listeners.
+        dispatch(this.listeners, "onStoreResponse", [this.window, request, this.cache[url]]);
+    },
+
+    storeSplitLines: function(url, lines)  
+    {
+        if (FBTrace.DBG_CACHE)
+            FBTrace.sysout("tabCache.storeSplitLines: " + url, lines);
+
+        var currLines = this.cache[url];
+        if (!currLines)
+            currLines = this.cache[url] = [];
+
+        // Join the last line with the new first one so, the source code 
+        // lines are properly formatted.
+        if (currLines.length)
+            currLines[currLines.length-1] += lines.shift();
+
+        // Append new lines (if any) into the array for specified url.
+        if (lines.length)
+            this.cache[url] = currLines.concat(lines);
+
+    	return this.cache[url];
+    },
 
     loadFromCache: function(url, method, file)
     {
@@ -183,7 +201,7 @@ Firebug.TabCache.prototype = extend(top.SourceCache.prototype,
         // should be already cached.
 
         if (FBTrace.DBG_CACHE)
-            FBTrace.dumpProperties("tabCache.loadFromCache: FAILED" + 
+            FBTrace.dumpProperties("tabCache.loadFromCache: FAILED " + 
                 this.window.location.href, this.cache);
     },
 
@@ -196,16 +214,6 @@ Firebug.TabCache.prototype = extend(top.SourceCache.prototype,
     removeListener: function(listener)
     {
         remove(this.listeners, listener);
-    },
-
-    fireOnStoreResponse: function(context, request, responseText)
-    {
-        for (var i=0; i<this.listeners.length; i++)
-        {
-            var listener = this.listeners[i];
-            if (listener.onStoreResponse)
-                listener.onStoreResponse(context, request, responseText);
-        }
     }
 });
 
@@ -217,16 +225,16 @@ Firebug.TabCache.prototype = extend(top.SourceCache.prototype,
  * channels (nsIHttpChannel). For every channel a new instance of this object is created and 
  * registered. See Firebug.TabCacheModel.onExamineResponse method.
  */
-function TracingListener(context)
+function TracingListener(win)
 {
-    this.context = context;
+    this.window = win;
     this.listener = null;
-    this.receivedData = [];
+    this.endOfLine = false;
 }
 
 TracingListener.prototype = 
 {
-    onCollectData: function(inputStream, offset, count)
+    onCollectData: function(request, inputStream, offset, count)
     {
         try
         {
@@ -238,11 +246,34 @@ TracingListener.prototype =
             storageStream.init(8192, count, null);
             binaryOutputStream.setOutputStream(storageStream.getOutputStream(0));
 
-            // Copy received data as they come.
             var data = binaryInputStream.readBytes(count);
-            this.receivedData.push(data);
-
             binaryOutputStream.writeBytes(data, count);
+
+            // Avoid creating additional empty line if response comes in more pieces 
+            // and the split is made just between "\r" and "\n" (Win line-end).
+            // So, if the response starts with "\n" while the previous part ended with "\r",
+            // remove the first character.
+            if (this.endOfLine && data.length && data[0] == "\n")
+                data = data.substring(1);
+
+            if (data.length)
+                this.endOfLine = data[data.length-1] == "\r";
+
+            // At this moment, initContext is alredy called so, the context is
+            // ready and associated with the window.
+            var context = TabWatcher.getContextByWindow(this.window);
+            if (context) 
+            {
+                // Store received data into the cache as they come.
+                context.sourceCache.storePartialResponse(request, data);
+            }
+            else 
+            {
+                if (FBTrace.DBG_CACHE)
+                    FBTrace.dumpProperties("tabCache.onCollectData NO CONTEXT for: " + this.window.location.href);
+            }
+
+            // Let other listeners use the stream.
             return storageStream.newInputStream(0);
         }
         catch (err)
@@ -257,10 +288,19 @@ TracingListener.prototype =
     /* nsIStreamListener */
     onDataAvailable: function(request, requestContext, inputStream, offset, count)
     {
-        // xxxHonza: all content types should be cached?
-        var newStream = this.onCollectData(inputStream, offset, count);
-        if (newStream)
-            inputStream = newStream;
+        // Cache only text responses for now.
+        if (contentTypes[request.contentType])
+        {
+            var newStream = this.onCollectData(request, inputStream, offset, count);
+            if (newStream)
+                inputStream = newStream;
+        }
+        else
+        {
+            if (FBTrace.DBG_CACHE)
+                FBTrace.dumpProperties("tabCache.onDataAvailable Content-Type not cached: " +
+                    request.contentType + ", " + safeGetName(request));
+        }
 
         try
         {
@@ -295,18 +335,15 @@ TracingListener.prototype =
     {
         try
         {
-            if (statusCode != Ci.nsIRequest.NS_BINDING_ABORTED)
+            var context = TabWatcher.getContextByWindow(this.window);
+            if (context) 
             {
-                var responseText = this.receivedData.join();
-
-                // Convert text types.
-                if (contentTypes[request.contentType])
-                    responseText = FBL.convertToUnicode(responseText);
-
-                this.context.sourceCache.store(safeGetName(request), responseText);
-
-                // Notify listeners.
-                this.context.sourceCache.fireOnStoreResponse(this.context, request, responseText);
+                context.sourceCache.stopRequest(request);
+            }
+            else 
+            {
+                if (FBTrace.DBG_CACHE)
+                    FBTrace.dumpProperties("tabCache.onStopRequest NO CONTEXT for: " + this.window.location.href);
             }
 
             if (this.listener)

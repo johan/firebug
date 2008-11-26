@@ -75,7 +75,8 @@ const mimeExtensionMap =
     "gif": "image/gif",
     "png": "image/png",
     "bmp": "image/bmp",
-    "swf": "application/x-shockwave-flash"
+    "swf": "application/x-shockwave-flash",
+    "flv": "video/x-flv"
 };
 
 const fileCategories =
@@ -120,7 +121,8 @@ const mimeCategoryMap =
     "image/gif": "image",
     "image/png": "image",
     "image/bmp": "image",
-    "application/x-shockwave-flash": "flash"
+    "application/x-shockwave-flash": "flash",
+    "video/x-flv": "flash"
 };
 
 const binaryCategoryMap =
@@ -622,7 +624,9 @@ NetPanel.prototype = domplate(Firebug.AblePanel,
             var netInfo = template.tag.replace({file: row.repObject}, netInfoRow.firstChild);
             template.selectTabByName(netInfo, "Headers");
 
-            setClass(netInfo, "category-" + getFileCategory(row.repObject));
+            var category = getFileCategory(row.repObject);
+            if (category)
+                setClass(netInfo, "category-" + category);
         }
         else
         {
@@ -1994,7 +1998,7 @@ NetProgress.prototype =
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
     // tabCache listener
 
-    onStoreResponse: function(context, request, responseText)
+    onStoreResponse: function(win, request, responseText)
     {
         var file = this.getRequestFile(request, null, true);
         if (file)
@@ -2627,7 +2631,7 @@ Firebug.NetMonitor.NetInfoBody = domplate(Firebug.Rep,
 
         if (hasClass(tab, "netInfoPostTab"))
         {
-            var postTextBox = getChildByClass(netInfoBox, "netInfoPostText");
+            var postTextBox = getElementByClass(netInfoBox, "netInfoPostText");
             if (!netInfoBox.postPresented)
             {
                 netInfoBox.postPresented  = true;
@@ -2653,7 +2657,7 @@ Firebug.NetMonitor.NetInfoBody = domplate(Firebug.Rep,
 
         if (hasClass(tab, "netInfoPutTab"))
         {
-            var putTextBox = getChildByClass(netInfoBox, "netInfoPutText");
+            var putTextBox = getElementByClass(netInfoBox, "netInfoPutText");
             if (!netInfoBox.putPresented)
             {
                 netInfoBox.putPresented  = true;
@@ -2717,7 +2721,7 @@ Firebug.NetMonitor.NetInfoBody = domplate(Firebug.Rep,
         {
             netInfoBox.cachePresented = true;
 
-            var responseTextBox = getChildByClass(netInfoBox, "netInfoCacheText");
+            var responseTextBox = getElementByClass(netInfoBox, "netInfoCacheText");
             if (file.cacheEntry) {
                 this.insertHeaderRows(netInfoBox, file.cacheEntry, "Cache");
             }

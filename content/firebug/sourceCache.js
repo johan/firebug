@@ -26,14 +26,14 @@ const NS_BINDING_ABORTED = 0x804b0002;
 
 // ************************************************************************************************
 
-top.SourceCache = function(window, context)
+Firebug.SourceCache = function(window, context)
 {
     this.window = window;
     this.context = context;
     this.cache = {};
 };
 
-top.SourceCache.prototype =
+Firebug.SourceCache.prototype =
 {
 	isCached: function(url)
 	{
@@ -82,9 +82,23 @@ top.SourceCache.prototype =
             var localURI = chromeReg.convertChromeURL(chromeURI);
             if (FBTrace.DBG_CACHE)
                 FBTrace.sysout("sourceCache.load converting chrome to local: "+url, " -> "+localURI.spec);
-            url = localURI.spec;
+            return this.loadFromLocal(localURI.spec);
+        } 
+         
+        c = FBL.reFile.test(url);
+        if (c)
+        {
+        	return this.loadFromLocal(url);
         }
 
+        // Unfortunately, the URL isn't available so, let's try to use FF cache. 
+        // Notice that additional network request to the server can be made in 
+        // this method (double-load).
+        return this.loadFromCache(url, method, file);
+    },
+
+    loadFromLocal: function(url)
+    {
         // if we get this far then we have either a file: or chrome: url converted to file:
         var src = getResource(url);
         if (src)
@@ -94,15 +108,12 @@ top.SourceCache.prototype =
 
             return lines;
         }  
-
-        // Unfortunately, the URL isn't available so, let's try to use FF cache. 
-        // Notice that additional network request to the server can be made in 
-        // this method (double-load).
-        this.loadFromCache(url, method, file);
     },
-
+    
     loadFromCache: function(url, method, file)
     {
+    	if (FBTrace.DBG_CACHE) FBTrace.sysout("sourceCache.loadFromCache url:"+url);                                             /*@explore*/
+        
         var doc = this.context.window.document;
         if (doc)
             var charset = doc.characterSet;
