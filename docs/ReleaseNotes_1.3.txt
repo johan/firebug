@@ -49,6 +49,7 @@ Firebug 1.1 is Firebug 1.05 by Joe Hewitt with additions by John J. Barton and M
 
 == Bug Fixes ==
 	* Issue 156: Sort DOM object properties alphabetically
+	* Issue 176: net flash tab not recognising flv files
 	* Issue 472: New console API - clear
 	* Issue 489: Array content is not printed in version 1.1 beta
 	* Issue 502:  Component is not available (SessionStore exception)
@@ -95,4 +96,5 @@ Firebug 1.1 is Firebug 1.05 by Joe Hewitt with additions by John J. Barton and M
 	* Issue 1210: 1.3b1 post message display is screwed up
 	* Issue 1211: Autocomplete broken in 1.3b1
 	* Issue 1212: race condition in XHR reported status in console
+	* Issue 1256: Firebug displays spaces as plus signs in POST fields
 	
