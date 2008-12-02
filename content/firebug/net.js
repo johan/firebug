@@ -1539,6 +1539,15 @@ function NetProgress(context)
         requestQueue = [];
     };
 
+    // tabCache listener. This must be property of the object itself (not of the prototype).
+    // So the FBL.dispatch method can find it (using hasOwnProperty).
+    this.onStoreResponse = function(win, request, responseText)
+    {
+        var file = this.getRequestFile(request, null, true);
+        if (file)
+            file.responseText = responseText;
+    };
+
     this.clear();
 }
 
@@ -1994,16 +2003,6 @@ NetProgress.prototype =
     onLocationChange: function() {},
     onSecurityChange : function() {},
     onLinkIconAvailable : function() {},
-
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-    // tabCache listener
-
-    onStoreResponse: function(win, request, responseText)
-    {
-        var file = this.getRequestFile(request, null, true);
-        if (file)
-            file.responseText = responseText;
-    }
 };
 
 var requestedFile = NetProgress.prototype.requestedFile;
