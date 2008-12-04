@@ -496,10 +496,15 @@
 
             <setter><![CDATA[
                 var locator = this.getLocator();
-                if (val)
-                    var fileName = locator.getObjectDescription(val).name;
+                
+                var fileName = null;
+                if (!locator)
+                    fileName = "no locator!";
+                else if (val)
+                    fileName = locator.getObjectDescription(val).name;
                 else
-                    var fileName = "(none)";
+                    fileName = "(none)";
+                    
                 this.repObject = val;
                 this.setAttribute("label", FBL.cropString(fileName, 80));
                 this.setAttribute("location", val);
@@ -516,7 +521,9 @@
                     else
                     {
                         var whichBinding = this.getAttribute("id");
-                        throw "panelFileList "+whichBinding+" requires attribute \'locationProvider\', an expression yielding a function";
+                        var msg = "panelFileList "+whichBinding+" requires attribute \'locationProvider\', an expression yielding a function";
+                        FBTrace.sysout(msg);
+                        return null;
                     }
                 }
                 return this.locator(this);
@@ -602,7 +609,7 @@
                 }
                 else if (event.keyCode == 8) // Backspace
                 {
-                    this.searchString = this.searchString.substr(0, this.searchString.length-2);
+                    this.searchString = this.searchString.substr(0, this.searchString.length-1);
                     this.filterList(this.searchString);
                 }
                 else if (event.charCode)
