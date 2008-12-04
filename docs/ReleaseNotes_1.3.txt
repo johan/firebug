@@ -71,6 +71,7 @@ Firebug 1.1 is Firebug 1.05 by Joe Hewitt with additions by John J. Barton and M
 	* Issue 1109: Missing POST information (empty POST tab)
 	* Issue 1110: Firebug doesn't respond (abclinuxu.cz) (very long URL)
 	* Issue 1121: "Open in Tab" does a POST request for a GET request
+	* Issue 1122: can't copy or open image background from css viewer
 	* Issue 1124: console.assert() doesn't work  
 	* Issue 1125: (partial) Net panel not working as expected (1.2.0) (issue 402 tested and works)
 	* Issue 1127: console fails to load into reload iframe (Frame > Reload Frame)
@@ -97,4 +98,5 @@ Firebug 1.1 is Firebug 1.05 by Joe Hewitt with additions by John J. Barton and M
 	* Issue 1211: Autocomplete broken in 1.3b1
 	* Issue 1212: race condition in XHR reported status in console
 	* Issue 1256: Firebug displays spaces as plus signs in POST fields
+	* Issue 1290: Using backspace when searching in open files menu deletes two characters instead of one.
 	
