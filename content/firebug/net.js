@@ -1545,7 +1545,7 @@ function NetProgress(context)
     {
         var file = this.getRequestFile(request, null, true);
         if (file)
-            file.responseText = responseText;
+            file.responseText = lines ? lines.join("\n") : null;
     };
 
     this.clear();
