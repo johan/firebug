@@ -18,7 +18,9 @@ const prefs = PrefService.getService(Ci.nsIPrefBranch2);
 const prefService = PrefService.getService(Ci.nsIPrefService);
 const consoleService = Cc["@mozilla.org/consoleservice;1"].getService(Ci.nsIConsoleService);
 
+try {                                                                                                                                                             /*@explore*/
 const appShellService = Components.classes["@mozilla.org/appshell/appShellService;1"].getService(Components.interfaces.nsIAppShellService);                       /*@explore*/
+} catch (e) {}                                                                                                                                                    /*@explore*/
 
 // ************************************************************************************************
 // Service implementation
@@ -154,13 +156,13 @@ TraceConsoleService.prototype =
                 for (var i=0; i<this.observers.length; i++)
                     this.observers[i].observe(subject, topic, someData);
             }
-            else
-            {
-                var hiddenWindow = appShellService.hiddenDOMWindow; 
-                var unwrapped = subject.wrappedJSObject;
-                var objPart = unwrapped.obj ? (" obj: "+unwrapped.obj) : "";
-                hiddenWindow.dump("FTS: "+someData+objPart+"\n");
-            }            
+            else if (appShellService)                                                     /*@explore*/
+            {                                                                             /*@explore*/
+                var hiddenWindow = appShellService.hiddenDOMWindow;                       /*@explore*/
+                var unwrapped = subject.wrappedJSObject;                                  /*@explore*/
+                var objPart = unwrapped.obj ? (" obj: "+unwrapped.obj) : "";              /*@explore*/
+                hiddenWindow.dump("FTS: "+someData+objPart+"\n");                         /*@explore*/
+            }                                                                             /*@explore*/
         }
         catch (err)
         {

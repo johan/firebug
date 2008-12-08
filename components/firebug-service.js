@@ -157,10 +157,6 @@ function FirebugService()
     this.timeStamp = new Date();  /* explore */
     this.breakpoints = breakpoints; // so chromebug can see it /* explore */
 
-    var appShellService = Components.classes["@mozilla.org/appshell/appShellService;1"].   		/*@explore*/
-                    getService(Components.interfaces.nsIAppShellService);						/*@explore*/
-    this.hiddenWindow = appShellService.hiddenDOMWindow;										/*@explore*/
-
     this.enabled = false;
     this.profiling = false;
 
