@@ -1036,8 +1036,10 @@ NetPanel.prototype = domplate(Firebug.AblePanel,
             var hrefLabel = row.childNodes[0].firstChild;
             hrefLabel.firstChild.nodeValue = this.getHref(file);
 
-            if (file.mimeType && !file.category)
+            if (file.mimeType)
             {
+                // Force update category.
+                file.category = null;
                 removeClass(row, "category-undefined");
                 setClass(row, "category-"+getFileCategory(file));
             }
@@ -1558,7 +1560,7 @@ NetProgress.prototype =
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
-    requestedFile: function requestedFile(request, time, win, category)
+    requestedFile: function requestedFile(request, time, win, xhr)
     {
         var file = this.getRequestFile(request, win);
         if (file)
@@ -1574,10 +1576,7 @@ NetProgress.prototype =
             file.waitingForTime = time;
             file.connectingTime = time;
             file.respondedTime = time;
-
-            if (category && !file.category)
-                file.category = category;
-
+            file.isXHR = xhr;
             file.isBackground = request.loadFlags & LOAD_BACKGROUND;
 
             this.awaitFile(request, file);
@@ -2335,9 +2334,7 @@ function getHttpHeaders(request, file)
         file.method = http.requestMethod;
         file.status = request.responseStatus;
         file.urlParams = parseURLParams(file.href);
-
-        if (!file.mimeType)
-            file.mimeType = getMimeType(request.contentType, request.name);
+        file.mimeType = getMimeType(request.contentType, request.name);
 
         // Disable temporarily
         if (!file.responseHeaders && Firebug.collectHttpHeaders)
@@ -2366,17 +2363,15 @@ function getHttpHeaders(request, file)
     }
 }
 
-function getRequestCategory(request)
+function isXHR(request)
 {
-    try
-    {
+    try {
         if (request.notificationCallbacks)
-        {
-            if (request.notificationCallbacks instanceof XMLHttpRequest)
-                return "xhr";
-        }
+            return (request.notificationCallbacks instanceof XMLHttpRequest);
     }
-    catch (exc) {}
+    catch (exc) {
+    }
+    return false;
 }
 
 function safeGetName(request)
@@ -2394,6 +2389,9 @@ function getFileCategory(file)
 {
     if (file.category)
         return file.category;
+
+    if (file.isXHR)
+        return "xhr";
 
     if (!file.mimeType)
     {
@@ -2918,8 +2916,8 @@ var HttpObserver =
 
         if (networkContext) 
         {
-            var category = getRequestCategory(request);
-            networkContext.post(requestedFile, [request, now(), win, category]);
+            var xhr = isXHR(request);
+            networkContext.post(requestedFile, [request, now(), win, xhr]);
         }
     },
 
