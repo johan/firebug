@@ -459,8 +459,15 @@ this.hasClass = function(node, name)
         return false;
     else
     {
-        var re = new RegExp("(^|\\s)"+name+"($|\\s)");
-        return re.exec(node.getAttribute("class")) != null;
+        for (var i=1; i<arguments.length; ++i)
+        {
+            var name = arguments[i];
+            var re = new RegExp("(^|\\s)"+name+"($|\\s)");
+            if (!re.exec(node.getAttribute("class")))
+                return false;
+        }
+
+        return true;
     }
 };
 
@@ -585,19 +592,23 @@ this.getElementByClass = function(node, className)
     return null;
 };
 
-this.getElementsByClass = function(node, className, result)
+this.getElementsByClass = function(node, className)  // className, className, ...
 {
-    if (!result)
-        result = [];
-
-    for (var child = node.firstChild; child; child = child.nextSibling)
+    function iteratorHelper(node, classNames, result)
     {
-        if (this.hasClass(child, className))
-            result.push(child);
+        for (var child = node.firstChild; child; child = child.nextSibling)
+        {
+            var args1 = cloneArray(classNames); args1.unshift(child);
+            if (FBL.hasClass.apply(null, args1))
+                result.push(child);
 
-        this.getElementsByClass(child, className, result);
+            iteratorHelper(child, classNames, result);
+        }
     }
 
+    var result = [];
+    var args = cloneArray(arguments); args.shift();
+    iteratorHelper(node, args, result);
     return result;
 };
 
