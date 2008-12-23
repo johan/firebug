@@ -575,15 +575,17 @@ this.getAncestorByClass = function(node, className)
     return null;
 };
 
-this.getElementByClass = function(node, className)
+this.getElementByClass = function(node, className)  // className, className, ...
 {
+    var args = cloneArray(arguments); args.splice(0, 1);
     for (var child = node.firstChild; child; child = child.nextSibling)
     {
-        if (this.hasClass(child, className))
+        var args1 = cloneArray(args); args1.unshift(child);
+        if (FBL.hasClass.apply(null, args1))
             return child;
         else
         {
-            var found = this.getElementByClass(child, className);
+            var found = FBL.getElementByClass.apply(null, args1);
             if (found)
                 return found;
         }
