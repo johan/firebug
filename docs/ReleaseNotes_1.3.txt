@@ -4,7 +4,6 @@ Firebug 1.2 is Firebug 1.1 with additions by John J. Barton and Jan Odvarko.
 Firebug 1.1 is Firebug 1.05 by Joe Hewitt with additions by John J. Barton and Max Stepanov
 
 == Not Panel Specific ==
-    
     * FBTrace service (for internal Firebug debugging). 
     * TraceConsole (for internal Firebug debugging)
 
@@ -98,5 +97,7 @@ Firebug 1.1 is Firebug 1.05 by Joe Hewitt with additions by John J. Barton and M
 	* Issue 1211: Autocomplete broken in 1.3b1
 	* Issue 1212: race condition in XHR reported status in console
 	* Issue 1256: Firebug displays spaces as plus signs in POST fields
+	* Issue 1285: Enhancement patch: filefield is editable in add external editor dialog
 	* Issue 1290: Using backspace when searching in open files menu deletes two characters instead of one.
+	* Issue 1308: Missing URL-Encoding of reserved characters when using 'Copy Location with Parameters' from Net Panel
 	
