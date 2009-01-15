@@ -2783,9 +2783,14 @@ this.parseURLEncodedText = function(text)
             }
             else
                 params.push({name: decodeURIComponent(parts[0]), value: ""});
-        } catch (e) {
-            FBTrace.sysout("parseURLEncodedText EXCEPTION ", e);
-            FBTrace.sysout("parseURLEncodedText EXCEPTION URI", args[i]);
+        } 
+        catch (e) 
+        {
+            if (FBTrace.DBG_ERRORS)
+            {
+                FBTrace.sysout("parseURLEncodedText EXCEPTION ", e);
+                FBTrace.sysout("parseURLEncodedText EXCEPTION URI", args[i]);
+            }
         }
     }
 
