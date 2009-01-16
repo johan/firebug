@@ -2833,7 +2833,7 @@ this.getResource = function(aURL)
 // ************************************************************************************************
 // Network
 
-this.readFromStream = function(stream, charset)
+this.readFromStream = function(stream, charset, noClose)
 {
     try
     {
@@ -2844,7 +2844,8 @@ this.readFromStream = function(stream, charset)
         for (var count = stream.available(); count; count = stream.available())
             segments.push(sis.readBytes(count));
 
-        sis.close();
+        if (!noClose)
+            sis.close();
 
         var text = segments.join("");
         return this.convertToUnicode(text, charset);
@@ -2871,7 +2872,7 @@ this.readPostTextFromPage = function(url, context)
                 postStream.seek(NS_SEEK_SET, 0);
 
                 var charset = context.window.document.characterSet;
-                return this.readFromStream(postStream, charset);
+                return this.readFromStream(postStream, charset, true);
             }
          }
          catch (exc)
