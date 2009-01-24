@@ -25,7 +25,18 @@ top.Firebug.Console.injector = {
             this.attachConsoleInjector(context, win);
             this.addConsoleListener(context, win);
         
-            return this.isAttached(win);
+            var attached = this.isAttached(win);
+            if (attached)
+            {
+                // If the user has the cursor in the command line and reloads, the focus will already be there. issue 1339
+                var isFocused = ($("fbLargeCommandLine").getAttribute("focused") == "true");
+                isFocused = isFocused || ($("fbCommandLine").getAttribute("focused") == "true");
+                if (isFocused)  
+                    setTimeout(top.FirebugChrome.onCommandLineFocus);
+                if (FBTrace.DBG_CONSOLE)
+                    FBTrace.sysout("attachIfNeeded attached:"+attached+" isFocused "+isFocused);
+            }
+            return attached;
         },
         
         attachConsoleInjector: function(context, win)

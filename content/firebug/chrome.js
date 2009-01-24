@@ -1305,7 +1305,11 @@ function onCommandLineFocus(event)
             }
         }
     }
-}
+} 
+
+// This is hack for 1.3.1. We need to call this from the consoleInjector. 
+// 1.4+ has this code in a better place.
+top.FirebugChrome.onCommandLineFocus = onCommandLineFocus;
 
 // ************************************************************************************************
 // Utils (duplicated from lib.js)
