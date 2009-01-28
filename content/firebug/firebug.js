@@ -2319,7 +2319,7 @@ Firebug.ActivableModule = extend(Firebug.Module,
 
     showContext: function(browser, context)
     {
-        this.updateTab(null);
+        this.updateTab(null); /// xxxJJB was context in 1.2
     },
 
     destroyContext: function(context)
@@ -2382,7 +2382,7 @@ Firebug.ActivableModule = extend(Firebug.Module,
         if (!destroy)
         {
             var panel = context.getPanel(this.panelName, true);
-            if (panel)
+            if (panel)  // else? xxxJJB vs 1.2
                 panel.disablePanel();
 
             var chrome = context ? context.chrome : FirebugChrome;
@@ -2403,6 +2403,21 @@ Firebug.ActivableModule = extend(Firebug.Module,
     resetTooltip: function()
     {
         var tooltip = "Firebug "+ Firebug.getVersion();
+        
+        var fbStatusIcon = $('fbStatusIcon');
+        if (fbStatusIcon.getAttribute("errors") == "on")
+            tooltip +=" console: on,";
+        else
+        	tooltip +=" console: off,";
+        if (fbStatusIcon.getAttribute("net") == "on")
+            tooltip +=" net: on,";
+        else
+        	tooltip +=" net: off,";
+        if (fbStatusIcon.getAttribute("jsd") == "on")
+            tooltip +=" script: on";
+        else
+        	tooltip +=" script: off,";
+        
         if (Firebug.getSuspended())
             tooltip += ": " + Firebug.getSuspended();
         else
