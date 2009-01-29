@@ -2893,7 +2893,7 @@ this.readPostTextFromRequest = function(request, context)
             var ss = this.QI(is, Ci.nsISeekableStream);
             if (ss) ss.seek(NS_SEEK_SET, 0);
             var charset = context.window.document.characterSet;
-            var text = this.readFromStream(is, charset);
+            var text = this.readFromStream(is, charset, true);
             if (ss) ss.seek(NS_SEEK_SET, 0);
             return text;
         }
