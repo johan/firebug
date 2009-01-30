@@ -113,3 +113,4 @@ Firebug 1.1 is Firebug 1.05 by Joe Hewitt with additions by John J. Barton and M
 	* Issue 1357: Firebug 1.3 locks file (Merge R1674 from 1.4)
 	* Issue 1369: URL params parsing: omniture gifs no longer show params properly (Merge R1663 from 1.4)
 	* Issue 1381: Autocompletion only shows the first match (Port from R1776 on firebug1.4)
+	* Issue 1426: XMLHttpRequest + POST broken (again)
