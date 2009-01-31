@@ -1,5 +1,5 @@
 var firebug = {
-  version:[1.23,20090129],
+  version:[1.23,20090131],
   el:{}, 
   env:{ 
     "cache":{}, 
@@ -1371,21 +1371,23 @@ var firebug = {
       }
     },
     keyboard:function(_event){
-      with(firebug){
-        if(_event.keyCode==27&&d.inspector.enabled){
-          d.inspector.toggle();
-        } else if (_event.keyCode === 123){
-          if(_event.ctrlKey || _event.metaKey) {
-            win.newWindow();
-          } else {
-            if(el.main.environment.getStyle("display") === 'none'){
-              win.show();
-            } else {
-              win.hide();
+        with(firebug){
+            if(_event.keyCode==27 && d.inspector.enabled){
+                d.inspector.toggle();
+            } else if(_event.keyCode === 123 && _event.ctrlKey || _event.metaKey) {
+                win.newWindow();
+            } else if(
+				(_event.keyCode === 123 && !_event.ctrlKey && !_event.metaKey) || 
+                (_event.keyCode === 76 && (_event.ctrlKey || _event.metaKey) && _event.shiftKey) ||
+                (_event.keyCode === 13 && _event.shiftKey)) {
+                
+                if (el.main.environment.getStyle("display") === 'none') {
+                    win.show();
+                } else {
+                    win.hide();
+                }
             }
-          }
         }
-      }
     },
     mouse:function(_event){
       with(firebug){
@@ -1450,7 +1452,8 @@ var firebug = {
     ie8: /MSIE 8/i.test(navigator.userAgent),
     firefox: /Firefox/i.test(navigator.userAgent),
     opera: /Opera/i.test(navigator.userAgent),
-    webkit: /Webkit/i.test(navigator.userAgent)
+    webkit: /Webkit/i.test(navigator.userAgent),
+    camino: /Camino/i.test(navigator.userAgent)
   };
   
   pi.get = function(){
