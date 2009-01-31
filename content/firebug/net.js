@@ -666,12 +666,8 @@ NetPanel.prototype = domplate(Firebug.AblePanel,
                 return;
         }
 
-        // The response text can be empty so, test against undefined.
-        var text = (file.responseText != undefined)
-            ? file.responseText
-            : this.context.sourceCache.loadText(file.href, file.method, file);
-
-        copyToClipboard(text);
+        // Copy response to the clipboard
+        copyToClipboard(getResponseText(file, this.context));
 
         // Try to update file.cacheEntry flag.
         getCacheEntry(file, this.context.netProgress);
@@ -2718,10 +2714,7 @@ Firebug.NetMonitor.NetInfoBody = domplate(Firebug.Rep,
     setResponseText: function(file, netInfoBox, responseTextBox, context)
     {
         // The response text can be empty so, test against undefined.
-        var text = (file.responseText != undefined)
-            ? file.responseText
-            : context.sourceCache.loadText(file.href, file.method, file);
-
+        var text = getResponseText(file, context);
         if (text)
             insertWrappedText(text, responseTextBox);
         else
@@ -2803,6 +2796,12 @@ function getPostText(file, context)
         file.postText = readPostTextFromRequest(file.request, context);
 
     return file.postText;
+}
+
+function getResponseText(file, context)
+{
+    return file.responseText ? file.responseText : 
+        context.sourceCache.loadText(file.href, file.method, file);
 }
 
 function isURLEncodedFile(file, text)
