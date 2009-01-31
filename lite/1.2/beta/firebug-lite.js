@@ -509,6 +509,7 @@ var firebug = {
         }
       },
       eval:function(_cmd){
+        var result;
         with(firebug){
         if(_cmd.length==0)
           return;
@@ -516,9 +517,13 @@ var firebug = {
         el.left.console.input.environment.getElement().value = "";
         d.console.historyIndex = d.console.history.push(_cmd);
         
-        try { 
-          var result = eval.call(window,_cmd);
-          d.console.print(_cmd,result);
+        try {
+          if(_cmd==='console.firebug') {
+            d.console.addLine().attribute.addClass("Arrow").update(firebug.version);
+          } else {    
+            result = eval.call(window,_cmd);
+            d.console.print(_cmd,result);
+          }
         } catch(e){
           d.console.addLine().attribute.addClass("Arrow").update(">>> "+_cmd);
           d.console.printException(e);
