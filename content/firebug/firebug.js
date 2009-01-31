@@ -238,6 +238,7 @@ top.Firebug =
         dispatch(modules, "enable");  // allows errors to flow thru fbs and callbacks to supportWindow to begin
 
         dispatch(modules, "initializeUI", [detachArgs]);
+        Firebug.ActivableModule.resetTooltip();  // 1.3.1 set the initial value of the tool tip
     },
 
     shutdown: function()
@@ -2319,7 +2320,7 @@ Firebug.ActivableModule = extend(Firebug.Module,
 
     showContext: function(browser, context)
     {
-        this.updateTab(null); /// xxxJJB was context in 1.2
+        this.updateTab(context); /// 1.3.1 regression from 1.2.1, need context
     },
 
     destroyContext: function(context)
@@ -2458,6 +2459,8 @@ Firebug.ActivableModule = extend(Firebug.Module,
                             var url = cw.location.toString();
                             if (contextURLSet.indexOf(url) == -1)
                                 contextURLSet.push(url);
+                            if (FBTrace.DBG_PANELS) // 1.3.1 better tracing for activation
+                            	FBTrace.sysout("activeContext for "+module.panelName+" is "+url);
                         }
                     }
                     catch(e)
@@ -2794,8 +2797,8 @@ Firebug.ActivableModule = extend(Firebug.Module,
                     }
                     catch (exc)
                     {
-                        if (FBTrace.DBG_ERRORS)
-                            FBTrace.dumpProperties("firebug.activationChange changeActivation fails for "+location, location);
+                        if (FBTrace.DBG_ERRORS) // 1.3.1 report exception
+                            FBTrace.dumpProperties("firebug.activationChange changeActivation fails for "+location+": "+exc, exc);
                     }
                 }
             );

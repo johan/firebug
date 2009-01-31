@@ -226,6 +226,7 @@ Firebug.Console = extend(ActivableConsole,
     onFirstPanelActivate: function(context, init)
     {
         Firebug.Errors.startObserving();
+        Firebug.Debugger.registerDebugger(); // 1.3.1 we inject the console during JS compiles so we need jsd
     },
 
     onPanelActivate: function(context, init, panelName)
@@ -246,6 +247,7 @@ Firebug.Console = extend(ActivableConsole,
             FBTrace.sysout("console.onLastPanelDeactivate**************> activeContexts: "+this.activeContexts.length+"\n");
         // last one out, turn off error observer
         Firebug.Errors.stopObserving();
+        Firebug.Debugger.unregisterDebugger(); // 1.3.1 we inject the console during JS compiles so we need jsd, now we are done with it
     },
 
     onSuspendFirebug: function(context)

@@ -1339,7 +1339,7 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
         this.filterButton = $("fbScriptFilterMenu");
         this.filterMenuUpdate();
         fbs.registerClient(this);   // allow callbacks for jsd
-        fbs.registerDebugger(this);  // this will eventually set 'jsd' on the statusIcon
+        // 1.3.1 move fbs.registerDebugger(this);  // this will eventually set 'jsd' on the statusIcon
     },
 
     initContext: function(context)
@@ -1435,12 +1435,33 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
         fbs.unregisterClient(this);
     },
 
+    registerDebugger: function() // 1.3.1 safe for multiple calls
+    {
+        FBTrace.sysout(">>registerDebugger this.registered: "+this.registered );
+        if (this.registered)
+            return;
+        var check = fbs.registerDebugger(this);  //  this will eventually set 'jsd' on the statusIcon
+        this.registered = true;
+        FBTrace.sysout(">>registerDebugger this.registered: "+this.registered +" check: "+((check == 0)?"FAILED":"OK"));
+    },
+    
+    unregisterDebugger: function() // 1.3.1 safe for multiple calls
+    {
+        FBTrace.sysout("<<unregisterDebugger this.registered: "+this.registered );
+        if (!this.registered)
+            return;
+        if (Firebug.Debugger.activeContexts.length > 0 || Firebug.Console.activeContexts.length > 0)
+            return;  // don't turn off JSD unless both console and script panels are done.
+        var check = fbs.unregisterDebugger(this);   
+        this.registered = false;
+        FBTrace.sysout("<<unregisterDebugger this.registered: "+this.registered+" check: "+((check == 0)?"OK":"FAILED") );
+    },
+    
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
     // extends ActivableModule
     onFirstPanelActivate: function(context, init)
     {
-       // Because the console injection is done during onTopLevelScript, we must register a debugger for this XUL window, 
-       // independent of the enable status of Script panel. Otherwise this method would be a great place to registerDebugger().
+        this.registerDebugger(); // 1.3.1 
     },
 
     onPanelActivate: function(context, init, panelName)
@@ -1474,6 +1495,7 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
     {
         if (FBTrace.DBG_STACK || FBTrace.DBG_LINETABLE || FBTrace.DBG_SOURCEFILES || FBTrace.DBG_FBS_FINDDEBUGGER) /*@explore*/
             FBTrace.sysout("debugger.onLastPanelDeactivate for "+this.debuggerName+" with destroy:"+destroy+" on"+context.window.location+"\n"); /*@explore*/
+        this.unregisterDebugger(); // 1.3.1
     },
 
     onSuspendFirebug: function(context)
