@@ -59,11 +59,13 @@ Firebug 1.1 is Firebug 1.05 by Joe Hewitt with additions by John J. Barton and M
 	* Issue 502:  Component is not available (SessionStore exception)
 	* Issue 548:  'open with editor' mangles non-ascii characters
 	* Issue 588:  DOM HTMLCollection/NodeList should be formatted like an array in the console
+	* Issue 767: XHR Response Bug (ported)
 	* Issue 789:  Using the console in the context of the current debugging stack
 	* Issue 814:  cd not working correctly
 	* Issue 874:  User object incorrectly identified as arrays
 	* Issue 882:  console.log() reports wrong source file and line number
 	* Issue 903:  Overflow is removed from Style section of Computed tab display when overflow-x differs from overflow-y
+	* Issue 906: Xorg crashes on large XHRs (from R1800)
 	* Issue 983:  GWT with Firebug on FF3 cause "listener is undefined"
 	* Issue 992: New zh-CN locale file for Firebug 1.2
 	* Issue 1000: console.group doesn't work
@@ -107,10 +109,12 @@ Firebug 1.1 is Firebug 1.05 by Joe Hewitt with additions by John J. Barton and M
 	* Issue 1290: Using backspace when searching in open files menu deletes two characters instead of one.
 	* Issue 1303: console.log with wrong output -- scope of commandline
 	* Issue 1308: Missing URL-Encoding of reserved characters when using 'Copy Location with Parameters' from Net Panel
+	* Issue 1323: img preview in CSS tab not working
 	* Issue 1339: Command line becomes unusable after reload.
 	* issue 1347: re-introduce this.notifyFirebug, backported r1645 from 1.4
 	* Issue 1352: All xmlhttprequest's appear to come from firebug-http-observer.js when looking at console view (port from 1.4)
 	* Issue 1357: Firebug 1.3 locks file (Merge R1674 from 1.4)
 	* Issue 1369: URL params parsing: omniture gifs no longer show params properly (Merge R1663 from 1.4)
+	* Issue 1377: Status bar icon is always activated;
 	* Issue 1381: Autocompletion only shows the first match (Port from R1776 on firebug1.4)
 	* Issue 1426: XMLHttpRequest + POST broken (again)
