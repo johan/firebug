@@ -36,6 +36,7 @@ const contentSplitter = $("fbContentSplitter");
 const toggleCommand = $("cmd_toggleFirebug");
 const detachCommand = $("cmd_toggleDetachFirebug");
 const tabBrowser = $("content");
+const fbStatusIcon = $('fbStatusIcon');
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -2348,13 +2349,14 @@ Firebug.ActivableModule = extend(Firebug.Module,
             this.onFirstPanelActivate(context, init);
 
         this.activeContexts.push(context);
-        this.resetTooltip();
         
         var panel = context.getPanel(this.panelName, true);
         if (panel)
             panel.enablePanel();
 
         dispatch(modules, "onPanelActivate", [context, init, this.panelName]);
+        
+        this.resetTooltip();  // 1.3.1 set tooltip after modules look at state
     },
 
     panelDeactivate: function(context, destroy)
@@ -2367,10 +2369,7 @@ Firebug.ActivableModule = extend(Firebug.Module,
 
         var i = this.activeContexts.indexOf(context);
         if (i != -1)
-        {
             this.activeContexts.splice(i, 1);
-            this.resetTooltip();
-        }
         else
         {
             if (FBTrace.DBG_ERRORS)
@@ -2399,21 +2398,24 @@ Firebug.ActivableModule = extend(Firebug.Module,
 
         if (this.activeContexts.length == 0)
             this.onLastPanelDeactivate(context, destroy);
+        
+        this.resetTooltip();  // 1.3.1 set tooltip after modules process changes
     },
 
     resetTooltip: function()
     {
         var tooltip = "Firebug "+ Firebug.getVersion();
         
-        var fbStatusIcon = $('fbStatusIcon');
         if (fbStatusIcon.getAttribute("errors") == "on")
             tooltip +=" console: on,";
         else
         	tooltip +=" console: off,";
+        	
         if (fbStatusIcon.getAttribute("net") == "on")
             tooltip +=" net: on,";
         else
         	tooltip +=" net: off,";
+        
         if (fbStatusIcon.getAttribute("jsd") == "on")
             tooltip +=" script: on";
         else
@@ -2438,7 +2440,7 @@ Firebug.ActivableModule = extend(Firebug.Module,
                 }
             }
         }
-        $('fbStatusIcon').setAttribute("tooltiptext", tooltip);
+        fbStatusIcon.setAttribute("tooltiptext", tooltip);
     },
 
     getURLsForAllActiveContexts: function()
