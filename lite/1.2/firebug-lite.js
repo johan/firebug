@@ -298,46 +298,60 @@ var firebug = {
       }
     },
     newWindow: function() {
-      if (!firebug.env.popupWin) {
-      var scripts = document.getElementsByTagName('script');
-      firebug.env.popupWin = window.open("", "_firebug", "status=0,menubar=0,resizable=1,top=1,left=1,width=" + firebug.el.main.element.offsetWidth + ",height=" + firebug.el.main.element.offsetHeight + ",scrollbars=1,addressbar=0");
+        var interval,scripts,script;
 
-      if(!firebug.env.popupWin) {
-        alert("Firebug Lite could not open a pop-up window, most likely because of a popup blocker.\nPlease enable popups for this domain");
-      } else {
-        for (i=0,len=scripts.length; i<len; i++) {
-        if (scripts[i].src.indexOf('firebug-lite') > -1) {
-          var scriptPath = scripts[i].src;
-          break;
-        }
-        }
-          
-        var script = firebug.env.popupWin.document.createElement('script'), 
-        done = false;
-        script.type = 'text/javascript';
-        script.src = scriptPath;
+        if (!firebug.env.popupWin) {
+            scripts = document.getElementsByTagName('script');
+            firebug.env.popupWin = window.open("", "_firebug", "status=0,menubar=0,resizable=1,top=1,left=1,width=" + firebug.el.main.element.offsetWidth + ",height=" + firebug.el.main.element.offsetHeight + ",scrollbars=1,addressbar=0");
+
+            if(!firebug.env.popupWin) {
+                alert("Firebug Lite could not open a pop-up window, most likely because of a popup blocker.\nPlease enable popups for this domain");
+            } else {
+                for (i=0,len=scripts.length; i<len; i++) {
+                    if (scripts[i].src.indexOf('firebug-lite') > -1) {
+                        var scriptPath = scripts[i].src;
+                        break;
+                    }
+                }
+
+                script = firebug.env.popupWin.document.createElement('script'), done = false;
+                script.type = 'text/javascript';
+                script.src = scriptPath;
+
+                script[firebug.lib.env.ie?"onreadystatechange":"onload"] = function(){
+                    if(!done && (!firebug.lib.env.ie || this.readyState == "complete" || this.readyState=="loaded")){
+                        done = true;
+                        with(firebug.env.popupWin.firebug) {
+                            env.isPopup = true;
+                            env.css = firebug.env.css;
+                            init();
+                            el.button.dock.environment.addStyle({ "display": "block"});
+                            el.button.newWindow.environment.addStyle({ "display": "none"});
+                        }
+                    }
+                };
         
-        script[firebug.lib.env.ie?"onreadystatechange":"onload"] = function(){
-          if(!done && (!firebug.lib.env.ie || this.readyState == "complete" || this.readyState=="loaded")){
-            done = true;
-        
-           with(firebug.env.popupWin.firebug) {
-            env.isPopup = true;
-            env.css = firebug.env.css;
-            init();
-            el.button.dock.environment.addStyle({ "display": "block"});
-            el.button.newWindow.environment.addStyle({ "display": "none"});
+                if (!done && firebug.lib.env.webkit) {
+                    firebug.env.popupWin.document.write('<html><head></head><body></body></html>');
+                    interval = setInterval(function() {
+                        if (firebug.env.popupWin.firebug) {
+                            clearInterval(interval);
+                            done = true;
+                            with(firebug.env.popupWin.firebug) {
+                                env.isPopup = true;
+                                env.css = firebug.env.css;
+                                init();
+                                el.button.dock.environment.addStyle({ "display": "block"});
+                                el.button.newWindow.environment.addStyle({ "display": "none"});
+                            }
+                        }
+                    }, 10);
+                };
+
+                firebug.env.popupWin.document.getElementsByTagName('head')[0].appendChild(script);
+                firebug.el.main.environment.addStyle({"display": "none"});
             }
-          }
-        };
-
-        firebug.env.popupWin.document.getElementsByTagName('head')[0].appendChild(script);
-
-        firebug.el.main.environment.addStyle({
-        "display": "none"
-        });
-      }
-      }
+        }
     },
     dock: function() {
       with(opener.firebug) {
