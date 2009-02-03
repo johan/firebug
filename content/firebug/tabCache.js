@@ -47,6 +47,9 @@ var contentTypes =
     "application/json": 1,
 };
 
+// Maximum cached size of a signle response (bytes)
+var responseSizeLimit = 1024 * 1024 * 5;
+
 // ************************************************************************************************
 // Model implementation
 
@@ -72,6 +75,9 @@ Firebug.TabCacheModel = extend(Firebug.Module,
             if (FBTrace.DBG_CACHE)
                 FBTrace.sysout("tabCache.initializeUI, custom mime-types added", list);
         }
+
+        // Read maximum size limit for cached response from preferences.
+        responseSizeLimit = Firebug.getPref(Firebug.prefDomain, "cache.responseLimit");
 
         // Register for HTTP events.
         if (Ci.nsITraceableChannel)
@@ -107,6 +113,8 @@ Firebug.TabCacheModel = extend(Firebug.Module,
                 this.onModifyRequest(subject, win, tabId);
             else if (topic == "http-on-examine-response")
                 this.onExamineResponse(subject, win, tabId);
+            else if (topic == "http-on-cached-response")
+                this.onCachedResponse(subject, win, tabId);
         }
         catch (err)
         {
@@ -135,6 +143,12 @@ Firebug.TabCacheModel = extend(Firebug.Module,
                 FBTrace.dumpProperties("tabCache: Register Traceable Listener EXCEPTION", err);
         }
     },
+
+    onCachedResponse: function(request, win, tabId)
+    {
+        // Make sure cached responses are observed with nsITraceableChannel too.
+        this.onExamineResponse(request, win, tabId);
+    }
 });
 
 // ************************************************************************************************
@@ -161,35 +175,66 @@ Firebug.TabCache = function(win)
 Firebug.TabCache.prototype = extend(Firebug.SourceCache.prototype,
 {
     listeners: [],
-    requests: [],       // requests in progress.
+    responses: [],       // responses in progress.
 
     storePartialResponse: function(request, responseText)
     {
-        var url = safeGetName(request);
-
-        if (!this.requests[url])
+        try
         {
-            this.invalidate(url);
-            this.requests[url] = request;
+            responseText = FBL.convertToUnicode(responseText);
+        }
+        catch (err)
+        {
+            if (FBTrace.DBG_ERRORS || FBTrace.DBG_CACHE)
+                FBTrace.sysout("tabCache.storePartialResponse EXCEPTION " + 
+                    safeGetName(request), err);
+            return false;
         }
 
-        // Convert
-        responseText = FBL.convertToUnicode(responseText);
+        // If this is the first part of the response make sure the appropriate
+        // entry in the cache is clean (thi.invalidate).
+        var url = safeGetName(request);
+        var response = this.responses[url];
+        if (!response)
+        {
+            this.invalidate(url);
+            this.responses[url] = response = {
+                request: request,
+                size: 0
+            };
+        }
+
+        // Size of each response is limited.
+        var limitNotReached = true;
+        if (response.size + responseText.length >= responseSizeLimit)
+        {
+            limitNotReached = false;
+            responseText = responseText.substr(0, responseSizeLimit - response.size);
+            FBTrace.sysout("tabCache.storePartialResponse Max size limit reached for: " + url);
+        }
+
+        response.size += responseText.length;
 
         // Store partial content into the cache.
         this.store(url, responseText);
+
+        // Return false if furhter parts of this response should be ignored.
+        return limitNotReached;
     },
 
     stopRequest: function(request)
     {
         var url = safeGetName(request);
-        delete this.requests[url];
+        delete this.responses[url];
+
+        if (FBTrace.DBG_CACHE)
+            FBTrace.sysout("tabCache.stopRequest: " + url);
 
         // Notify listeners.
         dispatch(this.listeners, "onStoreResponse", [this.window, request, this.cache[url]]);
     },
 
-    storeSplitLines: function(url, lines)  
+    storeSplitLines: function(url, lines)
     {
         if (FBTrace.DBG_CACHE)
             FBTrace.sysout("tabCache.storeSplitLines: " + url, lines);
@@ -207,7 +252,7 @@ Firebug.TabCache.prototype = extend(Firebug.SourceCache.prototype,
         if (lines.length)
             this.cache[url] = currLines.concat(lines);
 
-    	return this.cache[url];
+        return this.cache[url];
     },
 
     loadFromCache: function(url, method, file)
@@ -221,7 +266,7 @@ Firebug.TabCache.prototype = extend(Firebug.SourceCache.prototype,
         // xxxHonza: let's try to get the response from the cache till #449198 is fixed.
         var stream;
         var responseText;
-        try
+        try 
         {
             var channel = ioService.newChannel(url, null, null);
 
@@ -239,19 +284,20 @@ Firebug.TabCache.prototype = extend(Firebug.SourceCache.prototype,
 
             responseText = this.store(url, responseText);
         }
-        catch (err)
+        catch (err) 
         {
             if (FBTrace.DBG_ERROR || FBTrace.DBG_CACHE)
                 FBTrace.sysout("tabCache.loadFromCache EXCEPTION " + url, err);
         }
         finally
         {
-            stream.close();
+            if(stream)
+                stream.close(); 
         }
 
         return responseText;
     },
-
+    
     // Listeners
     addListener: function(listener)
     {
@@ -261,7 +307,7 @@ Firebug.TabCache.prototype = extend(Firebug.SourceCache.prototype,
     removeListener: function(listener)
     {
         remove(this.listeners, listener);
-    }
+    }    
 });
 
 // ************************************************************************************************
@@ -277,6 +323,7 @@ function TracingListener(win)
     this.window = win;
     this.listener = null;
     this.endOfLine = false;
+    this.ignore = false;
 }
 
 TracingListener.prototype = 
@@ -312,7 +359,8 @@ TracingListener.prototype =
             if (context) 
             {
                 // Store received data into the cache as they come.
-                context.sourceCache.storePartialResponse(request, data);
+                if (!context.sourceCache.storePartialResponse(request, data))
+                    this.ignore = true;
             }
             else 
             {
@@ -335,18 +383,21 @@ TracingListener.prototype =
     /* nsIStreamListener */
     onDataAvailable: function(request, requestContext, inputStream, offset, count)
     {
-        // Cache only text responses for now.
-        if (contentTypes[request.contentType])
+        if (!this.ignore) 
         {
-            var newStream = this.onCollectData(request, inputStream, offset, count);
-            if (newStream)
-                inputStream = newStream;
-        }
-        else
-        {
-            if (FBTrace.DBG_CACHE)
-                FBTrace.dumpProperties("tabCache.onDataAvailable Content-Type not cached: " +
-                    request.contentType + ", " + safeGetName(request));
+            // Cache only text responses for now.
+            if (contentTypes[request.contentType])
+            {
+                var newStream = this.onCollectData(request, inputStream, offset, count);
+                if (newStream)
+                    inputStream = newStream;
+            }
+            else
+            {
+                if (FBTrace.DBG_CACHE)
+                    FBTrace.dumpProperties("tabCache.onDataAvailable Content-Type not cached: " +
+                        request.contentType + ", " + safeGetName(request));
+            }
         }
 
         try
