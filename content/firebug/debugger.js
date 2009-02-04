@@ -114,7 +114,7 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
         var watchPanel = context.getPanel("watches", true);
         if (watchPanel)
         {
-        	Firebug.CommandLine.isNeededGetReady(context);
+            Firebug.CommandLine.isNeededGetReady(context);
             watchPanel.editNewWatch();
         }
     },
@@ -138,17 +138,17 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
     {
         this.haltCallback = fn;
         fbs.halt(this);
-        
+
         if(FBTrace.DBG_BP)
             FBTrace.sysout("debugger.halt, issuing debugger stmt", fn);
-        
+
         debugger; // For some reason this is not reliable.
         if (this.haltCallback) // so we have a second try
         {
             if (Firebug.CommandLine.isNeededGetReady(FirebugContext))
                 Firebug.CommandLine.evaluate("debugger;", FirebugContext);
         }
-        
+
         if(FBTrace.DBG_BP)
             FBTrace.sysout("debugger.halt, completed debugger stmt");
     },
@@ -606,7 +606,7 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
             updateViewOnShowHook();
         }
 
-        if (panel) 
+        if (panel)
         {
             this.syncCommands(panel.context);
             this.ableWatchSidePanel(panel.context);
@@ -674,10 +674,10 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
     supportsGlobal: function(global) // This is call from fbs for almost all fbs operations
     {
         var context = (TabWatcher ? TabWatcher.getContextByWindow(global) : null);
-        
+
         if (context)
         {
-            // Apparently the global is a XPCSafeJSObjectWrapper that looks like a Window. 
+            // Apparently the global is a XPCSafeJSObjectWrapper that looks like a Window.
             // Since this is method called a lot make a hacky fast check on _getFirebugConsoleElement
             if (!global._getFirebugConsoleElement)
             {
@@ -693,7 +693,7 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
                         FBTrace.sysout("debugger.supportsGlobal !global._getFirebugConsoleElement console NOT enabled ", global);
                 }
             }
-        
+
             if (!this.isEnabled(context))
                 return false;
         }
@@ -951,7 +951,7 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
             return;
         }
 
-        if (FBTrace.DBG_BP) FBTrace.sysout("debugger("+this.debuggerName+").onToggleBreakpoint: "+lineNo+"@"+url+" contexts:"+TabWatcher.contexts.length, props);      
+        if (FBTrace.DBG_BP) FBTrace.sysout("debugger("+this.debuggerName+").onToggleBreakpoint: "+lineNo+"@"+url+" contexts:"+TabWatcher.contexts.length, props);
         for (var i = 0; i < TabWatcher.contexts.length; ++i)
         {
             var panel = TabWatcher.contexts[i].getPanel("script", true);
@@ -1359,38 +1359,38 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
     {
         var watchPanel = this.ableWatchSidePanel(context);
         var needNow = watchPanel && watchPanel.watches;
-    	var watchPanelState = Firebug.getPanelState({name: "watches", context: context});
-    	var needPersistent = watchPanelState && watchPanelState.watches;
-    	if (needNow || needPersistent) 
-    	{
-    		Firebug.CommandLine.isNeededGetReady(context);
-    		if (watchPanel)
-    		{
-    		    context.setTimeout(function refreshWatchesAfterCommandLineReady() 
-    		    {
-    		        watchPanel.refresh(); 
-    		    });
-    		}
-    	}
-    	else
-    	{
-    	    if (FBTrace.DBG_ERRORS)
-    	        FBTrace.sysout("debugger loadedContext watchPanelState", watchPanelState);
-    	}
-    	
-        if (FBTrace.DBG_SOURCEFILES) 
+        var watchPanelState = Firebug.getPanelState({name: "watches", context: context});
+        var needPersistent = watchPanelState && watchPanelState.watches;
+        if (needNow || needPersistent)
+        {
+            Firebug.CommandLine.isNeededGetReady(context);
+            if (watchPanel)
+            {
+                context.setTimeout(function refreshWatchesAfterCommandLineReady()
+                {
+                    watchPanel.refresh();
+                });
+            }
+        }
+        else
+        {
+            if (FBTrace.DBG_ERRORS)
+                FBTrace.sysout("debugger loadedContext watchPanelState", watchPanelState);
+        }
+
+        if (FBTrace.DBG_SOURCEFILES)
             FBTrace.dumpProperties("debugger("+this.debuggerName+").loadedContext context.sourceFileMap", context.sourceFileMap);
-        
+
         updateScriptFiles(context);
-        
+
         var panel = context.chrome.getSelectedPanel();
         if (panel && panel.name == "script" && panel.restoreRetry)
         {
-        	panel.location = null;  // the default could have been a URLOnly
-        	var state = Firebug.getPanelState(panel);
-        	panel.reShow(state);
-        	delete panel.restoreRetry;
-        }        	
+            panel.location = null;  // the default could have been a URLOnly
+            var state = Firebug.getPanelState(panel);
+            panel.reShow(state);
+            delete panel.restoreRetry;
+        }
     },
 
     destroyContext: function(context, persistedState)
@@ -1437,38 +1437,34 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
 
     registerDebugger: function() // 1.3.1 safe for multiple calls
     {
-        FBTrace.sysout(">>registerDebugger this.registered: "+this.registered );
         if (this.registered)
             return;
         var check = fbs.registerDebugger(this);  //  this will eventually set 'jsd' on the statusIcon
         this.registered = true;
-        FBTrace.sysout(">>registerDebugger this.registered: "+this.registered +" check: "+((check == 0)?"FAILED":"OK"));
     },
-    
+
     unregisterDebugger: function() // 1.3.1 safe for multiple calls
     {
-        FBTrace.sysout("<<unregisterDebugger this.registered: "+this.registered );
         if (!this.registered)
             return;
         if (Firebug.Debugger.activeContexts.length > 0 || Firebug.Console.activeContexts.length > 0)
             return;  // don't turn off JSD unless both console and script panels are done.
-        var check = fbs.unregisterDebugger(this);   
+        var check = fbs.unregisterDebugger(this);
         this.registered = false;
-        FBTrace.sysout("<<unregisterDebugger this.registered: "+this.registered+" check: "+((check == 0)?"OK":"FAILED") );
     },
-    
+
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
     // extends ActivableModule
     onFirstPanelActivate: function(context, init)
     {
-        this.registerDebugger(); // 1.3.1 
+        this.registerDebugger(); // 1.3.1
     },
 
     onPanelActivate: function(context, init, panelName)
     {
         //if (panelName == "console" || panelName == this.panelName)
         //    this.ableWatchSidePanel(context);
-        
+
         if (panelName != this.panelName)
             return;
 
@@ -1483,7 +1479,7 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
     {
         if (panelName != this.panelName)
             return;
-        
+
         if (FBTrace.DBG_PANELS) FBTrace.sysout("debugger.onPanelDeactivate destroy: "+destroy+" for "+context.window.location+"\n");
 
         if (!destroy)  // then the user is saying no to debugging
@@ -1533,7 +1529,7 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
             return false;
         }
     },
-    
+
     //---------------------------------------------------------------------------------------------
     // Menu in toolbar.
 
@@ -1938,7 +1934,7 @@ Firebug.ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
 
     reattach: function(doc)
     {
-    	Firebug.SourceBoxPanel.reattach.apply(this, arguments);
+        Firebug.SourceBoxPanel.reattach.apply(this, arguments);
 
         setTimeout(bind(function()
         {
@@ -2003,8 +1999,8 @@ Firebug.ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
 
         this.reShow(state);
     },
-    
-    reShow: function(state) 
+
+    reShow: function(state)
     {
         this.retryRestore = restoreObjects(this, state, true);  // delay the retry for loadedContext
 
@@ -2017,20 +2013,20 @@ Firebug.ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
                     sourceBox.scrollTop = state.lastScrollTop;
             }, this);
         }
-        
+
         var enabled = Firebug.Debugger.isEnabled(this.context);
         if (enabled)
         {
-        	Firebug.ModuleManagerPage.hide(this); // the navigate in restoreObject remains in effect
-        
+            Firebug.ModuleManagerPage.hide(this); // the navigate in restoreObject remains in effect
+
             var breakpointPanel = this.context.getPanel("breakpoints", true);
             if (breakpointPanel)
                 breakpointPanel.refresh();
         }
         else
         {
-            // xxxHonza: ModuleManagerPage should be always displayed if 
-            // debugger is disabled. 
+            // xxxHonza: ModuleManagerPage should be always displayed if
+            // debugger is disabled.
             //if (!state.persistedLocation)
                 Firebug.ModuleManagerPage.show(this, Firebug.Debugger);
             // else the navigate in restoreObject remains in effect
@@ -2965,20 +2961,20 @@ function getCallingFrame(frame)
 
 function getFrameScopeWindowAncestor(frame)  // walk script scope chain to bottom, null unless a Window
 {
-	var scope = frame.scope;
-	if (scope)
-	{	
-		while(scope.jsParent)
-			scope = scope.jsParent;
-	
-		if (scope.jsClassName == "Window" || scope.jsClassName == "ChromeWindow")
-			return  scope.getWrappedValue();
-		
-		if (FBTrace.DBG_FBS_FINDDEBUGGER)
-			FBTrace.sysout("debugger.getFrameScopeWindowAncestor found scope chain bottom, not Window: "+scope.jsClassName, scope);
-	}
-	else
-		return null;
+    var scope = frame.scope;
+    if (scope)
+    {
+        while(scope.jsParent)
+            scope = scope.jsParent;
+
+        if (scope.jsClassName == "Window" || scope.jsClassName == "ChromeWindow")
+            return  scope.getWrappedValue();
+
+        if (FBTrace.DBG_FBS_FINDDEBUGGER)
+            FBTrace.sysout("debugger.getFrameScopeWindowAncestor found scope chain bottom, not Window: "+scope.jsClassName, scope);
+    }
+    else
+        return null;
 }
 
 function getFrameWindow(frame)
