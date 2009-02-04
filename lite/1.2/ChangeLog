@@ -6,3 +6,13 @@
 
 2009-02-02 Azer Koculu <azer@kodfabrik.com>
   * Copied latest source to googlecode repository.
+
+2009-01-31 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
+  * Added extra hotkeys to show / hide FBLite:
+    F12, (CTRL|CMD)+SHIFT+L, SHIFT+ENTER
+  * Added console.firebug command to show FBLite version number
+  * Fixed problem with Open in New Window in Safari
+  * Added debug="true/false" to show or hide FBLite on startup
+  
+2009-01-29 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
+  * Added Open in New Window
