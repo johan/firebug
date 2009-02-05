@@ -20,5 +20,8 @@
   * firebug-lite.js: Fixed problem with Open in New Window in Safari
   * firebug-lite.js: Added debug="true/false" to show or hide FBLite on startup
   
-2009-01-29 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
+2009-01-01 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
   * firebug-lite.js & firebug-lite.css: Added Open in New Window
+  * firebug-lite.js: Fixed: HTML Inspect only worked in 1 very specific situation ... it now works in all situations
+  * firebug-lite.js: Fixed: Permission was occasionally denied to inspect CSS or scripts when it should not have been
+  * firebug-lite.js: Fixed: Domain check now works with domain names containing - and _ 
