@@ -2097,17 +2097,16 @@ var firebug = {
   );
 })(firebug);
 
-if(!window.console||!window.console.firebug) {
-  if(firebug.env.override){
+if(!firebug.env.detectFirebug||(!window.console||window.console&&!window.console.firebug)) {
+  firebug.lib.util.Init.push(firebug.init);
+
+  if((!window.console||window.console&&!window.console.firebug)||firebug.env.override){
     window.console = { "provider":"Firebug Lite" };
-    for(var command in firebug.d.console.cmd){
-      window.console[command] = firebug.lib.util.Curry(firebug.d.console.run,window,command);
-    };
-    window.onerror = function(_message,_file,_line){
-      firebug.d.console.run('error',firebug.lib.util.String.format('{0} ({1},{2})',_message,firebug.getFileName(_file),_line));
-    };
   }
-  firebug.lib.util.Init.push(firebug.init);
-} else if(firebug.env.detectFirebug==false) {
-  firebug.lib.util.Init.push(firebug.init);
-}
+  for(var command in firebug.d.console.cmd){
+    window.console[command] = firebug.lib.util.Curry(firebug.d.console.run,window,command);
+  };	
+  window.onerror = function(_message,_file,_line){
+	firebug.d.console.run('error',firebug.lib.util.String.format('{0} ({1},{2})',_message,firebug.getFileName(_file),_line));
+  };
+} 
