@@ -5,6 +5,7 @@ var firebug = {
     "cache":{}, 
     "css":"http://fbug.googlecode.com/svn/trunk/lite/1.2/firebug-lite.css", 
     "debug":true,
+    "detectFirebug":true,
     "dIndex":"console", 
     "height":295, 
     "init":false, 
@@ -2096,15 +2097,17 @@ var firebug = {
   );
 })(firebug);
 
-if(!window.console||firebug.env.override){
-  window.console = { "provider":"Firebug Lite" };
-  for(var command in firebug.d.console.cmd){
-    window.console[command] = firebug.lib.util.Curry(firebug.d.console.run,window,command);
-  };
-
-  window.onerror = function(_message,_file,_line){
-    firebug.d.console.run('error',firebug.lib.util.String.format('{0} ({1},{2})',_message,firebug.getFileName(_file),_line));
-  };
+if(!window.console||!window.console.firebug) {
+  if(firebug.env.override){
+    window.console = { "provider":"Firebug Lite" };
+    for(var command in firebug.d.console.cmd){
+      window.console[command] = firebug.lib.util.Curry(firebug.d.console.run,window,command);
+    };
+    window.onerror = function(_message,_file,_line){
+      firebug.d.console.run('error',firebug.lib.util.String.format('{0} ({1},{2})',_message,firebug.getFileName(_file),_line));
+    };
+  }
+  firebug.lib.util.Init.push(firebug.init);
+} else if(firebug.env.detectFirebug==false) {
+  firebug.lib.util.Init.push(firebug.init);
 }
-
-firebug.lib.util.Init.push(firebug.init);
