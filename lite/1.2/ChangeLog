@@ -2,6 +2,7 @@
 
 2009-02-05 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
   * firebug-lite.js: Added firebug.env.detectFirebug to prevent FBLite opening when Firebug is enabled (actually the Firebug Console). To run FBLite and Firebug at the same time it is now necessary to change the value of detectFirebug directly in firebug-lite.js
+  * Fixed multiple console initialization and override issues
 
 2009-02-05 Azer Koculu <azer@kodfabrik.com>
   * firebug-lite.css: mime-type property has been set to "text/css".
