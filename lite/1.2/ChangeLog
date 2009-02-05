@@ -1,5 +1,8 @@
 == Firebug Lite 1.2 Change Log ==
 
+2009-02-05 Azer Koculu <azer@kodfabrik.com>
+  * firebug-lite.css: mime-type property has been setted to "text/css".
+
 2009-02-04 Azer Koculu <azer@kodfabrik.com>
   * firebug-lite.js: Changed default css url getfirebug.com to fbug.google.com
   * firebug-lite-compressed.js: It was unnecesseary, removed.
