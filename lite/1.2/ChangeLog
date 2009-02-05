@@ -1,7 +1,10 @@
 == Firebug Lite 1.2 Change Log ==
 
+2009-02-05 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
+  * firebug-lite.js: Added firebug.env.detectFirebug to prevent FBLite opening when Firebug is enabled (actually the Firebug Console). To run FBLite and Firebug at the same time it is now necessary to change the value of detectFirebug directly in firebug-lite.js
+
 2009-02-05 Azer Koculu <azer@kodfabrik.com>
-  * firebug-lite.css: mime-type property has been setted to "text/css".
+  * firebug-lite.css: mime-type property has been set to "text/css".
 
 2009-02-04 Azer Koculu <azer@kodfabrik.com>
   * firebug-lite.js: Changed default css url getfirebug.com to fbug.google.com
@@ -11,11 +14,11 @@
   * Copied latest source to googlecode repository.
 
 2009-01-31 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
-  * Added extra hotkeys to show / hide FBLite:
+  * firebug-lite.js: Added extra hotkeys to show / hide FBLite:
     F12, (CTRL|CMD)+SHIFT+L, SHIFT+ENTER
-  * Added console.firebug command to show FBLite version number
-  * Fixed problem with Open in New Window in Safari
-  * Added debug="true/false" to show or hide FBLite on startup
+  * firebug-lite.js: Added console.firebug command to show FBLite version number
+  * firebug-lite.js: Fixed problem with Open in New Window in Safari
+  * firebug-lite.js: Added debug="true/false" to show or hide FBLite on startup
   
 2009-01-29 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
-  * Added Open in New Window
+  * firebug-lite.js & firebug-lite.css: Added Open in New Window
