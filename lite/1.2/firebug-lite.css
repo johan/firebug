@@ -8,6 +8,8 @@
 #Firebug em { font-style:italic; }
 /* */
 
+#FirebugIFrame { position:fixed !important; position:absolute; z-index:99999998; left:0; bottom:0; width:100%; height:295px; background:#fff; border-width:0px; }
+
 #Firebug { position:fixed !important; position:absolute; z-index:99999999; left:0; bottom:0; width:100%; height:295px; background:#fff; overflow:hidden; }
 #Firebug .Resizer { position:absolute; top:0; width:100%; height:5px; background:transparent; *background:url(spacer.gif); cursor:n-resize; -moz-user-select:none; }
 #Firebug .Header { height:38px; background:#ccc url(firebug.gif) 0 -85px; }

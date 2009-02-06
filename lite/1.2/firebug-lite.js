@@ -44,6 +44,7 @@ var firebug = {
        * main interface
        */
       el.content = {};
+      el.mainiframe = new lib.element("DIV").attribute.set("id","FirebugIFrame").environment.addStyle({ "display":"none", "width":lib.util.GetViewport().width+"px" }).insert(document.body);
       el.main = new lib.element("DIV").attribute.set("id","Firebug").environment.addStyle({ "display":"none", "width":lib.util.GetViewport().width+"px" }).insert(document.body);
       if(!env.isPopup){
         el.resizer = new lib.element("DIV").attribute.addClass("Resizer").event.addListener("mousedown",win.resizer.start).insert(el.main);
@@ -269,6 +270,7 @@ var firebug = {
       }
 
       el.main.environment.addStyle({ "display":env.debug&&'block'||'none' });
+      el.mainiframe.environment.addStyle({ "display":env.debug&&'block'||'none' });
     }  
   },
   inspect:function(){
@@ -288,11 +290,17 @@ var firebug = {
         el.main.environment.addStyle({
           "display": "none"
         });
+        el.mainiframe.environment.addStyle({
+          "display": "none"
+        });
       }
     },
     show:function(){
       with(firebug){
         el.main.environment.addStyle({
+          "display": "block"
+        });
+        el.mainiframe.environment.addStyle({
           "display": "block"
         });
       }
@@ -301,6 +309,7 @@ var firebug = {
       with(firebug){
         env.minimized=true;
         el.main.environment.addStyle({ "height":"35px" });
+        el.mainiframe.environment.addStyle({ "height":"35px" });
         el.button.maximize.environment.addStyle({ "display":"block" });
         el.button.minimize.environment.addStyle({ "display":"none" });
         win.refreshSize();
@@ -367,6 +376,7 @@ var firebug = {
 
           firebug.env.popupWin.document.getElementsByTagName('head')[0].appendChild(script);
           firebug.el.main.environment.addStyle({"display": "none"});
+          firebug.el.mainiframe.environment.addStyle({"display": "none"});
         }
       }
     },
@@ -374,6 +384,9 @@ var firebug = {
       with(opener.firebug) {
         env.popupWin = null;
         el.main.environment.addStyle({
+          "display": "block"
+        });
+        el.mainiframe.environment.addStyle({
           "display": "block"
         });
         window.close();
@@ -384,6 +397,9 @@ var firebug = {
         var viewport = lib.util.GetViewport(window);
         win.setHeight((window.innerHeight||viewport.height) - 38);
         el.main.environment.addStyle({
+          "width": (viewport.width) + "px"
+        });
+        el.mainiframe.environment.addStyle({
           "width": (viewport.width) + "px"
         });
       }
@@ -405,8 +421,10 @@ var firebug = {
           if(!win.resizer.enabled)return;
           win.resizer.y[2]=(win.resizer.y[0]+(win.resizer.y[1]-_event.clientY));
           el.main.environment.addStyle({ "height":win.resizer.y[2]+"px" });
+          el.mainiframe.environment.addStyle({ "height":win.resizer.y[2]+"px" });
           if(lib.env.ie6){
             el.main.environment.addStyle({ "top":win.resizer.y[3]-(win.resizer.y[1]-_event.clientY)+"px" });
+            el.mainiframe.environment.addStyle({ "top":win.resizer.y[3]-(win.resizer.y[1]-_event.clientY)+"px" });
           }
         }
       },
@@ -426,6 +444,7 @@ var firebug = {
         el.left.container.environment.addStyle({ "height":_height+"px" });
         el.right.container.environment.addStyle({ "height":_height+"px" });
         el.main.environment.addStyle({ "height":_height+38+"px" });
+        el.mainiframe.environment.addStyle({ "height":_height+38+"px" });
 
         win.refreshSize();
 
@@ -463,6 +482,7 @@ var firebug = {
 
         var dim = lib.util.GetViewport();
         el.main.environment.addStyle({ "width":dim.width+"px"});
+        el.mainiframe.environment.addStyle({ "width":dim.width+"px"});
         if(lib.env.ie6)
           win.setVerticalPosition(dim);
       }
@@ -471,6 +491,7 @@ var firebug = {
       with(firebug){
         var dim = _dim||lib.util.GetViewport();
         el.main.environment.addStyle({ "top":dim.height-el.main.environment.getSize().offsetHeight+Math.max(document.documentElement.scrollTop,document.body.scrollTop)+"px" });
+        el.mainiframe.environment.addStyle({ "top":dim.height-el.main.environment.getSize().offsetHeight+Math.max(document.documentElement.scrollTop,document.body.scrollTop)+"px" });
       }
     }
   },
