@@ -1,7 +1,8 @@
 == Firebug Lite 1.2 Change Log ==
 
 2009-02-06 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
-  * firebug-lite.js: Added Firefox version check when using firebug.env.override to prevent problems when override is set in FF3 where window.console is a getter
+  * firebug-lite.js: Removed firebug.env.override to prevent problems when override is set in FF3 where window.console is a getter and allow more control over initialization.
+  * firebug-lite.js: Refactored code to allow firebug.env.detectFirebug to be set from user code
   * firebug-lite.js: Moved console initialization code inside of the Firebug object to remove some global variables
   * firebug-lite.js & firebug-lite.css: Fixed Issue 1348 - String, Date and Boolean objects should be displayed similar to their primitive counterparts
 

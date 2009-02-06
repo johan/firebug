@@ -12,33 +12,30 @@ var firebug = {
     "isPopup":false,
     "minimized":false, 
     "ml":false,
-    "override":false,
     "popupWin":null
   },
   initConsole:function(){
     /* 
-     * initialize console.
-     * note that user settings like firebug.env.override are not loaded until later.
-     * to change this setting it must be changed at the top of this file
+     * initialize the console user defined variables are not available within this method because FBLite is not yet initialized
      */
-    var command,
-      _fbcLoaded = window.console && window.console.firebug;
-
-    if(!_fbcLoaded || (firebug.env.override && /Firefox\/2/i.test(navigator.userAgent))){
+    var command;
+    if(!window.console || !(window.console && window.console.firebug)) {
       window.console = { "provider":"Firebug Lite" };
+
+      for(command in firebug.d.console.cmd){
+        window.console[command] = firebug.lib.util.Curry(firebug.d.console.run,window,command);
+      };
     }
-    for(command in firebug.d.console.cmd){
-      window.console[command] = firebug.lib.util.Curry(firebug.d.console.run,window,command);
-    };
     window.onerror = function(_message,_file,_line){
       firebug.d.console.run('error',firebug.lib.util.String.format('{0} ({1},{2})',_message,firebug.getFileName(_file),_line));
     };
   },
   init:function(_css){
     with(firebug){
-      if(env.init)
+      if(env.init || (firebug.env.detectFirebug && window.console && window.console.firebug)) {
         return;
-
+      }
+      
       document.getElementsByTagName("head")[0].appendChild(
         new lib.element("link").attribute.set("rel","stylesheet").attribute.set("href",env.css).element
       );
@@ -2133,11 +2130,7 @@ var firebug = {
   );
 })(firebug);
 
-/*
- * note that the user settings like firebug.env.detectFirebug are not loaded until later
- * to change this setting it must be changed at the top of this file
- */
-if(!firebug.env.detectFirebug || (!window.console || window.console && !window.console.firebug)) {
-  firebug.initConsole();
-  firebug.lib.util.Init.push(firebug.init);
-} 
+with(firebug){
+  initConsole();
+  lib.util.Init.push(firebug.init);
+}
