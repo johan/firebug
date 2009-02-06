@@ -1,5 +1,5 @@
 var firebug = {
-  version:[1.23,20090204],
+  version:[1.23,20090206],
   el:{}, 
   env:{ 
     "cache":{}, 
@@ -2100,13 +2100,13 @@ var firebug = {
 if(!firebug.env.detectFirebug||(!window.console||window.console&&!window.console.firebug)) {
   firebug.lib.util.Init.push(firebug.init);
 
-  if((!window.console||window.console&&!window.console.firebug)||firebug.env.override){
+  if((!window.console || window.console && !window.console.firebug) || (firebug.env.override && /Firefox\/2/i.test(navigator.userAgent))){
     window.console = { "provider":"Firebug Lite" };
   }
   for(var command in firebug.d.console.cmd){
     window.console[command] = firebug.lib.util.Curry(firebug.d.console.run,window,command);
-  };	
+  };
   window.onerror = function(_message,_file,_line){
-	firebug.d.console.run('error',firebug.lib.util.String.format('{0} ({1},{2})',_message,firebug.getFileName(_file),_line));
+    firebug.d.console.run('error',firebug.lib.util.String.format('{0} ({1},{2})',_message,firebug.getFileName(_file),_line));
   };
 } 
