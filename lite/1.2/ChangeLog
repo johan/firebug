@@ -6,6 +6,7 @@
   * firebug-lite.js: Moved console initialization code inside of the Firebug object to remove some global variables
   * firebug-lite.js & firebug-lite.css: Fixed Issue 1348 - String, Date and Boolean objects should be displayed similar to their primitive counterparts
   * firebug-lite.js & firebug-lite.css: Fixed Issue 1023 - Elements such as Flash in iframes and dropdowns in IE bleed through FBLite, I have put an iframe 'shield' behind FBLite to prevent this
+  * Updated mime-types for all FBLite SVN files
 
 2009-02-05 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
   * firebug-lite.js: Added firebug.env.detectFirebug to prevent FBLite opening when Firebug is enabled (actually the Firebug Console). To run FBLite and Firebug at the same time it is now necessary to change the value of detectFirebug directly in firebug-lite.js
