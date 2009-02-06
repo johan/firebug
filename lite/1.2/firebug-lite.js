@@ -783,15 +783,32 @@ var firebug = {
     highlight:function(_value,_inObject,_inArray,_link){
       with(firebug){
         var isArray = false, isHash, isElement = false, vtype=typeof _value, result=[];
+        
+        if(vtype=="object"){
+          if(Object.prototype.toString.call(_value) === "[object Date]"){
+            vtype = "date";
+          } else if(Object.prototype.toString.call(_value) === "[object String]"){
+            vtype = "string";
+          } else if(Object.prototype.toString.call(_value) === "[object Boolean]"){
+            vtype = "boolean";
+          } else if(Object.prototype.toString.call(_value) === "[object RegExp]"){
+            vtype = "regexp";
+          }
+        }
+        
         try {
           isArray = lib.util.IsArray(_value);
           isHash = lib.util.IsHash(_value);
           isElement = _value!=undefined&&Boolean(_value.nodeName)&&Boolean(_value.nodeType);
 
           // number, string, boolean, null, function
-          if(_value==null||vtype=="number"||vtype=="string"||vtype=="boolean"||vtype=="function"){
+          if(_value==null||vtype=="number"||vtype=="string"||vtype=="boolean"||vtype=="function"||vtype=="regexp"||vtype=="date"){
             if(_value==null){
               result.push("<span class='Null'>null</span>");
+            }else if (vtype=="regexp") {
+              result.push("<span class='Maroon'>" + _value + "</span>");
+            }else if (vtype=="date") {
+              result.push("<span class='DarkBlue'>'" + _value + "'</span>");
             } else if (vtype=="boolean"||vtype=="number") {
               result.push("<span class='DarkBlue'>" + _value + "</span>");
             } else if(vtype=="function"){

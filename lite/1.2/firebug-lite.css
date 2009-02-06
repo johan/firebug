@@ -188,6 +188,7 @@
 #Firebug .Blue { color:#0000ee; }
 #Firebug .DarkBlue { color:#000099; }
 #Firebug .Red { color:#ee0000; }
+#Firebug .Maroon { color:#800000; font:11px Verdana, Geneva, Arial, Helvetica, sans-serif; }
 #Firebug .Null { font:11px Verdana, Geneva, Arial, Helvetica, sans-serif; color:#fff; padding:0 2px 0 2px; background:#999; border:1px solid #666; }
 #Firebug .ObjectLink, #Firebug .ObjectLinkHover { cursor:pointer; }
 #Firebug .ObjectLinkHover { border-bottom:1px solid #008800; }
