@@ -15,6 +15,25 @@ var firebug = {
     "override":false,
     "popupWin":null
   },
+  initConsole:function(){
+    /* 
+     * initialize console.
+     * note that user settings like firebug.env.override are not loaded until later.
+     * to change this setting it must be changed at the top of this file
+     */
+    var command,
+      _fbcLoaded = window.console && window.console.firebug;
+
+    if(!_fbcLoaded || (firebug.env.override && /Firefox\/2/i.test(navigator.userAgent))){
+      window.console = { "provider":"Firebug Lite" };
+    }
+    for(command in firebug.d.console.cmd){
+      window.console[command] = firebug.lib.util.Curry(firebug.d.console.run,window,command);
+    };
+    window.onerror = function(_message,_file,_line){
+      firebug.d.console.run('error',firebug.lib.util.String.format('{0} ({1},{2})',_message,firebug.getFileName(_file),_line));
+    };
+  },
   init:function(_css){
     with(firebug){
       if(env.init)
@@ -2097,16 +2116,11 @@ var firebug = {
   );
 })(firebug);
 
-if(!firebug.env.detectFirebug||(!window.console||window.console&&!window.console.firebug)) {
+/*
+ * note that the user settings like firebug.env.detectFirebug are not loaded until later
+ * to change this setting it must be changed at the top of this file
+ */
+if(!firebug.env.detectFirebug || (!window.console || window.console && !window.console.firebug)) {
+  firebug.initConsole();
   firebug.lib.util.Init.push(firebug.init);
-
-  if((!window.console || window.console && !window.console.firebug) || (firebug.env.override && /Firefox\/2/i.test(navigator.userAgent))){
-    window.console = { "provider":"Firebug Lite" };
-  }
-  for(var command in firebug.d.console.cmd){
-    window.console[command] = firebug.lib.util.Curry(firebug.d.console.run,window,command);
-  };
-  window.onerror = function(_message,_file,_line){
-    firebug.d.console.run('error',firebug.lib.util.String.format('{0} ({1},{2})',_message,firebug.getFileName(_file),_line));
-  };
 } 
