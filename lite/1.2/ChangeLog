@@ -1,4 +1,6 @@
 == Firebug Lite 1.2 Change Log ==
+2009-02-08 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
+  * firebug-lite.js: Issue 1406 - Added firebug.env.hideDOMFunctions to allow hiding of DOM functions in the DOM tab.
 
 2009-02-06 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
   * firebug-lite.js: Removed firebug.env.override to prevent problems when override is set in FF3 where window.console is a getter and allow more control over initialization.

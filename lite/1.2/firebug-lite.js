@@ -1,5 +1,5 @@
 var firebug = {
-  version:[1.23,20090206],
+  version:[1.23,20090208],
   el:{}, 
   env:{ 
     "cache":{}, 
@@ -7,7 +7,8 @@ var firebug = {
     "debug":true,
     "detectFirebug":true,
     "dIndex":"console", 
-    "height":295, 
+    "height":295,
+    "hideDOMFunctions":false,
     "init":false, 
     "isPopup":false,
     "minimized":false, 
@@ -771,7 +772,8 @@ var firebug = {
           parentElement.opened = true;
 
           for (var key in obj) {
-            try { 
+            try {
+              if (env.hideDOMFunctions && typeof(obj[key]) == "function") continue;
               var value = obj[key], property = key, container = new lib.element("DIV").attribute.addClass("DOMRow").insert(parentElement),
               left = new lib.element("DIV").attribute.addClass("DOMRowLeft").insert(container), right = new lib.element("DIV").attribute.addClass("DOMRowRight").insert(container);
 
