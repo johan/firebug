@@ -1,5 +1,5 @@
 var firebug = {
-  version:[1.23,20090208],
+  version:[1.23,20090209],
   el:{}, 
   env:{ 
     "cache":{}, 
@@ -11,7 +11,8 @@ var firebug = {
     "hideDOMFunctions":false,
     "init":false, 
     "isPopup":false,
-    "minimized":false, 
+    "minimized":false,
+    "override":true,
     "ml":false,
     "popupWin":null
   },
@@ -20,7 +21,8 @@ var firebug = {
      * initialize the console user defined variables are not available within this method because FBLite is not yet initialized
      */
     var command;
-    if(!window.console || !(window.console && window.console.firebug)) {
+    debugger;
+    if((!window.console || (window.console && !window.console.firebug)) || (firebug.env.override && !(/Firefox\/3/i.test(navigator.userAgent)))){
       window.console = { "provider":"Firebug Lite" };
 
       for(command in firebug.d.console.cmd){

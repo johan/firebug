@@ -1,4 +1,8 @@
 == Firebug Lite 1.2 Change Log ==
+2009-02-09 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
+  * firebug-lite.js: Issue 1400 - Re-implemented firebug.env.override. Default is now true ... it can only be manually changed in FBLite code.
+                                  The reason this is needed is because a number of browsers have a window.console object.
+
 2009-02-08 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
   * firebug-lite.js: Issue 1406 - Added firebug.env.hideDOMFunctions to allow hiding of DOM functions in the DOM tab.
 
@@ -7,11 +11,13 @@
   * firebug-lite.js: Refactored code to allow firebug.env.detectFirebug to be set from user code
   * firebug-lite.js: Moved console initialization code inside of the Firebug object to remove some global variables
   * firebug-lite.js & firebug-lite.css: Fixed Issue 1348 - String, Date and Boolean objects should be displayed similar to their primitive counterparts
-  * firebug-lite.js & firebug-lite.css: Fixed Issue 1023 - Elements such as Flash in iframes and dropdowns in IE bleed through FBLite, I have put an iframe 'shield' behind FBLite to prevent this
+  * firebug-lite.js & firebug-lite.css: Fixed Issue 1023 - Elements such as Flash in iframes and dropdowns in IE bleed through FBLite,
+                                        I have put an iframe 'shield' behind FBLite to prevent this
   * Updated mime-types for all FBLite SVN files
 
 2009-02-05 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
-  * firebug-lite.js: Added firebug.env.detectFirebug to prevent FBLite opening when Firebug is enabled (actually the Firebug Console). To run FBLite and Firebug at the same time it is now necessary to change the value of detectFirebug directly in firebug-lite.js
+  * firebug-lite.js: Added firebug.env.detectFirebug to prevent FBLite opening when Firebug is enabled (actually the Firebug Console).
+                     To run FBLite and Firebug at the same time it is now necessary to change the value of detectFirebug directly in firebug-lite.js
   * Fixed multiple console initialization and override issues
 
 2009-02-05 Azer Koculu <azer@kodfabrik.com>
