@@ -1,4 +1,7 @@
 == Firebug Lite 1.2 Change Log ==
+2009-02-12 Azer Koculu <azer@kodfabrik.com>
+  * minifier.py, jsmin.py, minify: Added minifier library and compressing scripts.
+
 2009-02-12 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
   * firebug-lite.js: Corrected 2 syntax errors
 
