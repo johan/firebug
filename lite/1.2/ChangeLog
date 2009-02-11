@@ -1,4 +1,8 @@
 == Firebug Lite 1.2 Change Log ==
+2009-02-11 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
+  * firebug-lite.js: Issue 1400 - firebug.env.override is now false by default ... I have also added two methods to make it easier for the user to control the console:
+                                  firebug.overrideConsole() & firebug.restoreConsole()
+
 2009-02-09 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
   * firebug-lite.js: Issue 1400 - Re-implemented firebug.env.override. Default is now true ... it can only be manually changed in FBLite code.
                                   The reason this is needed is because a number of browsers have a window.console object.

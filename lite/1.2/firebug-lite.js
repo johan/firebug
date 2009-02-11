@@ -1,8 +1,9 @@
 var firebug = {
-  version:[1.23,20090209],
+  version:[1.23,20090211],
   el:{}, 
   env:{ 
-    "cache":{}, 
+    "cache":{},
+    "extConsole":null,
     "css":"http://fbug.googlecode.com/svn/trunk/lite/1.2/firebug-lite.css", 
     "debug":true,
     "detectFirebug":true,
@@ -12,31 +13,56 @@ var firebug = {
     "init":false, 
     "isPopup":false,
     "minimized":false,
-    "override":true,
+    "override":false,
     "ml":false,
     "popupWin":null
   },
   initConsole:function(){
     /* 
-     * initialize the console user defined variables are not available within this method because FBLite is not yet initialized
+     * initialize the console - user defined values are not available within this method because FBLite is not yet initialized
      */
     var command;
-    debugger;
-    if((!window.console || (window.console && !window.console.firebug)) || (firebug.env.override && !(/Firefox\/3/i.test(navigator.userAgent)))){
-      window.console = { "provider":"Firebug Lite" };
+    try{
+      if((!window.console || (window.console && !window.console.firebug)) || (firebug.env.override && !(/Firefox\/3/i.test(navigator.userAgent)))){
+        window.console = { "provider":"Firebug Lite" };
 
-      for(command in firebug.d.console.cmd){
-        window.console[command] = firebug.lib.util.Curry(firebug.d.console.run,window,command);
+        for(command in firebug.d.console.cmd){
+          window.console[command] = firebug.lib.util.Curry(firebug.d.console.run,window,command);
+        };
+      }
+      window.onerror = function(_message,_file,_line){
+        firebug.d.console.run('error',firebug.lib.util.String.format('{0} ({1},{2})',_message,firebug.getFileName(_file),_line));
       };
+      } catch(e){}
+  },
+  overrideConsole:function(){
+    with firebug{
+      env.override=true;
+      try{
+        env.extConsole=window.console;
+      } catch(e){}
+      initConsole();
     }
-    window.onerror = function(_message,_file,_line){
-      firebug.d.console.run('error',firebug.lib.util.String.format('{0} ({1},{2})',_message,firebug.getFileName(_file),_line));
-    };
+  },
+  restoreConsole:function(){
+    with(firebug){
+      if(env.extConsole){
+        env.override=false;
+        try{
+          window.console=env.extConsole;
+        } catch(e){}
+        env.extConsole=null;
+      }
+    }
   },
   init:function(_css){
     with(firebug){
-      if(env.init || (firebug.env.detectFirebug && window.console && window.console.firebug)) {
+      if(env.init || (env.detectFirebug && window.console && window.console.firebug)) {
         return;
+      }
+      
+      if(env.override){
+        overrideConsole();
       }
       
       document.getElementsByTagName("head")[0].appendChild(
