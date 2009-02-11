@@ -1,5 +1,5 @@
 var firebug = {
-  version:[1.23,20090211],
+  version:[1.23,20090212],
   el:{}, 
   env:{ 
     "cache":{},
@@ -36,7 +36,7 @@ var firebug = {
       } catch(e){}
   },
   overrideConsole:function(){
-    with firebug{
+    with (firebug){
       env.override=true;
       try{
         env.extConsole=window.console;

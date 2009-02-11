@@ -1,4 +1,7 @@
 == Firebug Lite 1.2 Change Log ==
+2009-02-12 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
+  * firebug-lite.js: Corrected 2 syntax errors
+
 2009-02-11 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
   * firebug-lite.js: Issue 1400 - firebug.env.override is now false by default ... I have also added two methods to make it easier for the user to control the console:
                                   firebug.overrideConsole() & firebug.restoreConsole()
