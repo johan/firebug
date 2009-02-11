@@ -38,7 +38,7 @@ Firebug.TabContext = function(win, browser, chrome, persistedState)
     // Anyway, keep the previous cache implementation for backward compatibility 
     // (with Firefox 3.0.2 and lower)    
     if (Components.interfaces.nsITraceableChannel)
-        this.sourceCache = new Firebug.TabCache(win);
+        this.sourceCache = new Firebug.TabCache(win, this);
     else
         this.sourceCache = new Firebug.SourceCache(win, this);
 };
