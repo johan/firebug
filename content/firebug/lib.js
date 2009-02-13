@@ -14,6 +14,7 @@ const Ci = Components.interfaces;
 this.fbs = Cc["@joehewitt.com/firebug;1"].getService().wrappedJSObject;
 this.jsd = this.CCSV("@mozilla.org/js/jsd/debugger-service;1", "jsdIDebuggerService");
 const finder = this.finder = this.CCIN("@mozilla.org/embedcomp/rangefind;1", "nsIFind");
+const wm = this.CCSV("@mozilla.org/appshell/window-mediator;1", "nsIWindowMediator");
 
 const PCMAP_SOURCETEXT = Ci.jsdIScript.PCMAP_SOURCETEXT;
 const PCMAP_PRETTYPRINT = Ci.jsdIScript.PCMAP_PRETTYPRINT;
@@ -2198,6 +2199,22 @@ this.viewSource = function(url, lineNo)
         "all,dialog=no", url, null, null, lineNo);
 };
 
+// Iterate over all opened firefox windows of the given type. If the callback returns true
+// the iteration is stopped.
+this.iterateBrowserWindows = function(windowType, callback)
+{
+    var windowList = wm.getZOrderDOMWindowEnumerator(windowType, true);
+    if (!windowList.hasMoreElements())
+        windowList = wm.getEnumerator(windowType);
+
+    while (windowList.hasMoreElements()) {
+        if (callback(windowList.getNext()))
+            return true;
+    }
+
+    return false;
+};
+
 // ************************************************************************************************
 // JavaScript Parsing
 
@@ -2673,6 +2690,15 @@ this.getURLFromLocalFile = function(file)
     var URL = fileHandler.getURLSpecFromFile(file);
     return URL;
 };
+
+this.getDataURLForContent = function(content, url)
+{
+    // data:text/javascript;fileName=x%2Cy.js;baseLineNumber=10,<the-url-encoded-data>
+    var uri = "data:text/html;";
+    uri += "fileName="+encodeURIComponent(url)+ ","
+    uri += encodeURIComponent(content);
+    return uri;
+},
 
 this.getDomain = function(url)
 {
