@@ -1,4 +1,7 @@
 == Firebug Lite 1.2 Change Log ==
+2009-02-14 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
+  * firebug-lite.js: Issue 1487 - Added firebug.env.liteFilename ... this allows for the renaming of the FBLite script for use in popup windows.
+
 2009-02-12 Azer Koculu <azer@kodfabrik.com>
   * minifier.py, jsmin.py, minify: Added minifier library and compressing scripts.
 
@@ -6,7 +9,8 @@
   * firebug-lite.js: Corrected 2 syntax errors
 
 2009-02-11 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
-  * firebug-lite.js: Issue 1400 - firebug.env.override is now false by default ... I have also added two methods to make it easier for the user to control the console:
+  * firebug-lite.js: Issue 1400 - firebug.env.override is now false by default ... I have also added
+                                  two methods to make it easier for the user to control the console:
                                   firebug.overrideConsole() & firebug.restoreConsole()
 
 2009-02-09 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
@@ -17,10 +21,12 @@
   * firebug-lite.js: Issue 1406 - Added firebug.env.hideDOMFunctions to allow hiding of DOM functions in the DOM tab.
 
 2009-02-06 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
-  * firebug-lite.js: Removed firebug.env.override to prevent problems when override is set in FF3 where window.console is a getter and allow more control over initialization.
+  * firebug-lite.js: Removed firebug.env.override to prevent problems when override is set in FF3 where window.console
+    is a getter and allow more control over initialization.
   * firebug-lite.js: Refactored code to allow firebug.env.detectFirebug to be set from user code
   * firebug-lite.js: Moved console initialization code inside of the Firebug object to remove some global variables
-  * firebug-lite.js & firebug-lite.css: Fixed Issue 1348 - String, Date and Boolean objects should be displayed similar to their primitive counterparts
+  * firebug-lite.js & firebug-lite.css: Fixed Issue 1348 - String, Date and Boolean objects should be displayed similar
+    to their primitive counterparts
   * firebug-lite.js & firebug-lite.css: Fixed Issue 1023 - Elements such as Flash in iframes and dropdowns in IE bleed through FBLite,
                                         I have put an iframe 'shield' behind FBLite to prevent this
   * Updated mime-types for all FBLite SVN files
