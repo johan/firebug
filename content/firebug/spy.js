@@ -274,7 +274,7 @@ Firebug.Spy.XHR = domplate(Firebug.Rep,
 
     copyResponse: function(spy)
     {
-        copyToClipboard(spy.xhrRequest.responseText);
+        copyToClipboard(spy.responseText);
     },
 
     openInTab: function(spy)
@@ -332,6 +332,12 @@ top.XMLHttpRequestSpy = function(request, xhrRequest, context)
     this.xhrRequest = xhrRequest;
     this.context = context;
     this.responseText = null;
+
+    this.onStoreResponse = function(win, request, lines)
+    {
+        if (request == this.request)
+            this.responseText = lines ? lines.join("\n") : "";
+    };
 };
 
 top.XMLHttpRequestSpy.prototype =
@@ -348,6 +354,9 @@ top.XMLHttpRequestSpy.prototype =
         this.xhrRequest.onreadystatechange = this.onReadyStateChange;
         this.xhrRequest.addEventListener("load", this.onLoad, true);
         this.xhrRequest.addEventListener("error", this.onError, true);
+
+        // Use tabCache to get XHR response.
+        this.context.sourceCache.addListener(this);
     },
 
     detach: function()
@@ -359,12 +368,14 @@ top.XMLHttpRequestSpy.prototype =
         this.onreadystatechange = null;
         this.onLoad = null;
         this.onError = null;
+
+        this.context.sourceCache.removeListener(this);
     },
 
     getURL: function()
     {
         return this.xhrRequest.channel ? this.xhrRequest.channel.name : this.href;
-    },
+    }
 };
 
 Firebug.XHRSpyListener =
@@ -524,8 +535,11 @@ function onHTTPSpyLoad(spy)
     // The main XHR object has to be dettached now (i.e. listeners removed).
     spy.detach();
 
-    if (!spy.responseText)
-        spy.responseText = spy.xhrRequest.responseText;
+    // If the requst is aborted at this time the spy.xhrRequest.responseText 
+    // is truncated even if there actually was some response. So, the tabCache 
+    // listener is used to get the actuall response.
+    //if (!spy.responseText)
+    //    spy.responseText = spy.xhrRequest.responseText;
 
     var netProgress = spy.context.netProgress;
     if (netProgress)
