@@ -1,4 +1,7 @@
 == Firebug Lite 1.2 Change Log ==
+2009-02-17 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
+  * firebug-lite.js: Fixed problem with issue 1481 - A DIV was created instead of an IFRAME so the shield was ineffective.
+  
 2009-02-14 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
   * firebug-lite.js: Issue 1487 - Added firebug.env.liteFilename ... this allows for the renaming of the FBLite script for use in popup windows.
 

@@ -1,5 +1,5 @@
 var firebug = {
-  version:[1.23,20090214],
+  version:[1.23,20090217],
   el:{}, 
   env:{ 
     "cache":{},
@@ -74,7 +74,7 @@ var firebug = {
        * main interface
        */
       el.content = {};
-      el.mainiframe = new lib.element("DIV").attribute.set("id","FirebugIFrame").environment.addStyle({ "display":"none", "width":lib.util.GetViewport().width+"px" }).insert(document.body);
+      el.mainiframe = new lib.element("IFRAME").attribute.set("id","FirebugIFrame").environment.addStyle({ "display":"none", "width":lib.util.GetViewport().width+"px" }).insert(document.body);
       el.main = new lib.element("DIV").attribute.set("id","Firebug").environment.addStyle({ "display":"none", "width":lib.util.GetViewport().width+"px" }).insert(document.body);
       if(!env.isPopup){
         el.resizer = new lib.element("DIV").attribute.addClass("Resizer").event.addListener("mousedown",win.resizer.start).insert(el.main);
