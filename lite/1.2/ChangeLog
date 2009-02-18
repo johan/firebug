@@ -1,4 +1,7 @@
 == Firebug Lite 1.2 Change Log ==
+2009-02-18 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
+  * firebug-lite.js: Fixed issue 1086 - FBLite can now be used locally over HTTPS if firebug.env.css is set.
+  
 2009-02-17 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
   * firebug-lite.js: Fixed problem with issue 1481 - A DIV was created instead of an IFRAME so the shield was ineffective.
   

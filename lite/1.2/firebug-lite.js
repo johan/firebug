@@ -1,5 +1,5 @@
 var firebug = {
-  version:[1.23,20090217],
+  version:[1.23,20090218],
   el:{}, 
   env:{ 
     "cache":{},
@@ -748,7 +748,7 @@ var firebug = {
           var item = (env.isPopup&&window.opener||window).document.styleSheets[_index],
           uri = item.href,
           dmn = getDomain(uri);
-          if(uri.indexOf("http:\/\/")>-1&&dmn!=document.domain&&'www.'+dmn!=document.domain){
+          if(uri.indexOf("https?:\/\/")>-1&&dmn!=document.domain&&'www.'+dmn!=document.domain){
             el.left.css.container.update("<em>Access to restricted URI denied</em>");
             return;
           }
@@ -1197,7 +1197,7 @@ var firebug = {
           el.left.scripts.container.update("");
           var script = document.getElementsByTagName("script")[_index],uri = script.src||document.location.href,source,dmn=getDomain(uri);
 
-          if(uri.indexOf("http:\/\/")>-1&&dmn!=document.domain&&"www."+dmn!=document.domain){
+          if(uri.indexOf("https?:\/\/")>-1&&dmn!=document.domain&&"www."+dmn!=document.domain){
             el.left.scripts.container.update("<em>Access to restricted URI denied</em>");
             return;
           }
@@ -1373,7 +1373,7 @@ var firebug = {
     }
   },
   getDomain:function(_url){
-    var match = _url&&_url.match(/http:\/\/(www.)?([\.\w-_]+)/);
+    var match = _url&&_url.match(/https?:\/\/(www.)?([\.\w-_]+)/);
     return match&&match[2]||'';
   },
   getFileName:function(_path){
