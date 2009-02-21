@@ -196,3 +196,5 @@
 #Firebug .ObjectLinkHover { border-bottom:1px solid #008800; }
 
 #Firebug .Clear { clear:both; height:0px; font-size:0px; }
+
+#firebugIconDiv {width:38px;height:38px;right:15pt;bottom:5pt;border:2px solid #000;display:none;position:fixed;background-image:url(firebug_logo.png);text-decoration:underline;cursor:pointer;filter:alpha(opacity:60);opacity:.6;z-index:99999998;}

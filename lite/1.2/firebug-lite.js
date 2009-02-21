@@ -1,5 +1,5 @@
 var firebug = {
-  version:[1.23,20090218],
+  version:[1.23,20090221],
   el:{}, 
   env:{ 
     "cache":{},
@@ -16,7 +16,8 @@ var firebug = {
     "minimized":false,
     "override":false,
     "ml":false,
-    "popupWin":null
+    "popupWin":null,
+    "showIconWhenHidden": true
   },
   initConsole:function(){
     /* 
@@ -57,6 +58,8 @@ var firebug = {
     }
   },
   init:function(_css){
+    var iconTitle = "Click here or press F12, (CTRL|CMD)+SHIFT+L or SHIFT+ENTER to show Firebug Lite. CTRL|CMD click this icon to hide it.";
+  
     with(firebug){
       if(env.init || (env.detectFirebug && window.console && window.console.firebug)) {
         return;
@@ -70,6 +73,11 @@ var firebug = {
         new lib.element("link").attribute.set("rel","stylesheet").attribute.set("href",env.css).element
       );
 
+      /* 
+       * Firebug Icon
+       */
+      el.firebugIcon = new lib.element("div").attribute.set("id","firebugIconDiv").attribute.set("title",iconTitle).attribute.set("alt",iconTitle).event.addListener("mousedown",win.iconClicked).insert(document.body);
+      
       /* 
        * main interface
        */
@@ -301,6 +309,10 @@ var firebug = {
 
       el.main.environment.addStyle({ "display":env.debug&&'block'||'none' });
       el.mainiframe.environment.addStyle({ "display":env.debug&&'block'||'none' });
+      
+      if(env.showIconWhenHidden) {
+        el.firebugIcon.environment.addStyle({ "display": env.debug&&'none'||'block' });
+      }
     }  
   },
   inspect:function(){
@@ -323,6 +335,11 @@ var firebug = {
         el.mainiframe.environment.addStyle({
           "display": "none"
         });
+        if(env.showIconWhenHidden) {
+          el.firebugIcon.environment.addStyle({
+            "display": "block"
+          });
+        }
       }
     },
     show:function(){
@@ -333,7 +350,22 @@ var firebug = {
         el.mainiframe.environment.addStyle({
           "display": "block"
         });
+        if(env.showIconWhenHidden) {
+          el.firebugIcon.environment.addStyle({
+            "display": "none"
+          });
+        }
       }
+    },
+    iconClicked:function(_event) {
+        with(firebug) {
+            if(_event.ctrlKey==true||_event.metaKey==true) {
+                el.firebugIcon.environment.addStyle({ "display": "none" });
+                env.showIconWhenHidden=false;
+            } else {
+                win.show();
+            }
+        }
     },
     minimize:function(){
       with(firebug){

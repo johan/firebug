@@ -1,4 +1,8 @@
 == Firebug Lite 1.2 Change Log ==
+2009-02-21 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
+  * firebug-lite.js, firebug-lite.css, firebug_logo.png: Issue 1503: FBLite should have a visible sign it is running when starting hidden.
+                                                                     Added FBLite icon when hidden and firebug.env.showIconWhenHidden (default true).
+
 2009-02-18 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
   * firebug-lite.js: Fixed issue 1086 - FBLite can now be used locally over HTTPS if firebug.env.css is set.
   
