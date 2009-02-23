@@ -2177,8 +2177,6 @@ this.openNewTab = function(url)
 
 this.openWindow = function(windowType, url, features, params)
 {
-    var wm = this.CCSV("@mozilla.org/appshell/window-mediator;1", "nsIWindowMediator");
-
     var win = windowType ? wm.getMostRecentWindow(windowType) : null;
     if (win) {
       if ("initWithParams" in win)
