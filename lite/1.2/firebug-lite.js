@@ -84,15 +84,15 @@ var firebug = {
       if(env.init || (env.detectFirebug && window.console && window.console.firebug)) {
         return;
       }
-      
+
+      document.getElementsByTagName("head")[0].appendChild(
+        new lib.element("link").attribute.set("rel","stylesheet").attribute.set("type","text/css").attribute.set("href",env.css).element
+      );
+
       if(env.override){
         overrideConsole();
       }
       
-      document.getElementsByTagName("head")[0].appendChild(
-        new lib.element("link").attribute.set("rel","stylesheet").attribute.set("href",env.css).element
-      );
-
       /* 
        * Firebug Icon
        */
@@ -1188,7 +1188,7 @@ var firebug = {
                 if(_value.getAttribute){
                   if(_value.getAttribute&&_value.getAttribute("id"))
                     result.push("<span class='DarkBlue'>#"+_value.getAttribute("id")+"</span>");
-                  var elClass = _value.getAttribute(lib.env.ie?"className":"class")||"";
+                  var elClass = _value.getAttribute(lib.env.ie&&!lib.env.ie8?"className":"class")||"";
                   result.push(!elClass?"":"<span class='Red'>."+elClass.split(" ")[0]+"</span>");
                 }
                 result.push("</span>");
@@ -1927,7 +1927,10 @@ var firebug = {
       return object.build(_skipClonning);
     },
     IsArray:function(_object){
-      if(window.NodeList&&window.NamedNodeMap){
+      if(_object===null){
+        return false;
+      }
+      if(window.NodeList&&window.NamedNodeMap&&!pi.env.ie8){
         if(_object instanceof Array||_object instanceof NodeList||_object instanceof NamedNodeMap||(window.HTMLCollection&&_object instanceof HTMLCollection))
           return true;
       };
@@ -1964,7 +1967,7 @@ var firebug = {
           pi.util.Element.setClass(_element, pi.util.Element.getClass(_element) + " " + _class );
       },
       getClass:function(_element){
-        return _element.getAttribute(pi.env.ie?"className":"class")||"";
+        return _element.getAttribute(pi.env.ie&&!pi.env.ie8?"className":"class")||"";
       },
       hasClass:function(_element,_class){
         return pi.util.Array.indexOf(pi.util.Element.getClass(_element).split(" "),_class)>-1;
@@ -1979,7 +1982,12 @@ var firebug = {
         }
       },
       setClass:function(_element,_value){
-        _element.setAttribute(pi.env.ie?"className":"class", _value );
+        if(pi.env.ie8){
+          _element.setAttribute("className", _value );
+          _element.setAttribute("class", _value );
+        } else {
+          _element.setAttribute(pi.env.ie?"className":"class", _value );
+        }
       },
       toggleClass:function(){
         if(pi.util.Element.hasClass.apply(this,arguments))
