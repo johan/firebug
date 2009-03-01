@@ -45,6 +45,7 @@
 #Firebug .Nav .Tab { display:block; width:auto; float:left; padding:3px 6px 2px 6px; cursor:pointer; border:1px outset transparent !important; border:0; font:bold 11px Arial, Helvetica, sans-serif; color:#666; }
 #Firebug .Nav .Tab:hover, #Firebug .Nav .Selected { border:1px outset #ccc !important; border-top-color:transparent !important;  }
 #Firebug .Nav .Selected { color:#111; cursor:default; background-color:#f2f2f2; }
+#Firebug .Nav .Settings { float:right; }
 
 /*
  * inspector
@@ -179,6 +180,17 @@
 
 #Firebug .Left .STR { display:none; font:11px Verdana, Geneva, Arial, Helvetica, sans-serif; padding:5px; overflow:scroll; height:225px; }
 
+/*
+ * settings
+ */
+#Firebug .SettingsDiv {position:absolute;width:190px;top:60px;border:1px outset #000;-x-system-font:none;color:#000;font-family:"MS Sans Serif",Geneva,sans-serif;font-size:12px;font-size-adjust:none;font-stretch:normal;font-style:normal;font-variant:normal;font-weight:normal;line-height:normal;display:none;background-color:#FFF;}
+#Firebug .SettingsDiv .Header {background:#CCC url(firebug.gif) repeat scroll 0 -85px;height:30px;border-bottom:1px inset #000;}
+#Firebug .SettingsDiv .Header .Title {padding-top:10px;text-align:center;}
+#Firebug .SettingsDiv .Content {padding:5px;}
+#Firebug .SettingsDiv .Content .SettingsCBX{position:relative;top:2px;margin: 4px 5px 0 0; border:0 !important; padding:0 !important; height: 15px !important;}
+#Firebug .SettingsDiv .Content .ButtonsLeft {float:left;padding:10px 0px 5px 0px;}
+#Firebug .SettingsDiv .Content .ButtonsRight {float:right;padding:10px 0px 5px 0px;}
+ 
 /*
  * element highlighting
  */

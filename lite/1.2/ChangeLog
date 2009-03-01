@@ -1,5 +1,18 @@
 == Firebug Lite 1.2 Change Log ==
 2009-02-21 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
+  * firebug-lite.js, firebug-lite.css:
+      o Issue 1513 ... added:
+        - Settings dialog
+        - Settings storage cookie (stores settings, panel height, popup window positions etc.)
+        - firebug.env:
+            openInPopup
+            popupTop
+            popupLeft
+            popupWidth
+            popupHeight
+      o Various popup window bugfixes and performance improvements
+
+2009-02-21 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
   * firebug-lite.js, firebug-lite.css, firebug_logo.png: Issue 1503: FBLite should have a visible sign it is running when starting hidden.
                                                                      Added FBLite icon when hidden and firebug.env.showIconWhenHidden (default true).
 
