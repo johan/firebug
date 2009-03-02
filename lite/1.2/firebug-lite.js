@@ -1,5 +1,5 @@
 var firebug = {
-  version:[1.23,20090301],
+  version:[1.23,20090302],
   el:{}, 
   env:{ 
     "cache":{},
@@ -1771,13 +1771,19 @@ var firebug = {
         if(_event.keyCode==27 && d.inspector.enabled){
           d.inspector.toggle();
         } else if(_event.keyCode === 123 && _event.ctrlKey || _event.metaKey) {
-          win.newWindow();
+          if(env.isPopup){
+            win.dock();
+          }else {
+            win.newWindow();
+          }
         } else if(
             (_event.keyCode === 123 && !_event.ctrlKey && !_event.metaKey) || 
             (_event.keyCode === 76 && (_event.ctrlKey || _event.metaKey) && _event.shiftKey) ||
             (_event.keyCode === 13 && _event.shiftKey)) {
 
-          if (el.main.environment.getStyle("display") === 'none') {
+          if(env.isPopup){
+            win.dock();
+          } else if (el.main.environment.getStyle("display") === 'none') {
             win.show();
           } else {
             win.hide();

@@ -1,5 +1,8 @@
 == Firebug Lite 1.2 Change Log ==
 2009-02-21 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
+  * firebug-lite.js: Issue 1542: FBLite F12 etc should dock the popup instead of hiding the panel
+
+2009-02-21 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
   * firebug-lite.js, firebug-lite.css:
       o Issue 1513 ... added:
         - Settings dialog
