@@ -1,5 +1,5 @@
 var firebug = {
-  version:[1.23,20090302],
+  version:[1.23,20090303],
   el:{}, 
   env:{ 
     "cache":{},
@@ -297,6 +297,8 @@ var firebug = {
       el.settings.header = new lib.element("DIV").attribute.addClass("Header").insert(el.settings.container);
       el.settings.titlediv = new lib.element("DIV").attribute.addClass("Title").update("Firebug Lite Settings").insert(el.settings.header);
       el.settings.content = new lib.element("DIV").attribute.addClass("Content").insert(el.settings.container);
+      el.settings.progressDiv = new lib.element("DIV").attribute.addClass("ProgressDiv").insert(el.settings.content);
+      el.settings.progress = new lib.element("DIV").attribute.addClass("Progress").insert(el.settings.progressDiv);
       el.settings.cbxDebug = new lib.element("INPUT").attribute.set("type","checkbox").attribute.addClass("SettingsCBX").insert(el.settings.content);
       el.settings.content.child.add(document.createTextNode("Start visible"));
       new lib.element("BR").insert(el.settings.content);
@@ -320,7 +322,7 @@ var firebug = {
       el.settings.buttonRightDiv = new lib.element("DIV").attribute.addClass("ButtonsRight").insert(el.settings.buttonDiv);
       el.settings.cancelButton = new lib.element("INPUT").attribute.set("type","button").update("Cancel").event.addListener("click",settings.hide).insert(el.settings.buttonRightDiv);
       el.settings.buttonRightDiv.child.add(document.createTextNode(" "));
-      el.settings.saveButton = new lib.element("INPUT").attribute.set("type","button").update("Save").event.addListener("click",settings.formToSettings).insert(el.settings.buttonRightDiv);
+      el.settings.saveButton = new lib.element("INPUT").attribute.set("type","button").update("Save").event.addListener("click",settings.saveClicked).insert(el.settings.buttonRightDiv);
 
       lib.util.AddEvent(document,"mousemove",listen.mouse)("mousemove",win.resizer.resize)("mouseup",win.resizer.stop)("keydown",listen.keyboard);
 
@@ -396,12 +398,21 @@ var firebug = {
           "display": "block",
           "left": (posXY.X-125)+"px"
         });
+        el.settings.progressDiv.environment.addStyle({
+          "display": "none"
+        });
       }
     },
     hide: function() {
       firebug.el.settings.container.environment.addStyle({
         "display": "none"
       });
+    },
+    saveClicked: function() {
+      firebug.el.settings.progressDiv.environment.addStyle({
+        "display": "block"
+      });
+      setTimeout(firebug.settings.formToSettings,0);
     },
     formToSettings: function() {
       var fe=firebug.env,
