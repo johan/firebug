@@ -146,9 +146,7 @@ var firebug = {
         el.nav.scripts = new lib.element("A").attribute.addClass("Tab").update("Script").event.addListener("click",lib.util.Curry(d.navigate,window,"scripts")).insert(el.nav.container);
       }
       el.nav.dom = new lib.element("A").attribute.addClass("Tab").update("DOM").event.addListener("click",lib.util.Curry(d.navigate,env.isPopup && window.opener || window,"dom")).insert(el.nav.container);
-      if(!env.isPopup){
-        el.nav.xhr = new lib.element("A").attribute.addClass("Tab").update("XHR").event.addListener("click",lib.util.Curry(d.navigate,window,"xhr")).insert(el.nav.container);
-      }
+      el.nav.xhr = new lib.element("A").attribute.addClass("Tab").update("XHR").event.addListener("click",lib.util.Curry(d.navigate,window,"xhr")).insert(el.nav.container);
       el.nav.optionsdiv = new lib.element("DIV").attribute.addClass("Settings").insert(el.nav.container);
       el.nav.options = new lib.element("A").attribute.addClass("Tab").update("Options&nbsp;&or;").event.addListener("click", settings.show).insert(el.nav.optionsdiv);
       
@@ -1567,8 +1565,8 @@ var firebug = {
         with(firebug){
           for(var i=0,len=arguments.length; i<len; i++){
             try {
-              var item = arguments[i];
-              var val = eval(item);
+              var item = arguments[i],
+                  val = (env.isPopup?window.opener:window).eval(item);
               d.xhr.objects.push([item, val]);
             } catch(e){
               continue;
@@ -1601,8 +1599,8 @@ var firebug = {
           el.left.xhr.readystateContent.update("");
           el.left.xhr.responseContent.update("");
           for(var i=0,len=d.xhr.objects.length; i<len; i++){
-            var item = d.xhr.objects[i];
-            var response = item[1].responseText;
+            var item = d.xhr.objects[i],
+                response = item[1].responseText;
             if(Boolean(item[1])==false)continue;
             el.left.xhr.nameContent.child.add(new lib.element("span").update(item[0]));
             try {
@@ -1725,7 +1723,7 @@ var firebug = {
   listen: {
     addXhrObject:function(){
       with(firebug){
-        d.xhr.addObject.apply(window, el.button.xhr.textbox.environment.getElement().value.split(","));
+        d.xhr.addObject.apply(env.isPopup?window.opener:window, el.button.xhr.textbox.environment.getElement().value.split(","));
       }
     },
     consoleTextbox:function(_event){
@@ -1841,7 +1839,7 @@ var firebug = {
     xhrTextbox:function(_event){
       with(firebug){
         if(_event.keyCode==13){
-          d.xhr.addObject.apply(window, el.button.xhr.textbox.environment.getElement().value.split(","));
+          d.xhr.addObject.apply(env.isPopup?window.opener:window, el.button.xhr.textbox.environment.getElement().value.split(","));
         }
       }
     }
