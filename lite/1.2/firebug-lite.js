@@ -1,12 +1,12 @@
 var firebug = {
-  version:[1.23,20090303],
+  version:[1.23,20090306],
   el:{}, 
   env:{ 
     "cache":{},
     "extConsole":null,
     "css":"http://fbug.googlecode.com/svn/trunk/lite/1.2/firebug-lite.css", 
     "debug":true,
-    "detectFirebug":true,
+    "detectFirebug":false,
     "dIndex":"console", 
     "height":295,
     "hideDOMFunctions":false,

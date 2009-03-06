@@ -1,4 +1,8 @@
 == Firebug Lite 1.2 Change Log ==
+2009-03-06 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
+  * firebug-lite.js: Changed default for firebug.env.detectFirebug to false
+    progress.gif:    Corrected mime type
+
 2009-03-03 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
   * firebug-lite.js, firebug-lite.css, progress.gif: Fixed Issue 1544: Lite settings menu should have a "processing" gif
 
