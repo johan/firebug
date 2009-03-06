@@ -1053,18 +1053,17 @@ var firebug = {
       open:function(_index){
         with (firebug) {
           var item = (env.isPopup&&window.opener||window).document.styleSheets[_index],
-          uri = item.href,
-          dmn = getDomain(uri);
-          if(uri.indexOf("https?:\/\/")>-1&&dmn!=document.domain&&'www.'+dmn!=document.domain){
-            el.left.css.container.update("<em>Access to restricted URI denied</em>");
-            return;
-          }
-          var rules = item[lib.env.ie ? "rules" : "cssRules"], str = "";
-          for (var i=0; i<rules.length; i++) {
-            var item = rules[i];
-            var selector = item.selectorText;
-            var cssText = lib.env.ie?item.style.cssText:item.cssText.match(/\{(.*)\}/)[1];
-            str+=d.css.printRule(selector, cssText.split(";"), el.left.css.container);
+          uri = item.href;
+          try {
+            var rules = item[lib.env.ie ? "rules" : "cssRules"], str = "";
+            for (var i=0; i<rules.length; i++) {
+              var item = rules[i];
+              var selector = item.selectorText;
+              var cssText = lib.env.ie?item.style.cssText:item.cssText.match(/\{(.*)\}/)[1];
+              str+=d.css.printRule(selector, cssText.split(";"), el.left.css.container);
+            }
+          } catch(e) {
+            str="<em>Access to restricted URI denied</em>";
           }
           el.left.css.container.update(str);
         }
@@ -1502,32 +1501,33 @@ var firebug = {
         with(firebug){
           d.scripts.index = _index;
           el.left.scripts.container.update("");
-          var script = document.getElementsByTagName("script")[_index],uri = script.src||document.location.href,source,dmn=getDomain(uri);
-
-          if(uri.indexOf("https?:\/\/")>-1&&dmn!=document.domain&&"www."+dmn!=document.domain){
-            el.left.scripts.container.update("<em>Access to restricted URI denied</em>");
-            return;
-          }
-
-          if(uri!=document.location.href){
-            source = env.cache[uri]||lib.xhr.get(uri).responseText;
-            env.cache[uri] = source;
-          } else
-            source = script.innerHTML;
-          source = source.replace(/\n|\t|<|>/g,function(_ch){
-            return ({"<":"&#60;",">":"&#62;","\t":"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;","\n":"<br />"})[_ch];
-          });
-
-          if (!d.scripts.lineNumbers) 
-            el.left.scripts.container.child.add(
-                new lib.element("DIV").attribute.addClass("CodeContainer").update(source)
-            );
-          else {
-            source = source.split("<br />");
-            for (var i = 0; i < source.length; i++) {
-              el.left.scripts.container.child.add(new lib.element("DIV").child.add(new lib.element("DIV").attribute.addClass("LineNumber").update(i + 1), new lib.element("DIV").attribute.addClass("Code").update("&nbsp;" + source[i]), new lib.element("DIV").attribute.addClass('Clear')));
+          var script = document.getElementsByTagName("script")[_index],uri = script.src||document.location.href,source;
+          try {
+            if(uri!=document.location.href){
+              source = env.cache[uri]||lib.xhr.get(uri).responseText;
+              env.cache[uri] = source;
+            } else {
+              source = script.innerHTML;
+            }
+            source = source.replace(/\n|\t|<|>/g,function(_ch){
+              return ({"<":"&#60;",">":"&#62;","\t":"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;","\n":"<br />"})[_ch];
+            });
+          
+            if (!d.scripts.lineNumbers) 
+              el.left.scripts.container.child.add(
+                  new lib.element("DIV").attribute.addClass("CodeContainer").update(source)
+              );
+            else {
+              source = source.split("<br />");
+              for (var i = 0; i < source.length; i++) {
+                el.left.scripts.container.child.add(new lib.element("DIV").child.add(new lib.element("DIV").attribute.addClass("LineNumber").update(i + 1), new lib.element("DIV").attribute.addClass("Code").update("&nbsp;" + source[i]), new lib.element("DIV").attribute.addClass('Clear')));
+              };
             };
-          };
+          } catch(e) {
+            el.left.scripts.container.child.add(
+                new lib.element("DIV").attribute.addClass("CodeContainer").update("<em>Access to restricted URI denied</em>")
+            );
+          }
         }
       },
       toggleLineNumbers:function(){
@@ -1678,10 +1678,6 @@ var firebug = {
         }
       }
     }
-  },
-  getDomain:function(_url){
-    var match = _url&&_url.match(/https?:\/\/(www.)?([\.\w-_]+)/);
-    return match&&match[2]||'';
   },
   getFileName:function(_path){
     var match = _path&&_path.match(/[\w\-\.\?\=\&]+$/);
