@@ -1,5 +1,5 @@
 var firebug = {
-  version:[1.23,20090307],
+  version:[1.23,20090308],
   el:{}, 
   env:{ 
     "cache":{},
@@ -1792,7 +1792,18 @@ var firebug = {
     },
     mouse:function(_event){
       with(firebug){
-        var target = _event[lib.env.ie?"srcElement":"target"];
+        var target;
+        
+        if(document.elementFromPoint) {
+          target = document.elementFromPoint(_event.clientX, _event.clientY);
+        } else {
+          if(lib.env.ie) {
+            target = _event.srcElement;
+          } else {
+            target = _event.explicitOriginalTarget || _event.target;
+          }
+        }
+        
         if( d.inspector.enabled&&
           target!=document.body&&
           target!=document.firstChild&&

@@ -1,6 +1,9 @@
 == Firebug Lite 1.2 Change Log ==
 
 2009-03-07 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
+  * firebug-lite.js: Fixed issue 1554: Text nodes could not be accessed through the inspect button.
+
+2009-03-07 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
   * firebug-lite.js: Issue 1566: Added firebug.env.targetWindow variable to hold target window
 
 2009-03-06 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
