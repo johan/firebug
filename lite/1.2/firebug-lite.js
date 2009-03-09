@@ -657,10 +657,13 @@ var firebug = {
           }
 
           if (scriptPath) {
-            script = fe.popupWin.document.createElement('script'), done = false;
+            script = fe.popupWin.document.createElement('script');
+            done = false;
             script.type = 'text/javascript';
             script.src = scriptPath;
-
+            
+            fe.popupWin.document.write('<html><head><title>Firebug Lite - '+document.location.href+'</title></head><body></body></html>');
+            
             script[firebug.lib.env.ie?"onreadystatechange":"onload"] = function(){
               if(!done && (!firebug.lib.env.ie || this.readyState == "complete" || this.readyState=="loaded")){
                 done = true;
@@ -677,7 +680,6 @@ var firebug = {
             };
 
             if (!done && firebug.lib.env.webkit) {
-              fe.popupWin.document.write('<html><head></head><body></body></html>');
               interval = setInterval(function() {
                 if (fe.popupWin.firebug) {
                   clearInterval(interval);

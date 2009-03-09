@@ -1,4 +1,7 @@
 == Firebug Lite Change Log ==
+2009-03-09 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
+  * firebug-lite.js: Added title to popup window
+
 2009-03-09 Azer Koculu <azer@kodfabrik.com>
   * firebug-lite.js: Removed getElementPosXY method.
 		     Added toggle method to settings object.
