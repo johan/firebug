@@ -1,4 +1,7 @@
-== Firebug Lite 1.2 Change Log ==
+== Firebug Lite Change Log ==
+2009-03-09 Azer Koculu <azer@kodfabrik.com>
+  * firebug-lite.js: Removed getElementPosXY method.
+		     Added toggle method to settings object.
 
 2009-03-07 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
   * firebug-lite.js: Fixed issue 1554: Text nodes could not be accessed through the inspect button.

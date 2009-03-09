@@ -1,5 +1,5 @@
 var firebug = {
-  version:[1.23,20090308],
+  version:[1.23,20090309],
   el:{}, 
   env:{ 
     "cache":{},
@@ -151,7 +151,7 @@ var firebug = {
       el.nav.dom = new lib.element("A").attribute.addClass("Tab").update("DOM").event.addListener("click",lib.util.Curry(d.navigate,env.targetWindow,"dom")).insert(el.nav.container);
       el.nav.xhr = new lib.element("A").attribute.addClass("Tab").update("XHR").event.addListener("click",lib.util.Curry(d.navigate,window,"xhr")).insert(el.nav.container);
       el.nav.optionsdiv = new lib.element("DIV").attribute.addClass("Settings").insert(el.nav.container);
-      el.nav.options = new lib.element("A").attribute.addClass("Tab").update("Options&nbsp;&or;").event.addListener("click", settings.show).insert(el.nav.optionsdiv);
+      el.nav.options = new lib.element("A").attribute.addClass("Tab").update("Options&nbsp;&or;").event.addListener("click", settings.toggle).insert(el.nav.optionsdiv);
       
       /*
        * inspector
@@ -294,9 +294,11 @@ var firebug = {
        * settings
        */
       el.settings = {};
-      el.settings.container = new lib.element("DIV").attribute.addClass("SettingsDiv").insert(el.main);
-      el.settings.header = new lib.element("DIV").attribute.addClass("Header").insert(el.settings.container);
-      el.settings.titlediv = new lib.element("DIV").attribute.addClass("Title").update("Firebug Lite Settings").insert(el.settings.header);
+      el.settings.container = new lib.element("DIV").child.add(
+        new lib.element("DIV").attribute.addClass("Header").child.add(
+          new lib.element().attribute.addClass("Title").update('Firebug Lite Settings')
+        )
+      ).attribute.addClass("SettingsDiv").insert(el.main);
       el.settings.content = new lib.element("DIV").attribute.addClass("Content").insert(el.settings.container);
       el.settings.progressDiv = new lib.element("DIV").attribute.addClass("ProgressDiv").insert(el.settings.content);
       el.settings.progress = new lib.element("DIV").attribute.addClass("Progress").insert(el.settings.progressDiv);
@@ -389,25 +391,34 @@ var firebug = {
     }
   },
   settings:{
+    isVisible:false,
     show: function() {
       with(firebug){
-        var posXY=win.getElementPosXY(firebug.el.nav.options.element);
-      
+        var posXY=lib.util.Element.getPosition(firebug.el.nav.options.element);
         settings.refreshForm();
 
         el.settings.container.environment.addStyle({
           "display": "block",
-          "left": (posXY.X-125)+"px"
+          "left": (posXY.offsetLeft-125)+"px"
         });
         el.settings.progressDiv.environment.addStyle({
           "display": "none"
         });
+        firebug.settings.isVisible = true;
       }
     },
     hide: function() {
-      firebug.el.settings.container.environment.addStyle({
-        "display": "none"
-      });
+      with(firebug){
+        firebug.el.settings.container.environment.addStyle({
+          "display": "none"
+        });
+        firebug.settings.isVisible = false;
+      }
+    },
+    toggle: function(){
+      with(firebug){
+        settings[!settings.isVisible && 'show' || 'hide']();
+      }
     },
     saveClicked: function() {
       firebug.el.settings.progressDiv.environment.addStyle({
@@ -827,18 +838,6 @@ var firebug = {
         el.main.environment.addStyle({ "top":dim.height-el.main.environment.getSize().offsetHeight+Math.max(document.documentElement.scrollTop,document.body.scrollTop)+"px" });
         el.mainiframe.environment.addStyle({ "top":dim.height-el.main.environment.getSize().offsetHeight+Math.max(document.documentElement.scrollTop,document.body.scrollTop)+"px" });
       }
-    },
-    getElementPosXY:function(el) {
-      var X= 0, Y= 0;
-      while(el&&el.offsetLeft!==undefined){
-        X += el.offsetLeft;
-        Y += el.offsetTop;
-        el= el.offsetParent;
-      }
-      return {
-        "X":X,
-        "Y":Y
-      };
     }
   },
   d: {
@@ -1461,7 +1460,7 @@ var firebug = {
             "top":pos.offsetTop-(_bgInspector?0:2)+"px", "left":pos.offsetLeft-(_bgInspector?0:2)+"px",
             "display":"block"
           });
-
+9
           if(!_bgInspector){
             d.inspector.el = _element;
           }
@@ -1501,11 +1500,11 @@ var firebug = {
             } else {
               source = script.innerHTML;
             }
-            source = source.replace(/\n|\t|<|>/g,function(_ch){
-              return ({"<":"&#60;",">":"&#62;","\t":"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;","\n":"<br />"})[_ch];
+            source = source.replace(/<|>/g,function(_ch){
+              return ({"<":"&#60;",">":"&#62;"})[_ch];
             });
           
-            if (!d.scripts.lineNumbers) 
+            if(!d.scripts.lineNumbers) 
               el.left.scripts.container.child.add(
                   new lib.element("DIV").attribute.addClass("CodeContainer").update(source)
               );
@@ -1515,9 +1514,9 @@ var firebug = {
                 el.left.scripts.container.child.add(new lib.element("DIV").child.add(new lib.element("DIV").attribute.addClass("LineNumber").update(i + 1), new lib.element("DIV").attribute.addClass("Code").update("&nbsp;" + source[i]), new lib.element("DIV").attribute.addClass('Clear')));
               };
             };
-          } catch(e) {
+          } catch(e){
             el.left.scripts.container.child.add(
-                new lib.element("DIV").attribute.addClass("CodeContainer").update("<em>Access to restricted URI denied</em>")
+              new lib.element("DIV").attribute.addClass("CodeContainer").update("<em>Access to restricted URI denied</em>")
             );
           }
         }
