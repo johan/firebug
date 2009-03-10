@@ -10,6 +10,8 @@ const Ci = Components.interfaces;
 
 const httpObserver = Cc["@joehewitt.com/firebug-http-observer;1"].getService(Ci.nsIObserverService);
 const ioService = Cc["@mozilla.org/network/io-service;1"].getService(Ci.nsIIOService);
+const versionChecker = CCSV("@mozilla.org/xpcom/version-comparator;1", Ci.nsIVersionComparator);
+const appInfo = CCSV("@mozilla.org/xre/app-info;1", Ci.nsIXULAppInfo);
 
 // List of text content types. These content-types are cached.
 var contentTypes =
@@ -285,6 +287,17 @@ Firebug.TabCache.prototype = extend(Firebug.SourceCache.prototype,
         // be loaded from the Firefox cache) - known as double-load problem.
         // This new implementation (TabCache) uses nsITraceableListener so, all responses
         // should be already cached.
+
+        var ff307 = (versionChecker.compare(appInfo.version, "3.0.7") == 0);
+        if (FBTrace.DBG_CACHE)
+            FBTrace.sysout("tabCache.loadFromCache; Current Firefox version " +
+                appInfo.version + ", " + ff307);
+
+        // See issue: 1565 Site loading is slow or broken with Firebug 1.3.3 and Firefox 3.0.7
+        // xxxHonza: There is a bug in 3.0.7 that causes deadlock if FF cache is accessed by
+        // the following code.
+        if (ff307)
+            return "";
 
         // xxxHonza: let's try to get the response from the cache till #449198 is fixed.
         var stream;
