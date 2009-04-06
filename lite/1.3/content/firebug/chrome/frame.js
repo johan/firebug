@@ -80,6 +80,7 @@ Firebug.Chrome.Frame = extend(Firebug.Chrome,
     }
 });
 
+// TODO: inspect
 FBL.createFrame = Chrome.Frame.create;
 
 // ************************************************************************************************

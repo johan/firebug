@@ -3,10 +3,6 @@ FBL.ns(function() { with (FBL) {
 
 /*
 
-tabContext
-
-
-
 TODO: Better handling of switching tab contexts (selectedTab, rightPanelVisible)
 
 TODO: CommandLineAPI --> $, $$, dir, dirxml...
@@ -550,45 +546,45 @@ var selectedTab = 0; //Console
 FBL.frame = null;
 FBL.frameStyle = null;
 
-FBL.bottomVisible = true;
-FBL.rightPanelVisible = false;
-
-FBL.body = null;
-FBL.cmdLine = null;
-FBL.header = null;
-FBL.vSplitter = null;
-FBL.hSplitter = null;
-FBL.bottom = null;
-FBL.bodyL = null;
-FBL.bodyR = null;
-FBL.toolbarRFrame = null;
-FBL.toolbarRFrameStyle = null;
-
-FBL.vSplitterStyle = null;
-
-FBL.bodyStyle = null;
-FBL.bodyLStyle = null;
-FBL.bodyRStyle = null;
-
-FBL.consoleL = null;
-FBL.consoleR = null;
-
-FBL.HTMLL = null;
-
-FBL.tabL = null;
-FBL.tabR = null;
-
-FBL.consoleLStyle = null;
-FBL.tabLStyle = null;
-
-FBL.panelL = null;
-FBL.panelLStyle = null;
-
-FBL.consoleBody = null;
+//FBL.consoleBody = null;
 FBL.consoleBody = null;
 FBL.consoleBodyFrame = null;
 
-FBL.topHeight = null;
+var bottomVisible = true;
+var rightPanelVisible = false;
+
+var body = null;
+var cmdLine = null;
+var header = null;
+var vSplitter = null;
+var hSplitter = null;
+var bottom = null;
+var bodyL = null;
+var bodyR = null;
+var toolbarRFrame = null;
+var toolbarRFrameStyle = null;
+
+var vSplitterStyle = null;
+
+var bodyStyle = null;
+var bodyLStyle = null;
+var bodyRStyle = null;
+
+var consoleL = null;
+var consoleR = null;
+
+var HTMLL = null;
+
+var tabL = null;
+var tabR = null;
+
+var consoleLStyle = null;
+var tabLStyle = null;
+
+var panelL = null;
+var panelLStyle = null;
+
+var topHeight = null;
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
@@ -700,9 +696,9 @@ function onHSplitterMouseMove(event)
 {
     var frame = FBL.frame;
     var frameStyle = FBL.frameStyle;
-    var topHeight = FBL.topHeight;
-    var cmdLine = FBL.cmdLine;
-    var vSplitterStyle = FBL.vSplitterStyle;
+    //var topHeight = FBL.topHeight;
+    //var cmdLine = FBL.cmdLine;
+    //var vSplitterStyle = FBL.vSplitterStyle;
     
     var clientY = event.clientY;
     var win = document.all
@@ -787,12 +783,13 @@ var lastVSplitterMouseMove = 0;
 function onVSplitterMouseMove(event)
 {
     var frame = FBL.frame;
-    var bodyRStyle = FBL.bodyRStyle;
-    var bodyLStyle = FBL.bodyLStyle;
-    var panelLStyle = FBL.panelLStyle;
-    var tabLStyle = FBL.tabLStyle;
-    var toolbarRFrameStyle = FBL.toolbarRFrameStyle;
-    var vSplitterStyle = FBL.vSplitterStyle;
+    
+    //var bodyRStyle = FBL.bodyRStyle;
+    //var bodyLStyle = FBL.bodyLStyle;
+    //var panelLStyle = FBL.panelLStyle;
+    //var tabLStyle = FBL.tabLStyle;
+    //var toolbarRFrameStyle = FBL.toolbarRFrameStyle;
+    //var vSplitterStyle = FBL.vSplitterStyle;
     
     if (new Date().getTime() - lastVSplitterMouseMove > 40)
     {
@@ -867,8 +864,8 @@ function chromeLoad(doc)
     var rootNode = document.documentElement;
     
     /* Console event handlers */
-    FBL.addEvent(FBL.consoleL, 'mousemove', onListMouseMove);
-    FBL.addEvent(FBL.consoleL, 'mouseout', onListMouseOut);
+    FBL.addEvent(consoleL, 'mousemove', onListMouseMove);
+    FBL.addEvent(consoleL, 'mouseout', onListMouseOut);
 
     /*
      TODO: Organize 
@@ -882,6 +879,8 @@ function chromeLoad(doc)
     }
     
     */
+    
+    /*
     var html = [];
     FBL.Firebug.HTML.appendTreeNode(rootNode, html);
     FBL.HTMLL.innerHTML = '';
@@ -895,8 +894,10 @@ function chromeLoad(doc)
     input.style.cssText = "position: absolute; font: 11px Monaco, monospace; margin: 0; padding: 0; border: 1px solid #777;"
     input.style.display = "none";
     doc.body.appendChild(input);
+/**/
 
     /* HTML event handlers */
+    /*
     input.onblur = FBL.HTMLL.onscroll = function()
     {
         input.style.display = "none";
@@ -904,6 +905,7 @@ function chromeLoad(doc)
     FBL.addEvent(FBL.HTMLL, 'click', onTreeClick);
     FBL.addEvent(FBL.HTMLL, 'mousemove', onListMouseMove);
     FBL.addEvent(FBL.HTMLL, 'mouseout', onListMouseOut);
+/**/
     
 }
 

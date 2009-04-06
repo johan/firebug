@@ -60,6 +60,7 @@ Firebug.Chrome.Popup =
             doc.close();
         }
         
+        // TODO: inspect
         FBL.frame = popup;
         
         if (popup)
