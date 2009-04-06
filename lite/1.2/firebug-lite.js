@@ -1,5 +1,5 @@
 var firebug = {
-  version:[1.23,20090309],
+  version:[1.23,20090406],
   el:{}, 
   env:{ 
     "cache":{},
@@ -1494,7 +1494,7 @@ var firebug = {
         with(firebug){
           d.scripts.index = _index;
           el.left.scripts.container.update("");
-          var script = document.getElementsByTagName("script")[_index],uri = script.src||document.location.href,source;
+          var i,script = document.getElementsByTagName("script")[_index],uri = script.src||document.location.href,source;
           try {
             if(uri!=document.location.href){
               source = env.cache[uri]||lib.xhr.get(uri).responseText;
@@ -1506,13 +1506,13 @@ var firebug = {
               return ({"<":"&#60;",">":"&#62;"})[_ch];
             });
           
-            if(!d.scripts.lineNumbers) 
-              el.left.scripts.container.child.add(
-                  new lib.element("DIV").attribute.addClass("CodeContainer").update(source)
-              );
-            else {
-              source = source.split("<br />");
-              for (var i = 0; i < source.length; i++) {
+            source = source.split(/[\n\r]|<br \/>/);
+            if(!d.scripts.lineNumbers) {
+              for (i = 0; i < source.length; i++) {
+                el.left.scripts.container.child.add(new lib.element("DIV").attribute.addClass("Code").update(source[i]), new lib.element("DIV").attribute.addClass('Clear'));
+              };
+            } else {
+              for (i = 0; i < source.length; i++) {
                 el.left.scripts.container.child.add(new lib.element("DIV").child.add(new lib.element("DIV").attribute.addClass("LineNumber").update(i + 1), new lib.element("DIV").attribute.addClass("Code").update("&nbsp;" + source[i]), new lib.element("DIV").attribute.addClass('Clear')));
               };
             };

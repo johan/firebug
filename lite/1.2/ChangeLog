@@ -1,5 +1,8 @@
 == Firebug Lite Change Log ==
 2009-03-09 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
+  * firebug-lite.js: Issue 1637: Script missing linebreaks in IE7, line numbers broken in all browsers
+
+2009-03-09 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
   * firebug-lite.js: Added title to popup window
 
 2009-03-09 Azer Koculu <azer@kodfabrik.com>
