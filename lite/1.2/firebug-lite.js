@@ -1,5 +1,5 @@
 var firebug = {
-  version:[1.23,20090406],
+  version:[1.23,20090416],
   el:{}, 
   env:{ 
     "cache":{},
@@ -12,7 +12,7 @@ var firebug = {
     "hideDOMFunctions":false,
     "init":false, 
     "isPopup":false,
-    "liteFilename":"firebug-lite.js",
+    "liteFilename":null,
     "minimized":false,
     "openInPopup": false,
     "override":false,
@@ -657,13 +657,11 @@ var firebug = {
           }
 
           if (scriptPath) {
-            script = fe.popupWin.document.createElement('script');
             done = false;
+            script = fe.popupWin.document.createElement('script');
             script.type = 'text/javascript';
             script.src = scriptPath;
-            
-            fe.popupWin.document.write('<html><head><title>Firebug Lite - '+document.location.href+'</title></head><body></body></html>');
-            
+
             script[firebug.lib.env.ie?"onreadystatechange":"onload"] = function(){
               if(!done && (!firebug.lib.env.ie || this.readyState == "complete" || this.readyState=="loaded")){
                 done = true;
@@ -695,6 +693,9 @@ var firebug = {
               }, 10);
             };
 
+            if(!firebug.lib.env.ie) {
+              fe.popupWin.document.write('<html><head><title>Firebug Lite - '+document.location.href+'</title></head><body></body></html>');
+            }
             if (!done) {
               fe.popupWin.document.getElementsByTagName('head')[0].appendChild(script);
               firebug.el.main.environment.addStyle({"display": "none"});
@@ -2515,6 +2516,7 @@ var firebug = {
 })(firebug);
 
 with(firebug){
+  env.liteFilename = document.getElementsByTagName("script")[document.getElementsByTagName("script").length-1].src.match(/[^\\|^\/]+\.\w+\w?$/)[0];
   initConsole();
   lib.util.Init.push(firebug.init);
 }

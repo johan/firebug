@@ -1,4 +1,8 @@
 == Firebug Lite Change Log ==
+2009-04-16 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
+  * firebug-lite.js: Issue 1653: Removed reliability on firebug.liteFilename
+                     Fixed a security issue in IE 7 (introduced via Microsoft Update)
+
 2009-03-09 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
   * firebug-lite.js: Issue 1637: Script missing linebreaks in IE7, line numbers broken in all browsers
 
