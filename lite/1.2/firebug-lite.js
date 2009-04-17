@@ -1,5 +1,5 @@
 var firebug = {
-  version:[1.23,20090416],
+  version:[1.23,20090417],
   el:{}, 
   env:{ 
     "cache":{},
