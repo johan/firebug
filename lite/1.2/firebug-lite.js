@@ -6,7 +6,7 @@ var firebug = {
     "extConsole":null,
     "css":"http://fbug.googlecode.com/svn/trunk/lite/1.2/firebug-lite.css", 
     "debug":true,
-    "detectFirebug":false,
+    "detectFirebug":true,
     "dIndex":"console", 
     "height":295,
     "hideDOMFunctions":false,
@@ -151,7 +151,7 @@ var firebug = {
       el.nav.dom = new lib.element("A").attribute.addClass("Tab").update("DOM").event.addListener("click",lib.util.Curry(d.navigate,env.targetWindow,"dom")).insert(el.nav.container);
       el.nav.xhr = new lib.element("A").attribute.addClass("Tab").update("XHR").event.addListener("click",lib.util.Curry(d.navigate,window,"xhr")).insert(el.nav.container);
       el.nav.optionsdiv = new lib.element("DIV").attribute.addClass("Settings").insert(el.nav.container);
-      el.nav.options = new lib.element("A").attribute.addClass("Tab").update("Options&nbsp;&or;").event.addListener("click", settings.toggle).insert(el.nav.optionsdiv);
+      el.nav.options = new lib.element("A").attribute.addClass("Tab Button Options").update("Options&nbsp;&nbsp;&nbsp;&nbsp;").event.addListener("click", settings.toggle).insert(el.nav.optionsdiv);
       
       /*
        * inspector
@@ -399,7 +399,7 @@ var firebug = {
 
         el.settings.container.environment.addStyle({
           "display": "block",
-          "left": (posXY.offsetLeft-125)+"px"
+          "left": (posXY.offsetLeft-107)+"px"
         });
         el.settings.progressDiv.environment.addStyle({
           "display": "none"
