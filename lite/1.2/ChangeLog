@@ -1,4 +1,9 @@
 == Firebug Lite Change Log ==
+
+2009-04-19 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
+  * firebug-lite.js: Issue 1658: FB Lite HTML view body tag occasionally has multiple + signs
+                     Simplified discovery of body tag in HTML tree
+
 2009-04-16 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
   * firebug-lite.js: Issue 1653: Removed reliability on firebug.liteFilename
                      Fixed a security issue in IE 7 (introduced via Microsoft Update)

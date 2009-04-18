@@ -1,5 +1,5 @@
 var firebug = {
-  version:[1.23,20090417],
+  version:[1.23,20090418],
   el:{}, 
   env:{ 
     "cache":{},
@@ -1280,7 +1280,9 @@ var firebug = {
         var map = [],
         parentLayer,
         t,
+        link,
         tagName,
+        searchEl,
         parent = _element;
         while (parent) {
           map.push(parent);
@@ -1296,17 +1298,10 @@ var firebug = {
           env.targetWindow.firebug.d.inspector.toggle(false);
 
           for (t = 0; t < el.left.html.container.child.get().length; t++) {
-            if (el.left.html.container.child.get()[t].childNodes[0].childNodes[1].childNodes[0].childNodes[0]) {
-              if (el.left.html.container.child.get()[t].childNodes[0].childNodes[1].childNodes[0].childNodes[0].innerText) {
-                tagName = el.left.html.container.child.get()[t].childNodes[0].childNodes[1].childNodes[0].childNodes[0].innerText;
-              } else {
-                tagName = el.left.html.container.child.get()[t].childNodes[0].childNodes[1].childNodes[0].childNodes[0].textContent;
-              }
-
-              if (/<body/i.test(tagName)) {
-                parentLayer = el.left.html.container.child.get()[t].childNodes[1].lib;
-                break;
-              }
+            searchEl=el.left.html.container.child.get()[t];
+            if(/<body/i.test(searchEl.innerText||searchEl.textContent)) {
+              parentLayer = el.left.html.container.child.get()[t].childNodes[1].lib;
+              break;
             }
           }
 
@@ -1316,7 +1311,7 @@ var firebug = {
 
           for (t = 0, len = map.length; map[t]; t++) {
             if (t == len - 1) {
-              var link = parentLayer.environment.getElement().previousSibling.lib;
+              link = parentLayer.environment.getElement().previousSibling.lib;
               link.attribute.addClass("Selected");
 
               if (d.html.current) {
@@ -1400,6 +1395,7 @@ var firebug = {
 
               if(d.html.current==null&&item==document.body){
                 link.attribute.addClass("Selected");
+                link.attribute.addClass("Parent");
                 d.html.current = [item,link];
                 d.html.openHtmlTree(item,subContainer);
               }
@@ -1417,10 +1413,9 @@ var firebug = {
                   html.child.add(document.createTextNode(">"));
                   continue;
                 }
-                else 
-                  if (childLen > 0) {
-                    link.attribute.addClass("Parent");
-                  }
+                else if (childLen > 0) {
+                  link.attribute.addClass("Parent");
+                }
               }
             }
           };
