@@ -4,6 +4,7 @@
   * firebug-lite.js Fixed multiple issues with the HTML Tree:
       o Issue 1658: FB Lite HTML view body tag occasionally has multiple + signs
       o Issue 1659: FB Lite stops parsing childnodes when it reaches HTML comments
+      o Issue 1568: Firebug Lite: Inspect button often fails to scroll the html line into view when an element is clicked
       o Simplified discovery of body tag
       o Object tags displayed as function() in HTML tree
 

@@ -1313,6 +1313,10 @@ var firebug = {
             if (t == len - 1) {
               link = parentLayer.environment.getElement().previousSibling.lib;
               link.attribute.addClass("Selected");
+              
+              if(link.element.scrollIntoView) {
+                link.element.scrollIntoView(false);
+              }
 
               if (d.html.current) {
                 d.html.current[1].attribute.removeClass("Selected");
