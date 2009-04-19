@@ -7,6 +7,7 @@
       o Issue 1568: Firebug Lite: Inspect button often fails to scroll the html line into view when an element is clicked
       o Simplified discovery of body tag
       o Object tags displayed as function() in HTML tree
+      o Disabled trimming of text content, users expect to see things the same way they are displayed in Firebug.
 
 2009-04-16 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
   * firebug-lite.js: Issue 1653: Removed reliability on firebug.liteFilename
