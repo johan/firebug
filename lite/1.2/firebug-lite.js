@@ -1168,7 +1168,7 @@ var firebug = {
           isElement = _value!=undefined&&Boolean(_value.nodeName)&&Boolean(_value.nodeType);
 
           // number, string, boolean, null, function
-          if(_value==null||vtype=="number"||vtype=="string"||vtype=="boolean"||vtype=="function"||vtype=="regexp"||vtype=="date"){
+          if(_value==null||vtype=="number"||vtype=="string"||vtype=="boolean"||(vtype=="function"&&_value.nodeName!="OBJECT")||vtype=="regexp"||vtype=="date"){
             if(_value==null){
               result.push("<span class='Null'>null</span>");
             }else if (vtype=="regexp") {

@@ -5,6 +5,7 @@
       o Issue 1658: FB Lite HTML view body tag occasionally has multiple + signs
       o Issue 1659: FB Lite stops parsing childnodes when it reaches HTML comments
       o Simplified discovery of body tag
+      o Object tags displayed as function() in HTML tree
 
 2009-04-16 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
   * firebug-lite.js: Issue 1653: Removed reliability on firebug.liteFilename
