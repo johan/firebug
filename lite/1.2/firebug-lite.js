@@ -1,5 +1,5 @@
 var firebug = {
-  version:[1.23,20090418],
+  version:[1.23,20090419],
   el:{}, 
   env:{ 
     "cache":{},
@@ -1149,7 +1149,7 @@ var firebug = {
     highlight:function(_value,_inObject,_inArray,_link){
       with(firebug){
         var isArray = false, isHash, isElement = false, vtype=typeof _value, result=[];
-        
+
         if(vtype=="object"){
           if(Object.prototype.toString.call(_value) === "[object Date]"){
             vtype = "date";
@@ -1340,7 +1340,11 @@ var firebug = {
               returnParentVal = null,
               len = element.childNodes.length,
               nodeLink;
-
+          
+          if (!window.Node) {
+            window.Node = {TEXT_NODE:3,COMMENT_NODE:8};
+          }
+              
           if(parent!=el.left.html.container){
             nodeLink = parent.environment.getParent().lib.child.get()[0].lib;
             if (d.html.current) {
@@ -1352,7 +1356,7 @@ var firebug = {
             d.html.openProperties();
           };
 
-          if(element.childNodes&&(len==0||(len==1&&element.childNodes[0].nodeType==3)))return;
+          if(element.childNodes&&(len==0||(len==1&&element.childNodes[0].nodeType==Node.TEXT_NODE)))return;
           parent.clean();
 
           if(parent.opened&&Boolean(_returnParentElementByElement)==false){
@@ -1379,20 +1383,25 @@ var firebug = {
             } 
             var item = element.childNodes[i];
 
-            if (item.nodeType != 3){
+            if (item.nodeType != Node.TEXT_NODE){
               var container = new lib.element().attribute.addClass("Block").insert(parent), 
-              link = new lib.element("A").attribute.addClass("Link").insert(container), 
-              spacer = new lib.element("SPAN").attribute.addClass("Spacer").update("&nbsp;").insert(link),
-              html = new lib.element("SPAN").attribute.addClass("Content").update(d.highlight(item)).insert(link),
-              subContainer = new lib.element("DIV").attribute.addClass("SubContainer").insert(container),
-              view = lib.util.Element.getView(item);
+                  link = new lib.element("A").attribute.addClass("Link").insert(container), 
+                  spacer = new lib.element("SPAN").attribute.addClass("Spacer").update("&nbsp;").insert(link),
+                  html = new lib.element("SPAN").attribute.addClass("Content").update(d.highlight(item)).insert(link),
+                  subContainer = new lib.element("DIV").attribute.addClass("SubContainer").insert(container),
+                  view;
 
+              if(item.nodeType == Node.COMMENT_NODE) {
+                continue;
+              }
+              
+              view = lib.util.Element.getView(item);
               link.event.addListener("click", lib.util.Curry(d.html.openHtmlTree, window, item, subContainer, false));
               link.event.addListener("mouseover", lib.util.Curry(d.html.highlight, window, item, false));
               link.event.addListener("mouseout", lib.util.Curry(d.html.highlight, window, item, true));
-
+                            
               returnParentVal = returnParentEl == item ? subContainer : returnParentVal;
-
+    
               if(d.html.current==null&&item==document.body){
                 link.attribute.addClass("Selected");
                 link.attribute.addClass("Parent");
@@ -1406,8 +1415,8 @@ var firebug = {
 
               if (item.childNodes){
                 var childLen = item.childNodes.length;
-                if (childLen == 1 && item.childNodes[0].nodeType == 3) {
-                  html.child.add(document.createTextNode(item.childNodes[0].nodeValue.substring(0, 50)));
+                if (childLen == 1 && item.childNodes[0].nodeType == Node.TEXT_NODE) {
+                  html.child.add(document.createTextNode(item.childNodes[0].nodeValue));
                   html.child.add(document.createTextNode("</"));
                   html.child.add(new lib.element("span").attribute.addClass("Blue").update(item.nodeName.toLowerCase()).environment.getElement());
                   html.child.add(document.createTextNode(">"));
