@@ -1,5 +1,8 @@
 == Firebug Lite Change Log ==
 
+2009-04-20 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
+  * firebug-lite.js, firebug-lite.css: Issue 1664: Text node text trimming should be configurable in FB Lite
+ 
 2009-04-19 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
   * firebug-lite.js Fixed multiple issues with the HTML Tree:
       o Issue 1658: FB Lite HTML view body tag occasionally has multiple + signs

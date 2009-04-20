@@ -1,5 +1,5 @@
 var firebug = {
-  version:[1.23,20090419],
+  version:[1.23,20090420],
   el:{}, 
   env:{ 
     "cache":{},
@@ -23,7 +23,8 @@ var firebug = {
     "popupTop":1,
     "popupLeft":1,
     "popupWidth":undefined,
-    "popupHeight":undefined
+    "popupHeight":undefined,
+    "textNodeChars":0
   },
   initConsole:function(){
     /* 
@@ -319,6 +320,10 @@ var firebug = {
       new lib.element("BR").insert(el.settings.content);
       el.settings.cbxOpenInPopup = new lib.element("INPUT").attribute.set("type","checkbox").attribute.addClass("SettingsCBX").insert(el.settings.content);
       el.settings.content.child.add(document.createTextNode("Open in popup"));
+      new lib.element("BR").insert(el.settings.content);
+      el.settings.content.child.add(document.createTextNode("Trim textnode to "));
+      el.settings.textNodeChars = new lib.element("INPUT").attribute.set("type","text").attribute.addClass("SettingsTextbox").insert(el.settings.content);
+      el.settings.content.child.add(document.createTextNode(" chars"));
       el.settings.buttonDiv = new lib.element("DIV").insert(el.settings.content);
       el.settings.buttonLeftDiv = new lib.element("DIV").attribute.addClass("ButtonsLeft").insert(el.settings.buttonDiv);
       el.settings.resetButton = new lib.element("INPUT").attribute.set("type","button").update("Reset").event.addListener("click",settings.reset).insert(el.settings.buttonLeftDiv);
@@ -438,6 +443,7 @@ var firebug = {
       fe.override=elSet.cbxOverride.element.checked;
       fe.showIconWhenHidden=elSet.cbxShowIcon.element.checked;
       fe.openInPopup=elSet.cbxOpenInPopup.element.checked;
+      fe.textNodeChars=elSet.textNodeChars.element.value;
 
       if(fe.isPopup) {
         ofe=window.opener.firebug.env;
@@ -447,6 +453,7 @@ var firebug = {
         ofe.override=fe.override;
         ofe.showIconWhenHidden=fe.showIconWhenHidden;
         ofe.openInPopup=fe.openInPopup;
+        ofe.textNodeChars=fe.textNodeChars;
         ofe.popupTop=fe.popupTop;
         ofe.popupLeft=fe.popupLeft;
         ofe.popupWidth=fe.popupWidth;
@@ -457,6 +464,13 @@ var firebug = {
         settings.writeCookie();
         settings.hide();
         win.refreshDOM();
+        d.html.openHtmlTree();
+        if(env.isPopup) {
+          with(opener.firebug) {
+            win.refreshDOM();
+            d.html.openHtmlTree();
+          }
+        }
       }
     },
     reset: function() {
@@ -503,6 +517,9 @@ var firebug = {
                 case 'openInPopup':
                   openInPopup=value=="true";
                   break;
+                case 'textNodeChars':
+                  textNodeChars=isFinite(value)?parseInt(value,10):0;
+                  break;
                 case 'popupTop':
                   popupTop=parseInt(value,10);
                   break;
@@ -534,6 +551,7 @@ var firebug = {
         values+='override:'+override+',';
         values+='showIconWhenHidden:'+showIconWhenHidden+',';
         values+='openInPopup:'+openInPopup+',';
+        values+='textNodeChars:'+textNodeChars+',';
 
         if(isPopup) {
           if(window.outerWidth===undefined) {
@@ -571,6 +589,7 @@ var firebug = {
       elSet.cbxOverride.element.checked=fe.override;
       elSet.cbxShowIcon.element.checked=fe.showIconWhenHidden;
       elSet.cbxOpenInPopup.element.checked=fe.openInPopup;
+      elSet.textNodeChars.element.value=fe.textNodeChars;
     }
   },
   win:{
@@ -1420,7 +1439,11 @@ var firebug = {
               if (item.childNodes){
                 var childLen = item.childNodes.length;
                 if (childLen == 1 && item.childNodes[0].nodeType == Node.TEXT_NODE) {
-                  html.child.add(document.createTextNode(item.childNodes[0].nodeValue));
+                  if(isFinite(env.textNodeChars)&&parseInt(env.textNodeChars)>0) {
+                    html.child.add(document.createTextNode(item.childNodes[0].nodeValue.substring(0, env.textNodeChars)));
+                  } else {
+                    html.child.add(document.createTextNode(item.childNodes[0].nodeValue));
+                  }
                   html.child.add(document.createTextNode("</"));
                   html.child.add(new lib.element("span").attribute.addClass("Blue").update(item.nodeName.toLowerCase()).environment.getElement());
                   html.child.add(document.createTextNode(">"));

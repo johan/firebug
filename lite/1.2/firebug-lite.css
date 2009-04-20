@@ -191,6 +191,7 @@
 #Firebug .SettingsDiv .Header .Title {padding-top:10px;text-align:center;}
 #Firebug .SettingsDiv .Content {padding:5px;}
 #Firebug .SettingsDiv .Content .SettingsCBX{position:relative;top:2px;margin: 4px 5px 0 0; border:0 !important; padding:0 !important; height: 15px !important;}
+#Firebug .SettingsDiv .Content .SettingsTextbox{position:relative;top:2px;margin: 4px 5px 0 0; border:0 !important; padding:0 !important; height: 15px !important; width:35px !important; border:1px solid #000000 !important;}
 #Firebug .SettingsDiv .Content .ButtonsLeft {float:left;padding:10px 0px 5px 0px;}
 #Firebug .SettingsDiv .Content .ButtonsRight {float:right;padding:10px 0px 5px 0px;}
 #Firebug .SettingsDiv .Content .ProgressDiv {background-color:#FFF;width:100%;height:100%;position:absolute;left:0;top:0;z-index:1;opacity:.8;filter:alpha(opacity=80);display:none;}
