@@ -1,5 +1,8 @@
 == Firebug Lite Change Log ==
 
+2009-04-24 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
+  * firebug-lite.js: Issue 1683: Firebug lite delivered by Rails - Js Error
+
 2009-04-20 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
   * firebug-lite.js, firebug-lite.css: Issue 1664: Text node text trimming should be configurable in FB Lite
   * firebug-lite.js: Issue 1654: Internal variables should not be accessible to users

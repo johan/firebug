@@ -1,5 +1,5 @@
 var firebug = {
-  version:[1.23,20090420],
+  version:[1.23,20090424],
   el:{}, 
   env:{ 
     "css":"http://fbug.googlecode.com/svn/trunk/lite/1.2/firebug-lite.css", 
@@ -2549,7 +2549,7 @@ var firebug = {
 })(firebug);
 
 with(firebug){
-  env.liteFilename = document.getElementsByTagName("script")[document.getElementsByTagName("script").length-1].src.match(/[^\\|^\/]+\.\w+\w?$/)[0];
+  env.liteFilename = document.getElementsByTagName("script")[document.getElementsByTagName("script").length-1].src.match(/([^\\|^\/]+\.\w+\w?)(\?\w*)?$/)[0];
   initConsole();
   lib.util.Init.push(firebug.init);
 }
