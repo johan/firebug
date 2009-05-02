@@ -1,5 +1,5 @@
 var firebug = {
-  version:[1.23,20090424],
+  version:[1.23,20090502],
   el:{}, 
   env:{ 
     "css":"http://fbug.googlecode.com/svn/trunk/lite/1.2/firebug-lite.css", 
@@ -67,7 +67,9 @@ var firebug = {
     }
   },
   init:function(_css){
-    var iconTitle = "Click here or press F12, (CTRL|CMD)+SHIFT+L or SHIFT+ENTER to show Firebug Lite. CTRL|CMD click this icon to hide it.";
+    var i,
+        cssLoaded=false,
+        iconTitle = "Click here or press F12, (CTRL|CMD)+SHIFT+L or SHIFT+ENTER to show Firebug Lite. CTRL|CMD click this icon to hide it.";
   
     with(firebug){
       if(document.getElementsByTagName('html')[0].attributes.getNamedItem('debug')){
@@ -91,9 +93,18 @@ var firebug = {
         return;
       }
 
-      document.getElementsByTagName("head")[0].appendChild(
-        new lib.element("link").attribute.set("rel","stylesheet").attribute.set("type","text/css").attribute.set("href",env.css).element
-      );
+      for(i=0;i<document.styleSheets.length;i++) {
+        if(/firebug-lite\.css/i.test(document.styleSheets[i].href)) {
+          cssLoaded=true;
+          break;
+        }
+      }
+      
+      if(!cssLoaded){
+        document.getElementsByTagName("head")[0].appendChild(
+          new lib.element("link").attribute.set("rel","stylesheet").attribute.set("type","text/css").attribute.set("href",env.css).element
+        );
+      }
 
       if(env.override){
         overrideConsole();
