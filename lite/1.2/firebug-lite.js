@@ -938,7 +938,7 @@ var firebug = {
           try {
             if(_cmd==='console.firebug') {
               d.console.addLine().attribute.addClass("Arrow").update(firebug.version);
-            } else {  
+            } else {
               result = eval.call(window,_cmd);
               d.console.print(_cmd,result);
             }
@@ -1202,7 +1202,11 @@ var firebug = {
           // number, string, boolean, null, function
           if(_value==null||vtype=="number"||vtype=="string"||vtype=="boolean"||(vtype=="function"&&_value.nodeName!="OBJECT")||vtype=="regexp"||vtype=="date"){
             if(_value==null){
-              result.push("<span class='Null'>null</span>");
+              if(_value===undefined) {
+                result.push("<span class='Null'>undefined</span>");
+              } else {
+                result.push("<span class='Null'>null</span>");
+              }
             }else if (vtype=="regexp") {
               result.push("<span class='Maroon'>" + _value + "</span>");
             }else if (vtype=="date") {
