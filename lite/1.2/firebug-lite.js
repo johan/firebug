@@ -1819,14 +1819,14 @@ var firebug = {
       with(firebug){
         if(_event.keyCode==27 && d.inspector.enabled){
           d.inspector.toggle();
-        } else if(_event.keyCode === 123 && _event.ctrlKey || _event.metaKey) {
+        } else if(_event.keyCode === 123 && (_event.ctrlKey || _event.metaKey)) {
           if(internal.isPopup){
             win.dock();
           }else {
             win.newWindow();
           }
         } else if(
-            (_event.keyCode === 123 && !_event.ctrlKey && !_event.metaKey) || 
+            (_event.keyCode === 123 && (!_event.ctrlKey && !_event.metaKey)) ||
             (_event.keyCode === 76 && (_event.ctrlKey || _event.metaKey) && _event.shiftKey) ||
             (_event.keyCode === 13 && _event.shiftKey)) {
 
