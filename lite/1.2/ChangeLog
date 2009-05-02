@@ -1,5 +1,10 @@
 == Firebug Lite Change Log ==
 
+2009-05-02 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
+  * firebug-lite.js: Issue 1713: If FB Lite is loaded over https IE warns of unsecured items being loaded
+                     Issue 1703: Firebug lite incorrect reports the evaluation result of "undefined" as "null"
+                     Issue 1702: Mac OS X CMD key press toggles popup/docked Firebug window
+  
 2009-04-24 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
   * firebug-lite.js: Issue 1683: Firebug lite delivered by Rails - Js Error
 
@@ -9,12 +14,12 @@
  
 2009-04-19 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
   * firebug-lite.js Fixed multiple issues with the HTML Tree:
-      o Issue 1658: FB Lite HTML view body tag occasionally has multiple + signs
-      o Issue 1659: FB Lite stops parsing childnodes when it reaches HTML comments
-      o Issue 1568: Firebug Lite: Inspect button often fails to scroll the html line into view when an element is clicked
-      o Simplified discovery of body tag
-      o Object tags displayed as function() in HTML tree
-      o Disabled trimming of text content, users expect to see things the same way they are displayed in Firebug.
+                    Issue 1658: FB Lite HTML view body tag occasionally has multiple + signs
+                    Issue 1659: FB Lite stops parsing childnodes when it reaches HTML comments
+                    Issue 1568: Firebug Lite: Inspect button often fails to scroll the html line into view when an element is clicked
+                    Simplified discovery of body tag
+                    Object tags displayed as function() in HTML tree
+                    Disabled trimming of text content, users expect to see things the same way they are displayed in Firebug.
 
 2009-04-16 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
   * firebug-lite.js: Issue 1653: Removed reliability on firebug.liteFilename
@@ -28,7 +33,7 @@
 
 2009-03-09 Azer Koculu <azer@kodfabrik.com>
   * firebug-lite.js: Removed getElementPosXY method.
-		     Added toggle method to settings object.
+                     Added toggle method to settings object.
 
 2009-03-07 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
   * firebug-lite.js: Fixed issue 1554: Text nodes could not be accessed through the inspect button.
