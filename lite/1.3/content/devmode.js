@@ -1,76 +1,56 @@
 /*
 
-CHECK!!!!:
-
-IE - get element position (very fast). To use in BoxModel
-getBoundingClientRect
-
-QUESTIONS:
-
-  - Svn directory structure (beta)
-  - should I put these files in the SVN:
-    - compress.bat
-    - .psd (photoshop) file used to create the sprite file
-    
-  - The "build" folder doesn't exists in Firebug. 
-  - Files organized in folders.
-  - How to proceed when the console global variable is already defined?
-  
-
-
-
-  - Loading process
-    full:
-		- js with embedded HTML and CSS codes
-		- sprite image
-
-
-  
-HARD QUESTIONS
-  
-  - append versus extend
-  - Document Caching
-  
-
-TO THINK:
-
-  - how to auto-load FirebugLite + Extension in a single bookmarlet?
-
-  
-TODO: Define a pattern to fix the scope problem inside event handlers
-
-
-
-
-
-Partial Solved
-TODO: problem with the new Firebug for FF3, it seems that it doesn't allow 
-      appending the console namespace anymore.
-      
-TODO: CommandLineAPI --> $, $$, dir, dirxml...
-
-
-UI:
-TODO: Draw frame outside the screen to avoid flickering
-
+---Core----
 TODO: Better handling of switching tab contexts (selectedTab, rightPanelVisible)
-
-TODO: problem when resizing with the vSplitter, when it reaches the side of
-      the screen. Problem with negative pixel numbers.
-
-TODO: vSplitter is bigger than the frame in firefox. Problem with mouse scroll.
+TODO: Check if there's a problem using the Sizzle selector engine in the code
 
 
-Events:
-
-TODO: apply the onGlobalKeyDown handler to the Chrome Frame
-
-TODO: handle disble mouse wheel in IE
-
+---Events----
 TODO: handle disble text selection in IE
 
-TODO: opera problem with the TAB key in commandLine
 
+---ui----
+TODO: Opera problem with onunload and popups (context is not being destroyed)
+
+
+---Inspector---
+FIXED: Selected element in HTML tree isn't being highlighted (boxmodel)
+
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+
+---Core----
+FIXED: Revised "extend" and "append" functions
+
+FIXED: Problem with scope in event handlers. All functions that need to access
+       the "shared scope" must be assigned to a local variable.
+        
+        var onClick = function onClick(e)
+        {
+        ...
+
+FIXED: problem with the new Firebug for FF3, it seems that it doesn't allow 
+      extending the console namespace anymore.
+            
+FIXED: CommandLineAPI --> $, $$, dir, dirxml...
+
+
+---Events----
+FIXED: handle disble mouse wheel in IE
+
+FIXED: opera problem with the TAB key in commandLine
+
+FIXED: apply the onPressF12 handler to the Chrome Frame
+
+FIXED: problem when resizing with the fbVSplitter, when it reaches the side of
+      the screen. Problem with negative pixel numbers.
+
+FIXED: fbVSplitter is bigger than the frame in firefox. Problem with mouse scroll.
+
+
+---Other---
 
 FIXED: isScrolledToBottom is not working in Firefox, it seems that this is 
       happening because the scrollable panel is some pixels higher than
@@ -78,6 +58,75 @@ FIXED: isScrolledToBottom is not working in Firefox, it seems that this is
 
 FIXED: better handling of scope of commandLine.eval(), if you type "this" it will
       refer to the CommandLine module, and it should refer to "window" instead
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+
+ */
+
+
+/*
+ * 
+
+Geral
+  FBL.$
+  FBL.$$
+  $0
+  $1
+
+
+
+========================================================================
+===== Chrome States ====================================================
+========================================================================
+
+===== Window ===========================================================
+    - type (frame, popup)
+    - height
+    - width (popup)
+    - position (popup)
+
+===== Console ==========================================================
+    - console log history
+    - console commandLine history
+
+===== Tab ==============================================================
+  - active Panel
+
+
+
+========================================================================
+===== Panel States =====================================================
+========================================================================
+    - offset (scroll position)
+    - toolbarButtons (confirmar o que é isso)
+    - statusBar
+    
+    - isSearchable
+    - busca
+    
+    - consoleVisible
+    - sidePanelVisible
+
+===== SidePanel =======================================================
+    - offset (scroll position)
+    - sidePanelWidth
+    - activeSidePanel
+
+
+Eventos
+  - adição e remoção (controladores)
+  - painéis
+  - delegação
+    - clique
+    - inspeção
+
+  - Mover testes antigos (ferramentas de desenvolvimento: 
+    compress HTML, CSS e Build)
+
+
+
 
 
 <script language="JavaScript1.2">
@@ -100,6 +149,53 @@ document.onclick=reEnable
 }
 </script>
 
+*/
+
+  
+
+/*
+
+CHECK!!!!:
+
+IE - get element position (very fast). To use in BoxModel
+getBoundingClientRect OK!!!!
+
+QUESTIONS:
+  - Document Caching
+  - The "build" folder doesn't exists in Firebug. 
+  - Files organized in folders.
+  - How to proceed when the console global variable is already defined?
+  
+  - Loading process
+    full:
+		- js with embedded HTML and CSS codes
+		- sprite image
+
+TO THINK:
+  - how to auto-load FirebugLite + Extension in a single bookmarlet?
+
+  
+
+
+<script language="JavaScript1.2">
+
+function disabletext(e){
+return false
+}
+
+function reEnable(){
+return true
+}
+
+//if the browser is IE4+
+document.onselectstart=new Function ("return false")
+
+//if the browser is NS6
+if (window.sidebar){
+document.onmousedown=disabletext
+document.onclick=reEnable
+}
+</script>
 
 
 
@@ -145,6 +241,27 @@ function getXPath(node, path) {
 
 // Getting result
 document.evaluate("/html/body/div/ul/li[2]", document, null, XPathResult.ANY_TYPE, null ).iterateNext()
+
+
+
+
+---------------------------------------------------------
+
+//Returns true if it is a DOM node
+function isNode(o){
+  return (
+    typeof Node === "object" ? o instanceof Node : 
+    typeof o === "object" && typeof o.nodeType === "number" && typeof o.nodeName==="string"
+  );
+}
+
+//Returns true if it is a DOM element    
+function isElement(o){
+  return (
+    typeof HTMLElement === "object" ? o instanceof HTMLElement : //DOM2
+    typeof o === "object" && o.nodeType === 1 && typeof o.nodeName==="string"
+);
+}
 
 
 
@@ -154,7 +271,7 @@ document.evaluate("/html/body/div/ul/li[2]", document, null, XPathResult.ANY_TYP
 (function(){
 
 var bookmarletMode = false;
-var bookmarletURL = "http://fbug.googlecode.com/svn/lite/branches/firebug1.3/build/";
+var bookmarletURL = "http://fbug.googlecode.com/svn/trunk/lite/1.3/build/";
 
 var publishedURL = "";
 var baseURL = "";
@@ -163,27 +280,33 @@ var skinURL = "";
 
 var modules = 
 [
-    'lib.js',
+    "lib.js",
     
-    'firebug.js',
+    "firebug.js",
     
-    'firebug/object/reps.js',
-    'firebug/console.js',
-    'firebug/commandLine.js',
+    "firebug/object/reps.js",
+    "firebug/object/selector.js",
+    
+    "firebug/console.js",
+    "firebug/commandLine.js",
 
-    'firebug/chrome.js',
-    'firebug/chrome/frame.js',
-    'firebug/chrome/popup.js',
-    'firebug/chrome/injected.js',
+    "firebug/chrome.js",
+    "firebug/chrome/frame.js",
+    "firebug/chrome/popup.js",
+    //"firebug/chrome/injected.js",
+    "firebug/chrome/panel.js",
     
-    'firebug/boot.js'
+    "firebug/object/inspector.js",
+    "firebug/object/html.js",
+    
+    "firebug/boot.js"
 ];
 
 
-var isFirefox = navigator.userAgent.indexOf('Firefox') != -1;
-var isIE = navigator.userAgent.indexOf('MSIE') != -1;
-var isOpera = navigator.userAgent.indexOf('Opera') != -1;
-var isSafari = navigator.userAgent.indexOf('AppleWebKit') != -1;
+var isFirefox = navigator.userAgent.indexOf("Firefox") != -1;
+var isIE = navigator.userAgent.indexOf("MSIE") != -1;
+var isOpera = navigator.userAgent.indexOf("Opera") != -1;
+var isSafari = navigator.userAgent.indexOf("AppleWebKit") != -1;
 
 
 var API =
@@ -313,8 +436,8 @@ function findLocation()
     
     for(var i=0, c=head.childNodes, ci; ci=c[i]; i++)
     {
-        if ( ci.nodeName == 'SCRIPT' && 
-            (ci.src.indexOf('devmode.js') != -1) )
+        if ( ci.nodeName == "SCRIPT" && 
+            (ci.src.indexOf("devmode.js") != -1) )
         {
           
             if (reProtocol.test(ci.src)) {
@@ -354,7 +477,7 @@ function findLocation()
     }
     else
     {
-        throw 'Firebug error: Library path not found';
+        throw "Firebug error: Library path not found";
     }
 };
 
@@ -370,7 +493,7 @@ function loadScript(url)
        
     else
     {
-        var script = document.createElement('script');
+        var script = document.createElement("script");
         script.src = url;
         document.documentElement.firstChild.appendChild(script);
     }
