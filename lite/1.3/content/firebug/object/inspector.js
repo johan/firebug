@@ -52,7 +52,7 @@ Firebug.Inspector =
         fbBtnInspect.className = "fbBtnInspectActive";
         
         addEvent(document, "mousemove", Firebug.Inspector.onInspecting)
-        addEvent(document, "mousedown", Firebug.Inspector.onInspectingClick)
+        addEvent(document, "click", Firebug.Inspector.onInspectingClick)
     },
     
     stopInspecting: function()
@@ -62,7 +62,7 @@ Firebug.Inspector =
         
         if (outlineVisible) this.hideOutline();
         removeEvent(document, "mousemove", Firebug.Inspector.onInspecting)
-        removeEvent(document, "mousedown", Firebug.Inspector.onInspectingClick)
+        removeEvent(document, "click", Firebug.Inspector.onInspectingClick)
     },
     
     onInspectingClick: function(e)
@@ -77,6 +77,9 @@ Firebug.Inspector =
         
         Firebug.Console.log(targ);
         Firebug.Inspector.stopInspecting();
+        
+        cancelEvent(e, true);
+        return false;
     },
     
     onInspecting: function(e)
