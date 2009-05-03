@@ -1,23 +1,10 @@
 FBL.ns(function() { with (FBL) {
 // ************************************************************************************************
 
-Firebug.Chrome.Panel = 
-{
-    element: null,
-    
-    initialize: function()
-    {
-    },
-    
-    draw: null,
-    drawX: null,
-    drawY: null
-};
-
 Firebug.Panel = 
 {
-    Left: null,
-    Right: null,
+    panelNode: null,
+    panelBar: null,
 
     name: "HelloWorld",
     title: "Hello World!",
@@ -27,34 +14,20 @@ Firebug.Panel =
         //Firebug.Panel.initialize.apply(this, arguments);
     },
     
-    toggleCommandLine: function()
+    sync: function()
     {
-    },
-
-    toggleRightPanel: function()
-    {
+      
     }
     
 };
 
+//************************************************************************************************
+// Panel Management
 
-Firebug.PanelManager = 
+Firebug.registerPanel = function()
 {
-    register: function()
-    {
-    },
-    
-    open: function()
-    {
-    },
-    
-    clone: function()
-    {
-    }
-    
+  
 };
-
-Firebug.registerPanel = Firebug.PanelManager.register;
 
 // ************************************************************************************************
 }});
