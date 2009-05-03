@@ -90,7 +90,7 @@ var Chrome = Firebug.Chrome =
 {
     chromeHeight: 250,
     interfaceFile: "firebug.html",
-    injectedMode: false,
+    injectedMode: true,
     
     context: null,
     

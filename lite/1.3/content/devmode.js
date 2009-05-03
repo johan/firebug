@@ -293,7 +293,7 @@ var modules =
     "firebug/chrome.js",
     "firebug/chrome/frame.js",
     "firebug/chrome/popup.js",
-    //"firebug/chrome/injected.js",
+    "firebug/chrome/injected.js",
     //"firebug/panel.js",
     
     "firebug/object/inspector.js",
