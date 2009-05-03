@@ -84,41 +84,6 @@ append(ConsoleAPI,
         return logRow(html, "dir");
     },
     
-    old_dir: function(object)
-    {
-        var html = [];
-                    
-        var pairs = [];
-        for (var name in object)
-        {
-            try
-            {
-                pairs.push([name, object[name]]);
-            }
-            catch (exc)
-            {
-            }
-        }
-        
-        pairs.sort(function(a, b) { return a[0] < b[0] ? -1 : 1; });
-        
-        html.push('<table>');
-        for (var i = 0; i < pairs.length; ++i)
-        {
-            var name = pairs[i][0], value = pairs[i][1];
-            
-            html.push('<tr>', 
-            '<td class="propertyNameCell"><span class="propertyName">',
-                escapeHTML(name), '</span></td>', '<td><span class="propertyValue">');
-                
-            appendObject(value, html);
-            html.push('</span></td></tr>');
-        }
-        html.push('</table>');
-        
-        return logRow(html, "dir");
-    },
-    
     dirxml: function(node)
     {
         var html = [];
