@@ -42,12 +42,27 @@ var CommandLine = Firebug.CommandLine =
     
     initialize: function(doc)
     {
+        if (this._cmdElement)
+        {
+            this.destroy();
+        }
+        
         initializeCommandLineAPI();
 
-        this._cmdElement = doc.getElementById("commandLine");
+        this._cmdElement = doc.getElementById("fbCommandLine");
+        
+        if (isOpera)
+          fixOperaTabKey(this._cmdElement);
         
         addEvent(this._cmdElement, "keydown", this.onKeyDown);
         window.onerror = this.onError;
+    },
+    
+    destroy: function()
+    {
+      removeEvent(this._cmdElement, "keydown", this.onKeyDown);
+      window.onerror = null;
+      this._cmdElement = null
     },
 
     execute: function()
