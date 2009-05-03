@@ -52,7 +52,7 @@ Firebug.Inspector =
         fbBtnInspect.className = "fbBtnInspectActive";
         
         addEvent(document, "mousemove", Firebug.Inspector.onInspecting)
-        addEvent(document, "click", Firebug.Inspector.onInspectingClick)
+        addEvent(window, "click", Firebug.Inspector.onInspectingClick)
     },
     
     stopInspecting: function()
@@ -62,7 +62,7 @@ Firebug.Inspector =
         
         if (outlineVisible) this.hideOutline();
         removeEvent(document, "mousemove", Firebug.Inspector.onInspecting)
-        removeEvent(document, "click", Firebug.Inspector.onInspectingClick)
+        removeEvent(window, "click", Firebug.Inspector.onInspectingClick)
     },
     
     onInspectingClick: function(e)
@@ -145,7 +145,7 @@ Firebug.Inspector =
         
         var els = outlineElements;
         
-        els.fbOutlineT.style.top = Math.max(top-border, 0);
+        els.fbOutlineT.style.top = top-border;
         els.fbOutlineT.style.left = left;
         els.fbOutlineT.style.width = width;
   
@@ -153,13 +153,13 @@ Firebug.Inspector =
         els.fbOutlineB.style.left = left;
         els.fbOutlineB.style.width = width;
         
-        els.fbOutlineL.style.top = Math.max(top-border, 0);
-        els.fbOutlineL.style.left = Math.max(left-border, 0);
-        els.fbOutlineL.style.height = Math.min(height+2*border, document.body.scrollHeight-2*border);
+        els.fbOutlineL.style.top = top-border;
+        els.fbOutlineL.style.left = left-border;
+        els.fbOutlineL.style.height = height+2*border;
 
-        els.fbOutlineR.style.top = Math.max(top-border, 0);
-        els.fbOutlineR.style.left = Math.min(left+width, document.body.scrollWidth-border);
-        els.fbOutlineR.style.height = Math.min(height+2*border, document.body.scrollHeight-2*border);
+        els.fbOutlineR.style.top = top-border;
+        els.fbOutlineR.style.left = left+width;
+        els.fbOutlineR.style.height = height+2*border;
     },
     
     hideOutline: function()
