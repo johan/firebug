@@ -1,3 +1,12 @@
+.fbBtnInspectActive {
+  background: #aaa;
+  color: #fff !important;
+}
+
+#fbTest{
+  height: 100%;
+}
+
 /*----------------------------------------
  General
 ----------------------------------------*/
@@ -17,7 +26,8 @@ div.clear {
 /*----------------------------------------
  Master Layout
 ----------------------------------------*/
-#table {
+#fbChrome {
+  position: fixed;
   overflow: hidden;
   height: 100%;
   width: 100%;
@@ -25,11 +35,11 @@ div.clear {
   background: #fff;
 }
 
-#header {
+#fbTop {
   height: 50px;
 }
 
-#titlebar {
+#fbToolbar {
   position: absolute;
   z-index: 5;
   width: 100%;
@@ -39,7 +49,7 @@ div.clear {
   font-size: 11px;
 }
 
-#toolbar {
+#fbPanelBars {
   top: 27px;
   position: absolute;
   z-index: 8;
@@ -48,12 +58,12 @@ div.clear {
   height: 23px;
 }
 
-#body {
+#fbContent {
   height: 100%;
   vertical-align: top;
 }
 
-#bottom {
+#fbBottom {
   height: 18px;
   background: #fff;
 }
@@ -61,14 +71,14 @@ div.clear {
 /*----------------------------------------
  Sub-Layout 
 ----------------------------------------*/
-  /* titlebar ----------------------------*/
-#titlebarIcon {
+  /* fbToolbar ----------------------------*/
+#fbToolbarIcon {
   position: absolute;
   top: 5px;
   left: 10px;
 }
 
-#titlebarIcon a {
+#fbToolbarIcon a {
   display: block;
   height: 20px;
   width: 20px;
@@ -77,18 +87,18 @@ div.clear {
   cursor: default;
 }
 
-#titlebarButtons {
+#fbToolbarButtons {
   position: absolute;
   top: 5px;
   left: 35px;
 }
 
-#titlebarButtons span {
+#fbToolbarButtons span {
   margin: 0;
   padding: 0;
 }
 
-#titlebarButtons a {
+#fbToolbarButtons a {
   text-decoration: none;
   display: block;
   float: left;
@@ -98,7 +108,7 @@ div.clear {
   cursor: default;
 }
 
-#titlebarButtons a:hover {
+#fbToolbarButtons a:hover {
   color: #333;
   margin: 0;
   _margin: 0 1px 1px;
@@ -115,8 +125,8 @@ div.clear {
   z-index: 11;
 }
 
-/* toolbar -----------------------------*/
-#toolbarL {
+/* fbPanelBars -----------------------------*/
+#fbPanelBar1 {
   width: 255px; /* fixed width to avoid tabs breaking line */
   z-index: 8;
   left: 0;
@@ -126,7 +136,7 @@ div.clear {
   left: 4px;
 }
 
-#toolbarRFrame {
+#fbPanelBar2Box {
   background: url(sprite.png) #d9d9d9 0 -27px;
   position: absolute;
   height: 23px;
@@ -135,7 +145,7 @@ div.clear {
   right: 0;
 }
 
-#toolbarR {
+#fbPanelBar2 {
   position: absolute;
   width: 290px; /* fixed width to avoid tabs breaking line */
   height: 23px;
@@ -143,30 +153,26 @@ div.clear {
 }
 
 /* body --------------------------------*/
-#bodyL,#bodyR {
+#fbPanelBox1,#fbPanelBox2 {
   max-height: inherit;
   height: 100%;
   font-size: 11px;
 }
 
-#bodyR {
+#fbPanelBox2 {
   background: #fff;
 }
 
-#bodyR {
+#fbPanelBox2 {
   width: 300px;
   background: #fff;
 }
 
-#panelLFrame {
-  
+* html #fbPanel1 {
+  position: absolute;
 }
 
-#consoleL {
-  
-}
-
-#consoleR {
+#fbPanel2 {
   padding-left: 6px;
   background: #fff;
 }
@@ -178,12 +184,12 @@ div.clear {
   visibility: hidden !important;
 }
 
-/* bottom ------------------------------*/
-#command {
+/* fbBottom ------------------------------*/
+#fbCommand {
   height: 18px;
 }
 
-#commandFrame {
+#fbCommandBox {
   width: 100%;
   height: 19px;
   _height: 18px;
@@ -196,7 +202,7 @@ div.clear {
   border-top: 1px solid #ccc;
 }
 
-#commandIcon {
+#fbCommandIcon {
   position: absolute;
   color: #00f;
   top: 2px;
@@ -206,7 +212,7 @@ div.clear {
   z-index: 10;
 }
 
-#commandLine {
+#fbCommandLine {
   position: absolute;
   width: 100%;
   height: 19px;
@@ -219,7 +225,7 @@ div.clear {
   z-index: 9;
 }
 
-#bottom[fixFirefox] {
+#fbBottom[fixFirefox] {
   position: fixed;
   bottom: 0;
   left: 0;
@@ -227,11 +233,11 @@ div.clear {
   z-index: 10;
 }
 
-#bottom[fixFirefox] #command {
+#fbBottom[fixFirefox] #fbCommand {
   display: block;
 }
 
-div.FitHeight {
+div.fbFitHeight {
   padding: 0 1px;
   max-height: inherit;
   height: 100%;
@@ -241,7 +247,7 @@ div.FitHeight {
 /*----------------------------------------
  Layout Controls
 ----------------------------------------*/
-  /* titlebar buttons --------------------*/
+  /* fbToolbar buttons --------------------*/
 #mainButtons a {
   font-size: 1px;
   width: 16px;
@@ -268,7 +274,7 @@ div.FitHeight {
   background: url(sprite.png) -48px -119px;
 }
 
-/* toolbar tabs ------------------------*/
+/* fbPanelBars tabs ------------------------*/
 .tab {
   text-decoration: none;
   display: block;
@@ -323,7 +329,7 @@ div.FitHeight {
 }
 
 /* splitters ------------------------*/
-#hSplitter {
+#fbHSplitter {
   position: absolute;
   left: 0;
   top: 0;
@@ -335,7 +341,7 @@ div.FitHeight {
   z-index: 9;
 }
 
-.vSplitter {
+.fbVSplitter {
   background: #eee;
   color: #000;
   border: 1px solid #777;
@@ -380,7 +386,7 @@ pre.nodeCode {
   margin-left: -14px;
   float: left;
   _position: absolute;
-  _margin-left: -10px;
+  _margin-left: -11px;
   width: 9px;
   height: 9px;
   overflow: hidden;
@@ -400,11 +406,19 @@ div.objectBox-element {
 }
 
 .selectedElement{
-  background: #0A246A;
+  background: highlight;
   color: #fff !important;
 }
 .selectedElement span{
   color: #fff !important;
+}
+
+/* Webkit CSS Hack - bug in "highlight" named color" */ 
+@media screen and (-webkit-min-device-pixel-ratio:0) {
+    .selectedElement{
+      background: #316AC5;
+      color: #fff !important;
+    }
 }
 
 /************************************************************************************************/
@@ -620,11 +634,11 @@ div.objectBox-element {
   display: none !important;
 }
 
-.FirebugPopup #hSplitter {
+.FirebugPopup #fbHSplitter {
   display: none !important;
 }
 
-.FirebugPopup #commandFrame {
+.FirebugPopup #fbCommandBox {
   height: 18px !important;
   _height: 17px !important;
 }
