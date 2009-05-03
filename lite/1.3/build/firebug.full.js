@@ -4122,3 +4122,4 @@ Firebug.HTML =
 }});
 
 FBL.initialize();
+FBL.Firebug.Chrome.toggle(true);

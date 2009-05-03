@@ -270,7 +270,7 @@ function isElement(o){
 
 (function(){
 
-var bookmarletMode = false;
+var bookmarletMode = true;
 var bookmarletURL = "http://fbug.googlecode.com/svn/trunk/lite/1.3/build/";
 
 var publishedURL = "";
