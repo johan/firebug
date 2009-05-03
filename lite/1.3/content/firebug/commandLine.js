@@ -309,32 +309,6 @@ function initializeCommandLineAPI()
         if (!window[m])
             FBL.CommandLineAPI[m] = api[m];
 }
-    
-
-
-/*
-OPERA TAB bug
-function handleBlur(e) {
-  if (this.lastKey == 9)
-    this.focus();
-}
-
-function handleKeyDown(e) {
-  this.lastKey = e.keyCode;
-}
-
-function handleFocus(e) {
-  this.lastKey = null;
-}
-
-window.onload = function() {
-  var elm = document.getElementById('myTextarea');
-  elm.onfocus = handleFocus;
-  elm.onblur = handleBlur;
-  elm.onkeydown = handleKeyDown;
-};
-      
-/**/
 
 
 var reOpenBracket = /[\[\(\{]/;
