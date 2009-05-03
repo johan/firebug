@@ -110,6 +110,25 @@ this.emptyFn = function(){};
 
 
 
+//************************************************************************************************
+// DOM
+
+this.$ = function(id, doc)
+{
+    if (doc)
+        return doc.getElementById(id);
+    else
+        return document.getElementById(id);
+};
+
+this.UI$ = function(id)
+{
+    if (FBL.Firebug.Chrome.document)
+        return FBL.Firebug.Chrome.document.getElementById(id);
+    else
+        return undefined
+};
+
 // ************************************************************************************************
 // Event
 
@@ -119,7 +138,7 @@ this.addEvent = function(object, name, handler)
         object.attachEvent("on"+name, handler);
     else
         object.addEventListener(name, handler, false);
-}
+};
 
 this.removeEvent = function(object, name, handler)
 {
@@ -127,7 +146,7 @@ this.removeEvent = function(object, name, handler)
         object.detachEvent("on"+name, handler);
     else
         object.removeEventListener(name, handler, false);
-}
+};
 
 this.cancelEvent = function(e, preventDefault)
 {
@@ -146,8 +165,34 @@ this.cancelEvent = function(e, preventDefault)
     else
         e.stopPropagation();
                 
-}
+};
 
+
+//************************************************************************************************
+// Opera Tab Fix
+
+function onOperaTabBlur(e)
+{
+    if (this.lastKey == 9)
+      this.focus();
+};
+
+function onOperaTabKeyDown(e)
+{
+  this.lastKey = e.keyCode;
+};
+
+function onOperaTabFocus(e)
+{
+    this.lastKey = null;
+};
+
+this.fixOperaTabKey = function(el)
+{
+    el.onfocus = onOperaTabFocus;
+    el.onblur = onOperaTabBlur;
+    el.onkeydown = onOperaTabKeyDown;
+};
 
 
 // ************************************************************************************************
