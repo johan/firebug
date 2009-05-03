@@ -1,109 +1,7 @@
 FBL.ns(function() { with (FBL) {
 // ************************************************************************************************
 
-/*
-
-TODO: Better handling of switching tab contexts (selectedTab, rightPanelVisible)
-
-TODO: CommandLineAPI --> $, $$, dir, dirxml...
-
-TODO: apply the onGlobalKeyDown handler to the Chrome Frame
-
-TODO: problem when resizing with the vSplitter, when it reaches the side of
-      the screen. Problem with negative pixel numbers.
-
-TODO: vSplitter is bigger than the frame in firefox. Problem with mouse scroll.
-
-TODO: problem with the new Firebug for FF3, it seems that it doesn't allow 
-      extending the console namespace anymore.
-      
-TODO: handle disble mouse wheel in IE
-
-TODO: handle disble text selection in IE
-
-TODO: opera problem with the TAB key in commandLine
-
-
-FIXED: isScrolledToBottom is not working in Firefox, it seems that this is 
-      happening because the scrollable panel is some pixels higher than
-      it should be.
-
-FIXED: better handling of scope of commandLine.eval(), if you type "this" it will
-      refer to the CommandLine module, and it should refer to "window" instead
-
-
-<script language="JavaScript1.2">
-
-function disabletext(e){
-return false
-}
-
-function reEnable(){
-return true
-}
-
-//if the browser is IE4+
-document.onselectstart=new Function ("return false")
-
-//if the browser is NS6
-if (window.sidebar){
-document.onmousedown=disabletext
-document.onclick=reEnable
-}
-</script>
-
-
-
-
-*/
-
-/*
-
-
-
-function getXPath(node, path) {
-  path = path || [];
-  if(node.parentNode) {
-    path = getXPath(node.parentNode, path);
-  }
-
-  if(node.previousSibling) {
-    var count = 1;
-    var sibling = node.previousSibling
-    do {
-      if(sibling.nodeType == 1 && sibling.nodeName == node.nodeName) {count++;}
-      sibling = sibling.previousSibling;
-    } while(sibling);
-    if(count == 1) {count = null;}
-  } else if(node.nextSibling) {
-    var sibling = node.nextSibling;
-    do {
-      if(sibling.nodeType == 1 && sibling.nodeName == node.nodeName) {
-        var count = 1;
-        sibling = null;
-      } else {
-        var count = null;
-        sibling = sibling.previousSibling;
-      }
-    } while(sibling);
-  }
-
-  if(node.nodeType == 1) {
-    path.push(node.nodeName.toLowerCase() + (node.id ? "[@id='"+node.id+"']" : count > 0 ? "["+count+"]" : ''));
-  }
-  return path;
-};
-
-
-// Getting result
-document.evaluate("/html/body/div/ul/li[2]", document, null, XPathResult.ANY_TYPE, null ).iterateNext()
-
-
-
-
-*/
-
-
+  
 // ************************************************************************************************
 // Chrome API
 
@@ -128,77 +26,58 @@ append(ChromeAPI,
         Chrome.toggle(true, true);
     },    
     
-    toggleCommandLine: function()
-    {
-        bottomVisible = !bottomVisible;
-        bottom.className = bottomVisible ? "" : "hide";
-        
-        if (isFirefox)
-            setTimeout(Chrome.draw, 0);
-            
-        frame.focus();
-    },
-    
-    
-    toggleRightPanel: function()
-    {
-        rightPanelVisible = !rightPanelVisible;
-        
-        bodyR.className = rightPanelVisible ? "" : "hide"; 
-        toolbarRFrame.className = rightPanelVisible ? "" : "hide";
-         
-        if (isIE) 
-        {
-            if (rightPanelVisible)
-                vSplitterStyle.right = 300 + "px";
-                
-            Chrome.draw();
-        }
-        
-    },
-    
-    
     showTab: function(tabName)
     {
         if (tabName == 0 && tabName != selectedTab)
         {
-            ChromeAPI.toggleRightPanel();
-            ChromeAPI.toggleCommandLine();
-
             selectedTab = 0;
-            tabL = consoleL;
+            tabL = fbConsole;
             tabLStyle = tabL.style;
             
-            consoleL.style.display = "block";
-            HTMLL.style.display = "none";
+            fbConsole.style.display = "block";
+            fbHTML.style.display = "none";
             
-            Chrome.doc.getElementById("tc").className = "tab selectedTab";
-            Chrome.doc.getElementById("th").className = "tab";
-
+            Chrome.document.getElementById("tc").className = "tab selectedTab";
+            Chrome.document.getElementById("th").className = "tab";
+            
+            toggleCommandLine();
+            toggleRightPanel();
             Chrome.draw();
+
         }
         else if (tabName == 1 && tabName != selectedTab)
         {
             selectedTab = 1;
-            tabL = HTMLL;
+            tabL = fbHTML;
             tabLStyle = tabL.style;
             
-            HTMLL.style.display = "block";
-            consoleL.style.display = "none";
+            fbHTML.style.display = "block";
+            fbConsole.style.display = "none";
 
-            Chrome.doc.getElementById("tc").className = "tab";
-            Chrome.doc.getElementById("th").className = "tab selectedTab";
+            Chrome.document.getElementById("tc").className = "tab";
+            Chrome.document.getElementById("th").className = "tab selectedTab";
 
-            ChromeAPI.toggleRightPanel();
-            ChromeAPI.toggleCommandLine();
-
+            toggleRightPanel();
+            toggleCommandLine();
             Chrome.draw();
         }
+        
+    },
+    
+    startInspecting: function()
+    {
+        Firebug.Inspector.startInspecting();
+    },
+    
+    stopInspecting: function(el)
+    {
+        Firebug.Inspector.stopInspecting();
     },
     
     clear: function()
     {
         ConsoleAPI.clear();
+        Chrome.draw();
     }
     
 });
@@ -211,200 +90,51 @@ var Chrome = Firebug.Chrome =
 {
     chromeHeight: 250,
     interfaceFile: "firebug.html",
-    injectedMode: true,
+    injectedMode: false,
     
     context: null,
     
-    onReady: function() {
+    onReady: function()
+    {
         addEvent(
             document, 
             isIE || isSafari ? "keydown" : "keypress", 
-            onGlobalKeyDown
+            onPressF12
         );
     },
-    
-    onChromeReady: function()
-    {
-        chromeReady = true;
-        
-  	    var frame = FBL.frame;
-  	        
-  	    if (Chrome.context == Chrome.Frame)
-  	    {
-  	        Chrome.doc = frame.contentWindow.document;
-  	        Chrome.win = frame.contentWindow.window;
-  	    }
-  	    else
-  	    {
-  	        Chrome.doc = frame.document;
-  	        Chrome.win = frame.window;
-  	    }
-  	    
-  	    Chrome.win.FB = FBL.ChromeAPI;
-        
-  	    Chrome.context.onReady(Chrome.doc);
-  	    Chrome.initializeContext(Chrome.doc, Chrome.context);
-  	    
-  	    Chrome.draw();    
-	  },
-    
     
     destroy: function()
     {
         if (Chrome.context == Chrome.Popup)
         {
-            Chrome.finalizeContext(Chrome.Popup);
+            destroyContext(Chrome.Popup);
 
             var last = Chrome.Frame;
             if(last.element)
             {
-                Chrome.initializeContext(last.document, last);
+                createContext(last.document, last);
                 last.isVisible = false;
                 frame.style.visibility = "hidden";
             }
-	            
+            else
+            {
+              chromeReady = false;
+            }
         }
         else if (Chrome.context == Chrome.Frame)
         {
             chromeReady = false;
-            Chrome.finalizeContext(Chrome.Frame);
+            destroyContext(Chrome.Frame);
         }
     },
     
-    initializeContext: function(doc, context)
-    {
-        if (Firebug.CommandLine)
-            Firebug.CommandLine.initialize(doc);
-            
-        this.context = context;
-        this.context.document = doc;
-        this.doc = doc;
-        
-        body = doc.getElementById("body");
-        cmdLine = doc.getElementById("commandLine");
-        header = doc.getElementById("header");
-        bottom = doc.getElementById("bottom");
-        bodyL = doc.getElementById("bodyL");
-        bodyR = doc.getElementById("bodyR");
-        hSplitter = doc.getElementById("hSplitter");
-        vSplitter = doc.getElementById("vSplitter");
-        toolbarRFrame = doc.getElementById("toolbarRFrame");
-        toolbarRFrameStyle = toolbarRFrame.style;
-        
-        vSplitterStyle = vSplitter.style;
-        
-        bodyStyle  = body.style;
-        bodyLStyle = bodyL.style;
-        bodyRStyle = bodyR.style;
-        
-        panelL = doc.getElementById("panelL");
-        panelLStyle = panelL.style;
-
-        tabL = consoleL = doc.getElementById("consoleL");
-        tabLStyle = consoleLStyle = consoleL.style;
-        
-        tabR = consoleR = doc.getElementById("consoleR");
-        
-        HTMLL = doc.getElementById("HTMLL");
-    
-        consoleBody = consoleL;
-        consoleBody = consoleL;
-        consoleBodyFrame = panelL;
-        
-        topHeight = header.offsetHeight;
-    
-        vSplitter.onmousedown = onVSplitterMouseDown;
-        hSplitter.onmousedown = onHSplitterMouseDown;
-        
-        // TODO: refactor
-        selectedTab = 0; //Console
-        rightPanelVisible = false;
-        // TODO: refactor
-    
-        if (context == this.Popup)
-        {
-            frame = doc.body;
-            
-            if (isIE)
-            {
-                this.adjustPanelWitdh();
-              
-                var table = doc.getElementById("table");
-                table.style.position = "absolute";
-                table.style.marginTop = "-1px";
-            }
-        }
-        else
-        {
-            frame = document.getElementById("FirebugChrome");
-            frameStyle = frame.style;
-            
-            // TODO: If the document body has some margin (IE default behaviour), the 
-            // window won't fit correctly, so an event handler should be added
-            if (isIE)
-            {
-              this.adjustPanelWitdh();
-              
-              var margin = document.body.currentStyle.marginRight;
-              
-              if (margin == "10px")
-                  frameStyle.width = "102%";
-              //else
-              //  alert(margin + "TODO: need to add a onresize event to adjust the window width");
-
-            }
-        }
-        
-        var controllers = context.controllers;
-        if(controllers)
-            for(var i=0, ci; ci=controllers[i]; i++)
-                addEvent.apply(this, ci);
-                
-
-        if (isOpera) this.draw();
-
-            
-        // TODO: integrate code
-        
-        //OUT      = doc.getElementById("consoleL");
-        //OUT.style.padding = "4px 4px 4px 7px";
-        if(!!chromeLoad) chromeLoad(doc);
-        /**/
-        
-    },
-
-    finalizeContext: function(context)
-    {
-        chromeReady = false;
-        this.context.element = null;
-        this.frame = null;
-        
-        body      = null;
-        cmdLine   = null;
-        header    = null;
-        vSplitter = null;
-        hSplitter = null;
-        bottom    = null;
-        bodyR     = null;
-        
-        bodyRStyle = null;
-        bodyStyle = null;
-    
-        topHeight = null;
-        
-        var controllers = context.controllers;
-        if(controllers)
-            for(var i=0, ci; ci=controllers[i]; i++)
-              removeEvent.apply(this, ci);
-    },
-    
-    //
     toggle: function(forceOpen, popup)
     {
         if(popup)
         {
-            var context = Chrome.context = this.Popup; 
-            if(frame)
+            var context = Chrome.context = this.Popup;
+            
+            if(chromeReady)
             {
                 if(!context.element)
                 {     
@@ -424,10 +154,13 @@ var Chrome = Firebug.Chrome =
         }
         else
         {
+            // If the context is a popup, ignores the toggle process
+            if (Chrome.context == Chrome.Popup) return;
+            
             var context = Chrome.context = this.Frame; 
             context.isVisible = forceOpen || !context.isVisible;
             
-            if(frame)
+            if(chromeReady)
             { 
                 if(context.element)
                 {
@@ -453,74 +186,43 @@ var Chrome = Firebug.Chrome =
         }
     },
 
-
     draw: function()
     {
         var height = frame.clientHeight;
-        //var height = frame.ownerDocument.defaultView.innerHeight;
-        
-        var cmdHeight = cmdLine.offsetHeight;
+        var cmdHeight = commandLineVisible ? fbCommandLine.offsetHeight : 0;
         var fixedHeight = topHeight + cmdHeight;
         var y = Math.max(height, topHeight);
         
+        fbVSplitterStyle.height = y - 27 - cmdHeight + "px"; 
+        frame.style.height = y + "px";
+        fbContentStyle.height = Math.max(y - fixedHeight, 0)+ "px";
 
-
-
-        //console.log("draw() -- height: %d", height, frame);
-        
+        // Fix Firefox problem with table rows with 100% height (fit height)
         if (isFirefox)
-            setTimeout(function(){
-                y = Chrome.win.innerHeight;
-                frame.style.height = y + "px";
-                body.style.maxHeight = Math.max(y -1 - fixedHeight, 0)+ "px";
-
-
-
-        /*
+        {
+          fbContentStyle.maxHeight = Math.max(y - fixedHeight, 0)+ "px";
+        }
+  
         var width = frame.offsetLeft + frame.clientWidth;
-        var x = width - vSplitter.offsetLeft;
+        var x = rightPanelVisible ? sidePanelWidth : 0;
         
-        bodyRStyle.width = x + "px";
-        vSplitterStyle.right = x - 6 + "px";
-        toolbarRFrameStyle.width = x + "px";
-        bodyLStyle.width = width - x + "px";                
-        panelLStyle.width = width - x + "px";
-        consoleLStyle.width = width -20 - x + "px";        
-        /**/
+        fbPanelBox1Style.width = Math.max(width - x, 0) + "px";
+        fbPanel1Style.width = Math.max(width - x, 0) + "px";                
         
-                //vSplitterStyle.height = y - 23-cmdHeight + "px"; 
-            }, 0);
-        else
-            setTimeout(function(){ 
-                vSplitterStyle.height = y - 25 - cmdHeight + "px"; 
-                frame.style.height = y + "px";
-                body.style.height = Math.max(y - fixedHeight, 0)+ "px";
-
-        var width = frame.offsetLeft + frame.clientWidth;
-        var x = rightPanelVisible ? (width - vSplitter.offsetLeft) : 0;
+        if (rightPanelVisible)
+        {
+            fbPanelBox2Style.width = x + "px";
+            fbPanelBar2BoxStyle.width = Math.max(x -1, 0) + "px";
+            fbVSplitterStyle.right = Math.max(x - 6, 0) + "px";
+        }
         
-        bodyRStyle.width = x + "px";
-        //vSplitterStyle.right = x - 6 + "px";
-        toolbarRFrameStyle.width = x + "px";
-        bodyLStyle.width = width - x + "px";                
-        panelLStyle.width = width - x + "px";
-        tabLStyle.width = width -20 - x + "px";        
-                
-            }, 40);
-    
-        
-        //if(isIE) 
-        //  Chrome.adjustPanelWitdh();
-        
-    },
-    
-    adjustPanelWitdh: function()
-    {
-        var width = frame.offsetLeft + frame.clientWidth;
-        var x = bodyR.offsetWidth - (rightPanelVisible ? 20 : 0);
-        
-        bodyLStyle.width = width - x + "px";
-        panelLStyle.width = width - x + "px";
+        // Avoid horizontal scrollbar problem in IE
+        if (isIE)
+        {
+            var isScrolled = tabL.offsetHeight > fbPanel1.offsetHeight;
+            var scrollFix = isScrolled ? 18 : 0;
+            tabLStyle.width = Math.max(width -2 - scrollFix - x, 0) + "px";
+        }
     },
     
     saveSettings: function()
@@ -529,60 +231,78 @@ var Chrome = Firebug.Chrome =
     
     restoreSettings: function()
     {
-    }
+    },
     
+    focusCommandLine: function()
+    {
+        //toggleConsole(true);
+        //if (commandLine)
+        //    commandLine.focus();
+    }    
 
 };
+
 
 
 // ************************************************************************************************
 // Chrome Internals
 
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-var chromeReady = false;
-var selectedTab = 0; //Console
-
+//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+// Shared variables
 FBL.frame = null;
 FBL.frameStyle = null;
 
-//FBL.consoleBody = null;
 FBL.consoleBody = null;
 FBL.consoleBodyFrame = null;
 
-var bottomVisible = true;
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+var sidePanelWidth = 300;
+
+
+//Internal variables
+var chromeRedrawSkipRate = isIE ? 30 : 0;
+  
+var chromeReady = false;
+var selectedTab = 0; //Console
+
+var commandLineVisible = true;
 var rightPanelVisible = false;
 
-var body = null;
-var cmdLine = null;
-var header = null;
-var vSplitter = null;
-var hSplitter = null;
-var bottom = null;
-var bodyL = null;
-var bodyR = null;
-var toolbarRFrame = null;
-var toolbarRFrameStyle = null;
+//Internal Cache
+var fbTop = null;
+var fbContent = null;
+var fbContentStyle = null;
+var fbBottom = null;
 
-var vSplitterStyle = null;
+var fbBtnInspect = null;
 
-var bodyStyle = null;
-var bodyLStyle = null;
-var bodyRStyle = null;
+var fbPanelBox1 = null;
+var fbPanelBox1Style = null;
+var fbPanelBox2 = null;
+var fbPanelBox2Style = null;
+var fbPanelBar2Box = null;
+var fbPanelBar2BoxStyle = null;
 
-var consoleL = null;
-var consoleR = null;
+var fbHSplitter = null;
+var fbVSplitter = null;
+var fbVSplitterStyle = null;
 
-var HTMLL = null;
+var fbPanel1 = null;
+var fbPanel1Style = null;
+var fbPanel2 = null;
+
+var fbConsole = null;
+var fbConsoleStyle = null;
+var fbHTML = null;
+
+var fbCommandLine = null;
 
 var tabL = null;
+var tabLStyle = null;
 var tabR = null;
 
-var consoleLStyle = null;
-var tabLStyle = null;
-
-var panelL = null;
-var panelLStyle = null;
+//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 var topHeight = null;
 
@@ -590,7 +310,9 @@ var topHeight = null;
 
 
 // ************************************************************************************************
-// Section
+// Interface Loading
+
+
 function waitForDocument()
 {
     var console = window[FBL.consoleNS];
@@ -610,67 +332,215 @@ function waitForChrome()
 {
     var f = FBL.frame;
     if (f && (Chrome.context == Chrome.Frame) && f.contentWindow &&  
-        f.contentWindow.document.getElementById("commandLine") || // frame loaded
+        f.contentWindow.document.getElementById("fbCommandLine") || // frame loaded
         
         f && (Chrome.context == Chrome.Popup) &&  f.document && 
-        f.document.getElementById("commandLine")) // popup loaded
+        f.document.getElementById("fbCommandLine")) // popup loaded
     {
         if (!chromeReady)
-            Chrome.onChromeReady();
+            onChromeReady();
     }
     else
         setTimeout(waitForChrome, 100);
 };
-    
-/*
-function onChromeLoad()
+
+function onChromeReady()
 {
+    chromeReady = true;
+    
     var frame = FBL.frame;
         
-    if (Chrome.context == Chrome.Frame)
+    if (Chrome.context == Chrome.Frame) // frame
     {
-        Chrome.doc = frame.contentWindow.document;
-        Chrome.win = frame.contentWindow.window;
+        Chrome.document = frame.contentWindow.document;
+        Chrome.window = frame.contentWindow.window;
     }
-    else
+    else // popup
     {
-        Chrome.doc = frame.document;
-        Chrome.win = frame.window;
+        Chrome.document = frame.document;
+        Chrome.window = frame.window;
     }
     
-    Chrome.win.FB = FBL.ChromeAPI;
-
-    Chrome.context.onReady(Chrome.doc);
-    Chrome.initializeContext(Chrome.doc, Chrome.context);
+    // Create the global variable in the chrome window for the interface API 
+    Chrome.window.FB = FBL.ChromeAPI;
     
-    Chrome.draw();    
+    // Dispatch the onChromeReady event in the current context
+    Chrome.context.onChromeReady(Chrome.document);
+    
+    // Create the new context
+    createContext(Chrome.document, Chrome.context);
+    
+    Chrome.draw();
 };
-/**/
 
 
-function focusCommandLine()
+//************************************************************************************************
+// Interface
+
+function toggleCommandLine()
 {
-    //toggleConsole(true);
-    //if (commandLine)
-    //    commandLine.focus();
+    commandLineVisible = !commandLineVisible;
+    fbBottom.className = commandLineVisible ? "" : "hide";
 };
 
-
+function toggleRightPanel()
+{
+    rightPanelVisible = !rightPanelVisible;
+    fbPanelBox2.className = rightPanelVisible ? "" : "hide"; 
+    fbPanelBar2Box.className = rightPanelVisible ? "" : "hide";
+};
 
 
 
 // ************************************************************************************************
-// Section
+// Contexts
 
-function onGlobalKeyDown(event)
+
+var createContext = function createContext(doc, context)
 {
-    if (event.keyCode == 123 /* F12 */)
-        if (!FBL.isFirefox && !event.shiftKey || event.shiftKey && FBL.isFirefox)
-        {
-            FBL.Firebug.Chrome.toggle(false, event.ctrlKey);
-            FBL.cancelEvent(event, true);
-        }
+    if (Firebug.CommandLine)
+        Firebug.CommandLine.initialize(doc);
+        
+    Chrome.context = context;
+    Chrome.context.document = doc;
+    Chrome.document = doc;
+    
+    fbTop = UI$("fbTop");
+    fbContent = UI$("fbContent");
+    fbContentStyle = fbContent.style;
+    fbBottom = UI$("fbBottom");
+    
+    fbBtnInspect = UI$("fbBtnInspect");
+    
+    fbPanelBox1 = UI$("fbPanelBox1");
+    fbPanelBox1Style = fbPanelBox1.style;
+    fbPanelBox2 = UI$("fbPanelBox2");
+    fbPanelBox2Style = fbPanelBox2.style;
+    fbPanelBar2Box = UI$("fbPanelBar2Box");
+    fbPanelBar2BoxStyle = fbPanelBar2Box.style;
+    
+    fbHSplitter = UI$("fbHSplitter");
+    fbVSplitter = UI$("fbVSplitter");
+    fbVSplitterStyle = fbVSplitter.style;
+    
+    fbPanel1 = UI$("fbPanel1");
+    fbPanel1Style = fbPanel1.style;
+    tabR = fbPanel2 = UI$("fbPanel2");
 
+    tabL = fbConsole = UI$("fbConsole");
+    tabLStyle = fbConsoleStyle = fbConsole.style;
+    fbCommandLine = UI$("fbCommandLine");
+    
+    fbHTML = UI$("fbHTML");
+
+    consoleBody = fbConsole;
+    consoleBodyFrame = fbPanel1;
+    
+    topHeight = fbTop.offsetHeight;
+
+    fbVSplitter.onmousedown = onVSplitterMouseDown;
+    fbHSplitter.onmousedown = onHSplitterMouseDown;
+    
+    // TODO: refactor
+    selectedTab = 0; //Console
+    rightPanelVisible = false;
+    // TODO: refactor
+
+    if (context == Chrome.Popup)
+    {
+        frame = doc.body;
+        
+        if (isIE)
+        {
+            Chrome.draw();
+          
+            var fbChrome = UI$("fbChrome");
+            fbChrome.style.position = "absolute";
+            fbChrome.style.marginTop = "-1px";
+        }
+    }
+    else
+    {
+        frame = document.getElementById("FirebugChrome");
+        frameStyle = frame.style;
+        
+        // TODO: If the document body has some margin (IE default behaviour), the 
+        // window won't fit correctly, so an event handler should be added
+        if (isIE)
+        {
+          Chrome.draw();
+          
+          var margin = document.body.currentStyle.marginRight;
+          
+          if (margin == "10px")
+              frameStyle.width = "102%";
+          //else
+          //  alert(margin + "TODO: need to add a onresize event to adjust the window width");
+
+        }
+    }
+    
+    var controllers = context.controllers;
+    
+    controllers.push([   
+        Chrome.document, 
+        isIE || isSafari ? "keydown" : "keypress", 
+        onPressF12
+    ]);
+    
+    if(controllers)
+        for(var i=0, ci; ci=controllers[i]; i++)
+            addEvent.apply(Chrome, ci);
+            
+
+    if (isOpera) Chrome.draw();
+
+        
+    // TODO: integrate code
+    if(!!chromeLoad) chromeLoad(doc);
+    /**/
+    
+};
+
+var destroyContext = function destroyContext(context)
+{
+    chromeReady = false;
+    Chrome.context.element = null;
+    Chrome.frame = null;
+    
+    fbContent = null;
+    fbCommandLine = null;
+    fbTop = null;
+    fbBtnInspect = null;
+    fbVSplitter = null;
+    fbHSplitter = null;
+    fbBottom = null;
+    fbPanelBox2 = null;
+    
+    fbPanelBox2Style = null;
+    fbContentStyle = null;
+
+    topHeight = null;
+    
+    var controllers = context.controllers;
+    if(controllers)
+        for(var i=0, ci; ci=controllers[i]; i++)
+          removeEvent.apply(Chrome, ci);
+};
+
+
+// ************************************************************************************************
+// Event Handlers
+
+
+var onPressF12 = function onPressF12(event)
+{
+    if (event.keyCode == 123 /* F12 */ && 
+        (!isFirefox && !event.shiftKey || event.shiftKey && isFirefox))
+        {
+            Firebug.Chrome.toggle(false, event.ctrlKey);
+            cancelEvent(event, true);
+        }
 }
 
 
@@ -691,54 +561,54 @@ function onHSplitterMouseDown(event)
     return false;
 };
 
+var lastHSplitterMouseMove = 0;
 
-function onHSplitterMouseMove(event)
+var onHSplitterMouseMove = function onHSplitterMouseMove(event)
 {
-    var frame = FBL.frame;
-    var frameStyle = FBL.frameStyle;
-    //var topHeight = FBL.topHeight;
-    //var cmdLine = FBL.cmdLine;
-    //var vSplitterStyle = FBL.vSplitterStyle;
+    cancelEvent(event, true);
     
-    var clientY = event.clientY;
-    var win = document.all
-        ? event.srcElement.ownerDocument.parentWindow
-        : event.target.ownerDocument && event.target.ownerDocument.defaultView;
-  
-    if (!win)
-        return;
-    
-    if (win != win.parent)
-        clientY += win.frameElement ? win.frameElement.offsetTop : 0;
-    
-    var height = frame.offsetTop + frame.clientHeight;
-    var fixedHeight = topHeight + cmdLine.offsetHeight + 1;
-    var y = Math.max(height - clientY + 7, topHeight);
-        y = Math.min(y, document.body.scrollHeight);
-      
-
-    if(FBL.isIE)
-        setTimeout(function(){ 
-            //vSplitterStyle.height = y - 147 + "px";
-            frameStyle.height = y + "px";
-        }, 25);
-      
-    else if (FBL.isOpera)
-        setTimeout(function(){ 
-            frameStyle.height = y + "px";
-            bodyStyle.height = Math.max(y - fixedHeight, 0)+ "px";
-        }, 75);
-      
-    else if (FBL.isFirefox)
+    if (new Date().getTime() - lastHSplitterMouseMove > chromeRedrawSkipRate)
     {
+        var clientY = event.clientY;
+        var win = document.all
+            ? event.srcElement.ownerDocument.parentWindow
+            : event.target.ownerDocument && event.target.ownerDocument.defaultView;
+      
+        if (!win)
+            return;
+        
+        if (win != win.parent)
+            clientY += win.frameElement ? win.frameElement.offsetTop : 0;
+        
+        if (isIE && win == window)
+            clientY += document.body.scrollTop;
+        
+        var height = frame.offsetTop + frame.clientHeight;
+        var fixedHeight = topHeight + fbCommandLine.offsetHeight + 1;
+        var y = Math.max(height - clientY + 7, topHeight);
+            y = Math.min(y, document.body.scrollHeight);
+          
         frameStyle.height = y + "px";
-        setTimeout(function(){ 
-            bodyStyle.maxHeight = Math.max(y - fixedHeight, 0)+ "px";
-        }, 50);
-    }  
-    else
-    {
-        frameStyle.height = y + "px";
+        
+        /*
+        var t = event.srcElement || event.target;
+        Firebug.Console.log(
+            "y: ", y, 
+            "clientY: ", clientY, 
+            "  height: ", height,
+            "window: ", win.FBL,
+            "parent window: ", win.parent.FBL
+            ); /**/
+        
+        //Firebug.Console.dir(t.ownerDocument.parentWindow);
+        //Firebug.Console.log(y, " ", event.srcElement, ", ", event.srcElement.innerHTML);
+        
+        if (isIE && Chrome.context.fixIEPosition)
+          Chrome.context.fixIEPosition();
+        
+        Chrome.draw();
+        
+        lastHSplitterMouseMove = new Date().getTime();
     }
     
     return false;
@@ -755,7 +625,7 @@ function onHSplitterMouseUp(event)
         FBL.removeEvent(frames[i].document, "mouseup", onHSplitterMouseUp);
     }
     
-    setTimeout(Chrome.draw, 0);
+    Chrome.draw();
 };
 
 
@@ -780,21 +650,10 @@ function onVSplitterMouseDown(event)
 
 var lastVSplitterMouseMove = 0;
 
-function onVSplitterMouseMove(event)
+var onVSplitterMouseMove = function onVSplitterMouseMove(event)
 {
-    var frame = FBL.frame;
-    
-    //var bodyRStyle = FBL.bodyRStyle;
-    //var bodyLStyle = FBL.bodyLStyle;
-    //var panelLStyle = FBL.panelLStyle;
-    //var tabLStyle = FBL.tabLStyle;
-    //var toolbarRFrameStyle = FBL.toolbarRFrameStyle;
-    //var vSplitterStyle = FBL.vSplitterStyle;
-    
-    if (new Date().getTime() - lastVSplitterMouseMove > 40)
+    if (new Date().getTime() - lastVSplitterMouseMove > chromeRedrawSkipRate)
     {
-        lastVSplitterMouseMove = new Date().getTime();
-    
         var clientX = event.clientX;
         var win = document.all
             ? event.srcElement.ownerDocument.parentWindow
@@ -806,37 +665,13 @@ function onVSplitterMouseMove(event)
         var width = frame.offsetLeft + frame.clientWidth;
         var x = Math.max(width - clientX + 3, 7);
         
-        if (FBL.isIE)
-            setTimeout(function(){
-                bodyRStyle.width = x + "px";
-                vSplitterStyle.right = x - 6 + "px";
-                toolbarRFrameStyle.width = x + "px";
-                bodyLStyle.width = width - x + "px";                
-                panelLStyle.width = width - x + "px";
-                tabLStyle.width = width -20 - x + "px";
-            },25);
-
-        // TODO: Chrome bug - confirm if this happens on safari
-        else
-        {
-            if (FBL.isSafari)
-                setTimeout(function(){
-                    bodyRStyle.width = x + "px";
-                    toolbarRFrameStyle.width = x -1 + "px";
-                    vSplitterStyle.right = x - 6 + "px";
-                    bodyLStyle.width = width - x + "px";
-                    panelLStyle.width = width - 2 - x + "px";
-                },0);
-            else
-            {
-                bodyRStyle.width = x + "px";
-                toolbarRFrameStyle.width = x -1 + "px";
-                vSplitterStyle.right = x -6 + "px";
-            }
-        }
+        sidePanelWidth = x;
+        Chrome.draw();
+        
+        lastVSplitterMouseMove = new Date().getTime();
     }
     
-    FBL.cancelEvent(event, true);
+    cancelEvent(event, true);
     return false;
 };
 
@@ -858,16 +693,20 @@ function onVSplitterMouseUp(event)
 // ************************************************************************************************
 // ***  TODO:  ORGANIZE  **************************************************************************
 // ************************************************************************************************
-function chromeLoad(doc)
+var chromeLoad = function chromeLoad(doc)
 {
   
     var rootNode = document.documentElement;
     
     /* Console event handlers */
-    FBL.addEvent(consoleL, 'mousemove', onListMouseMove);
-    FBL.addEvent(consoleL, 'mouseout', onListMouseOut);
-
-    /*
+    addEvent(fbConsole, 'mousemove', onListMouseMove);
+    addEvent(fbConsole, 'mouseout', onListMouseOut);
+    
+    fbHTML.style.display = "none";
+    
+    Firebug.Inspector.onChromeReady();
+    
+  /*
      TODO: Organize 
      
     #treeInput {
@@ -880,32 +719,29 @@ function chromeLoad(doc)
     
     */
     
-    /*
     var html = [];
-    FBL.Firebug.HTML.appendTreeNode(rootNode, html);
-    FBL.HTMLL.innerHTML = '';
-    FBL.HTMLL.innerHTML = html.join('');
-    FBL.HTMLL.style.padding = "0 10px 0 15px";
-    FBL.HTMLL.style.display = "none";
+    Firebug.HTML.appendTreeNode(rootNode, html);
+    fbHTML.innerHTML = '';
+    fbHTML.innerHTML = html.join('');
+    fbHTML.style.padding = "4px 3px 0 15px";
+    fbHTML.style.display = "none";
 
-    var doc = FBL.Firebug.Chrome.doc;
+    var doc = Firebug.Chrome.document;
     var input = doc.createElement("input");
     input.id = "treeInput"
     input.style.cssText = "position: absolute; font: 11px Monaco, monospace; margin: 0; padding: 0; border: 1px solid #777;"
     input.style.display = "none";
     doc.body.appendChild(input);
-/**/
 
-    /* HTML event handlers */
-    /*
-    input.onblur = FBL.HTMLL.onscroll = function()
+    // HTML event handlers
+    input.onblur = fbHTML.onscroll = function()
     {
         input.style.display = "none";
     };
-    FBL.addEvent(FBL.HTMLL, 'click', onTreeClick);
-    FBL.addEvent(FBL.HTMLL, 'mousemove', onListMouseMove);
-    FBL.addEvent(FBL.HTMLL, 'mouseout', onListMouseOut);
-/**/
+    addEvent(fbHTML, 'click', onTreeClick);
+    addEvent(fbHTML, 'mousemove', onListMouseMove);
+    addEvent(fbHTML, 'mouseout', onListMouseOut);
+    /**/
     
 }
 
@@ -919,7 +755,7 @@ function onListMouseOut(e)
     if (targ.nodeType == 3) // defeat Safari bug
       targ = targ.parentNode;
         
-      if (targ.id == "consoleL") {
+      if (targ.id == "fbConsole") {
           FBL.Firebug.Inspector.hideBoxModel();
           hoverElement = null;        
       }
@@ -942,8 +778,7 @@ function onListMouseMove(e)
             
         var found = false;
         while (targ && !found) {
-            if (" objectBox-element objectBox-selector ".indexOf(" " + targ.className + " ") == -1)
-            //if (!/\sobjectBox-element\s|\sobjectBox-selector\s/.test(" " + targ.className + " "))
+            if (!/\sobjectBox-element\s|\sobjectBox-selector\s/.test(" " + targ.className + " "))
                 targ = targ.parentNode;
             else
                 found = true;
@@ -971,8 +806,7 @@ function onListMouseMove(e)
         if (FBL.isIE && " meta title script link ".indexOf(" "+nodeName+" ") != -1)
             return;
     
-        //if (!/\sobjectBox-element\s|\sobjectBox-selector\s/.test(" " + targ.className + " ")) return;
-        if (" objectBox-element objectBox-selector ".indexOf(" " + targ.className + " ") == -1) return;
+        if (!/\sobjectBox-element\s|\sobjectBox-selector\s/.test(" " + targ.className + " ")) return;
         
         if (" html head body br script link ".indexOf(" "+nodeName+" ") != -1) { 
             FBL.Firebug.Inspector.hideBoxModel();
@@ -1003,7 +837,10 @@ function selectElement(e)
         e.className = e.className + " selectedElement";
 
         if (FBL.isFirefox)
-            e.style.MozBorderRadius = "3px";
+            e.style.MozBorderRadius = "2px";
+        
+        else if (FBL.isSafari)
+            e.style.WebkitBorderRadius = "2px";
         
         selectedElement = e;
     }
@@ -1048,11 +885,11 @@ function onTreeClick(e)
     }
     else if (targ.className == 'nodeValue' || targ.className == 'nodeName')
     {
-        var input = FBL.Firebug.Chrome.doc.getElementById('treeInput');
+        var input = FBL.Firebug.Chrome.document.getElementById('treeInput');
         
         input.style.display = "block";
         input.style.left = targ.offsetLeft + 'px';
-        input.style.top = FBL.topHeight + targ.offsetTop - FBL.panelL.scrollTop + 'px';
+        input.style.top = FBL.topHeight + targ.offsetTop - FBL.fbPanel1.scrollTop + 'px';
         input.style.width = targ.offsetWidth + 6 + 'px';
         input.value = targ.textContent || targ.innerText;
         input.focus(); 
