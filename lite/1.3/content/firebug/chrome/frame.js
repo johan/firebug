@@ -6,7 +6,7 @@ var Chrome = Firebug.Chrome;
 //----------------------------------------------------------------------------
 // Frame Chrome
 //----------------------------------------------------------------------------
-Firebug.Chrome.Frame = extend(Firebug.Chrome,
+Firebug.Chrome.Frame = 
 {
     element: null,
     viewport: null,
@@ -15,7 +15,7 @@ Firebug.Chrome.Frame = extend(Firebug.Chrome,
     isVisible: false, 
     scrollHandler: null,
     
-    onReady: function(doc)
+    onChromeReady: function(doc)
     {
         var context = Chrome.Frame;
         
@@ -25,8 +25,9 @@ Firebug.Chrome.Frame = extend(Firebug.Chrome,
           ];
           
         if (isIE) {
-            context.scrollHandler = [window, "scroll", context.fixPosition];
-            //addEvent.apply(this, context.scrollHandler);
+            context.controllers.push([window, "scroll", context.fixIEPosition]);
+            context.controllers.push([window, "resize", context.fixIEPosition]);
+            context.controllers.push([Chrome.document, "mousewheel", function(e){FBL.cancelEvent(e, true);}]);
         }
     
         frame.style.visibility = context.isVisible ? "visible" : "hidden";    
@@ -69,16 +70,15 @@ Firebug.Chrome.Frame = extend(Firebug.Chrome,
     },
     
     
-    fixPosition: function()
+    fixIEPosition: function()
     {
         var maxHeight = document.body.clientHeight;
+        var height = frame.offsetHeight;
         
-        //var height = Chrome._maximized ? maxHeight-1 : Chrome._height;
-        var height = Chrome.chromeHeight;
-        
-        Chrome.elementStyle.top = maxHeight - height + document.body.scrollTop + "px"; 
+        frame.style.top = maxHeight - height + document.body.scrollTop + "px";
+        Chrome.draw();
     }
-});
+};
 
 // TODO: inspect
 FBL.createFrame = Chrome.Frame.create;

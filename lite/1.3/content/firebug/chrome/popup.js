@@ -14,7 +14,7 @@ Firebug.Chrome.Popup =
     
     controllers: null,
     
-    onReady: function(doc)
+    onChromeReady: function(doc)
     {
         if (isIE6)
             fixIE6BackgroundImageCache(doc);
@@ -24,8 +24,8 @@ Firebug.Chrome.Popup =
         doc.body.className = "FirebugPopup";
         
         context.controllers = [
-            [Chrome.win, "resize", Chrome.draw],
-            [Chrome.win, "unload", Chrome.destroy]
+            [Chrome.window, "resize", Chrome.draw],
+            [Chrome.window, "unload", Chrome.destroy]
           ];
     },
 
