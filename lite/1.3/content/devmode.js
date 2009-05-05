@@ -1,29 +1,61 @@
 /*
 
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+
 ---Core----
 TODO: Better handling of switching tab contexts (selectedTab, rightPanelVisible)
 TODO: Check if there's a problem using the Sizzle selector engine in the code
 
-
 ---Events----
-TODO: handle disble text selection in IE
-
+TODO: handle disble text selection on Vertical Scrolling
+TODO: handle disble mouse wheel in Chrome, when in frame mode?
 
 ---ui----
 TODO: Opera problem with onunload and popups (context is not being destroyed)
 
+---commandLine----
+TODO: refactor commandLine to hide internal methods and properties.
+
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
 
 ---Inspector---
-FIXED: Selected element in HTML tree isn't being highlighted (boxmodel)
+DONE: Inspect function implemented.
+
+DONE: onInspecting highlight element in HTML Tree behaviour implemented.
+      When inspecting, the elements are being highlighted, and the scroll
+      is being changed to make the element visible in the tree.
 
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
+
+
+---Chrome---
+FIXED: Problem with multiple iframes and the resizing of the Chrome, that
+       tries to add events on them.
+
+FIXED: Fixed problem in IE when resizing the Chrome, when the relative position
+       of the mouse wasnt being computed in all frames of the document, 
+       resulting in strange flickerings when resizing it.
+
+FIXED: Fixed problem in Opera when resizing the Chrome.
+
+FIXED: Problem when resizing with the fbVSplitter, when it reaches the side of
+       the screen. Problem with negative pixel numbers.
+
+FIXED: fbVSplitter is bigger than the frame in firefox. Problem with mouse scroll.
+
+FIXED: isScrolledToBottom is not working in Firefox, it seems that this is 
+      happening because the scrollable panel is some pixels higher than
+      it should be.
 
 
 ---Core----
-FIXED: Revised "extend" and "append" functions
-
 FIXED: Problem with scope in event handlers. All functions that need to access
        the "shared scope" must be assigned to a local variable.
         
@@ -31,31 +63,30 @@ FIXED: Problem with scope in event handlers. All functions that need to access
         {
         ...
 
+FIXED: Revised "extend" and "append" functions
+
 FIXED: problem with the new Firebug for FF3, it seems that it doesn't allow 
       extending the console namespace anymore.
             
 FIXED: CommandLineAPI --> $, $$, dir, dirxml...
 
 
+---Inspector---
+FIXED: Selected element in HTML tree isn't being highlighted (boxmodel)
+
+FIXED: BoxModel functions entirely revised. Now the position, size, padding
+       and margin are being computed correctly, in all units: pt, px, em, ex
+       and % (need to test more deeply the percentage values).
+
+
 ---Events----
-FIXED: handle disble mouse wheel in IE
+FIXED: Opera problem with the TAB key in commandLine
 
-FIXED: opera problem with the TAB key in commandLine
-
-FIXED: apply the onPressF12 handler to the Chrome Frame
-
-FIXED: problem when resizing with the fbVSplitter, when it reaches the side of
-      the screen. Problem with negative pixel numbers.
-
-FIXED: fbVSplitter is bigger than the frame in firefox. Problem with mouse scroll.
+FIXED: Better handling of the F12 key press, which wasn't being properly
+       attached to the Chrome Frame window.
 
 
----Other---
-
-FIXED: isScrolledToBottom is not working in Firefox, it seems that this is 
-      happening because the scrollable panel is some pixels higher than
-      it should be.
-
+---commandLine---
 FIXED: better handling of scope of commandLine.eval(), if you type "this" it will
       refer to the CommandLine module, and it should refer to "window" instead
 
@@ -63,7 +94,7 @@ FIXED: better handling of scope of commandLine.eval(), if you type "this" it wil
 -------------------------------------------------------------------------------
 
 
- */
+*/
 
 
 /*
@@ -271,7 +302,10 @@ function isElement(o){
 (function(){
 
 var bookmarletMode = true;
+
 var bookmarletURL = "http://fbug.googlecode.com/svn/trunk/lite/1.3/build/";
+var bookmarletSkinURL = "http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/";
+//var bookmarletSkinURL = "http://pedrosimonetti.googlepages.com/";
 
 var publishedURL = "";
 var baseURL = "";
@@ -419,7 +453,7 @@ var API =
 function loadModules() {
     findLocation();
     
-    publishedURL = bookmarletMode ? bookmarletURL : skinURL;
+    publishedURL = bookmarletMode ? bookmarletSkinURL : skinURL;
     
     for (var i=0, module, m=modules; module=m[i]; i++)
         loadScript(sourceURL + module);

@@ -27,7 +27,7 @@ Firebug.Chrome.Frame =
         if (isIE) {
             context.controllers.push([window, "scroll", context.fixIEPosition]);
             context.controllers.push([window, "resize", context.fixIEPosition]);
-            context.controllers.push([Chrome.document, "mousewheel", function(e){FBL.cancelEvent(e, true);}]);
+            //context.controllers.push([Chrome.document, "mousewheel", function(e){FBL.cancelEvent(e, true);}]);
         }
     
         frame.style.visibility = context.isVisible ? "visible" : "hidden";    
@@ -72,11 +72,21 @@ Firebug.Chrome.Frame =
     
     fixIEPosition: function()
     {
+        var size = Firebug.Inspector.getWindowSize();
+        var scroll = Firebug.Inspector.getWindowScrollPosition();
+        var maxHeight = size.height;
+        var height = frame.offsetHeight;
+        
+        frame.style.top = maxHeight - height + scroll.top + "px";
+        Chrome.draw();
+        
+        /*
         var maxHeight = document.body.clientHeight;
         var height = frame.offsetHeight;
         
         frame.style.top = maxHeight - height + document.body.scrollTop + "px";
         Chrome.draw();
+        /**/
     }
 };
 

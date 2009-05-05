@@ -124,8 +124,7 @@ append(FBL,
     
     registerPublicNamespaces: function()
     {
-        var isFirebugInstalled = isFirefox && window.console && window.console.firebug;
-        FBL.NS = isFirebugInstalled ? FBL.alternateNS : "console";
+        FBL.NS = isFirefox ? FBL.alternateNS : FBL.consoleNS;
       
         window[NS] = ConsoleAPI;
         FBL.loaded = true;

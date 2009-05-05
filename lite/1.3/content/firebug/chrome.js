@@ -66,6 +66,9 @@ append(ChromeAPI,
     
     startInspecting: function()
     {
+        if (selectedTab != 1)
+            this.showTab(1);
+          
         Firebug.Inspector.startInspecting();
     },
     
@@ -260,8 +263,8 @@ FBL.consoleBodyFrame = null;
 var sidePanelWidth = 300;
 
 
-//Internal variables
-var chromeRedrawSkipRate = isIE ? 30 : 0;
+// Internal variables
+var chromeRedrawSkipRate = isIE ? 30 : isOpera ? 50 : 0;
   
 var chromeReady = false;
 var selectedTab = 0; //Console
@@ -269,7 +272,7 @@ var selectedTab = 0; //Console
 var commandLineVisible = true;
 var rightPanelVisible = false;
 
-//Internal Cache
+// Internal Cache
 var fbTop = null;
 var fbContent = null;
 var fbContentStyle = null;
@@ -315,8 +318,7 @@ var topHeight = null;
 
 function waitForDocument()
 {
-    var console = window[FBL.consoleNS];
-    if (document.body && console && typeof window.FBL.loaded != "undefined")
+    if (document.body && FBL && typeof FBL.loaded != "undefined")
         onDocumentLoad();
     else
         setTimeout(waitForDocument, 100);
@@ -554,8 +556,15 @@ function onHSplitterMouseDown(event)
   
     for (var i = 0; i < frames.length; ++i)
     {
-        FBL.addEvent(frames[i].document, "mousemove", onHSplitterMouseMove);
-        FBL.addEvent(frames[i].document, "mouseup", onHSplitterMouseUp);
+        try
+        {
+            FBL.addEvent(frames[i].document, "mousemove", onHSplitterMouseMove);
+            FBL.addEvent(frames[i].document, "mouseup", onHSplitterMouseUp);
+        }
+        catch(E)
+        {
+            // Avoid acess denied
+        }
     }
     
     return false;
@@ -580,28 +589,28 @@ var onHSplitterMouseMove = function onHSplitterMouseMove(event)
         if (win != win.parent)
             clientY += win.frameElement ? win.frameElement.offsetTop : 0;
         
-        if (isIE && win == window)
-            clientY += document.body.scrollTop;
+        var size = Firebug.Inspector.getWindowSize();
         
-        var height = frame.offsetTop + frame.clientHeight;
+        var height = (isIE && win == top) ? height = size.height :
+                      frame.offsetTop + frame.clientHeight; 
+        
         var fixedHeight = topHeight + fbCommandLine.offsetHeight + 1;
         var y = Math.max(height - clientY + 7, topHeight);
-            y = Math.min(y, document.body.scrollHeight);
+            y = Math.min(y, size.height);
           
         frameStyle.height = y + "px";
         
         /*
         var t = event.srcElement || event.target;
         Firebug.Console.log(
+            "event.clientY:", event.clientY,
             "y: ", y, 
             "clientY: ", clientY, 
             "  height: ", height,
             "window: ", win.FBL,
-            "parent window: ", win.parent.FBL
+            "parent window: ", win.parent.FBL,
+            "frameoff: ", win.frameElement ? win.frameElement.offsetTop : -1
             ); /**/
-        
-        //Firebug.Console.dir(t.ownerDocument.parentWindow);
-        //Firebug.Console.log(y, " ", event.srcElement, ", ", event.srcElement.innerHTML);
         
         if (isIE && Chrome.context.fixIEPosition)
           Chrome.context.fixIEPosition();
@@ -621,8 +630,15 @@ function onHSplitterMouseUp(event)
   
     for (var i = 0; i < frames.length; ++i)
     {
-        FBL.removeEvent(frames[i].document, "mousemove", onHSplitterMouseMove);
-        FBL.removeEvent(frames[i].document, "mouseup", onHSplitterMouseUp);
+        try
+        {
+            FBL.removeEvent(frames[i].document, "mousemove", onHSplitterMouseMove);
+            FBL.removeEvent(frames[i].document, "mouseup", onHSplitterMouseUp);
+        }
+        catch(E)
+        {
+            // Avoid acess denied
+        }
     }
     
     Chrome.draw();
@@ -738,7 +754,7 @@ var chromeLoad = function chromeLoad(doc)
     {
         input.style.display = "none";
     };
-    addEvent(fbHTML, 'click', onTreeClick);
+    addEvent(fbHTML, 'click', Firebug.HTML.onTreeClick);
     addEvent(fbHTML, 'mousemove', onListMouseMove);
     addEvent(fbHTML, 'mouseout', onListMouseOut);
     /**/
@@ -825,76 +841,7 @@ function onListMouseMove(e)
     }
 }
 
-var selectedElement = null
-function selectElement(e)
-{
-    if (e != selectedElement)
-    {
-        if (selectedElement)
-            selectedElement.className = "objectBox-element";
-            
-        
-        e.className = e.className + " selectedElement";
 
-        if (FBL.isFirefox)
-            e.style.MozBorderRadius = "2px";
-        
-        else if (FBL.isSafari)
-            e.style.WebkitBorderRadius = "2px";
-        
-        selectedElement = e;
-    }
-}
-
-function onTreeClick(e)
-{
-    e = e || event;
-    var targ;
-    
-    if (e.target) targ = e.target;
-    else if (e.srcElement) targ = e.srcElement;
-    if (targ.nodeType == 3) // defeat Safari bug
-        targ = targ.parentNode;
-        
-    
-    if (targ.className.indexOf('nodeControl') != -1 || targ.className == 'nodeTag')
-    {
-        if(targ.className == 'nodeTag')
-        {
-            var control = FBL.isIE ? (targ.parentNode.previousSibling || targ) :
-                          (targ.previousSibling.previousSibling || targ);
-            
-            if (control.className.indexOf('nodeControl') == -1)
-                return;
-            
-            selectElement(targ.parentNode);
-        } else
-            control = targ;
-        
-        FBL.cancelEvent(e);
-        
-        var treeNode = FBL.isIE ? control.nextSibling : control.parentNode;
-        
-        if (control.className.indexOf(' nodeMaximized') != -1) {
-            control.className = 'nodeControl';
-            FBL.Firebug.HTML.removeTreeChildren(treeNode);
-        } else {
-            control.className = 'nodeControl nodeMaximized';
-            FBL.Firebug.HTML.appendTreeChildren(treeNode);
-        }
-    }
-    else if (targ.className == 'nodeValue' || targ.className == 'nodeName')
-    {
-        var input = FBL.Firebug.Chrome.document.getElementById('treeInput');
-        
-        input.style.display = "block";
-        input.style.left = targ.offsetLeft + 'px';
-        input.style.top = FBL.topHeight + targ.offsetTop - FBL.fbPanel1.scrollTop + 'px';
-        input.style.width = targ.offsetWidth + 6 + 'px';
-        input.value = targ.textContent || targ.innerText;
-        input.focus(); 
-    }
-}
 // ************************************************************************************************
 // ************************************************************************************************
 // ************************************************************************************************

@@ -1,34 +1,8 @@
 FBL.ns(function() { with (FBL) {
 // ************************************************************************************************
 
-/*============================================================================
-  inspector
-*===========================================================================*/
-var pixelsPerInch, boxModel, boxModelStyle, boxMargin, boxMarginStyle, 
-  boxPadding, boxPaddingStyle, boxContent, boxContentStyle, offlineFragment;
-
-var IEStantandMode = document.all && document.compatMode == "CSS1Compat";
-var resetStyle = "margin:0; padding:0; border: 0; position:absolute; overflow:hidden; display:block; z-index: 2147483500;";
-var boxModelVisible = false;
-
-
-var fbBtnInspect = null;
-var outlineVisible = false;
-var outlineElements = {};
-var outline = {
-    "fbOutlineT": "fbHorizontalLine",
-    "fbOutlineL": "fbVerticalLine",
-    "fbOutlineB": "fbHorizontalLine",
-    "fbOutlineR": "fbVerticalLine"
-};
-var outlineStyle = { 
-    fbHorizontalLine: "background: #3875D7; height: 2px;",
-    fbVerticalLine: "background: #3875D7; width: 2px;"
-}
-  
-
-
-FBL.offlineFragment = null;
+//************************************************************************************************
+// Inspector Module
 
 Firebug.Inspector =
 {  
@@ -36,9 +10,10 @@ Firebug.Inspector =
     onReady: function()
     {
         offlineFragment = document.createDocumentFragment();
-        this.calculatePixelsPerInch();
-        this.createBoxModelInspector();
-        this.createOutlineInspector();
+        
+        calculatePixelsPerInch();
+        createBoxModelInspector();
+        createOutlineInspector();
     },
     
     onChromeReady: function()
@@ -46,120 +21,107 @@ Firebug.Inspector =
         fbBtnInspect = UI$("fbBtnInspect");
     },    
   
+    //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    // Inspect functions
+    
     startInspecting: function()
     {
+        document.body.appendChild(fbInspectFrame);
+        fbInspectFrame.style.width = document.body.scrollWidth + "px";
+        fbInspectFrame.style.height = document.body.scrollHeight + "px";
+
         fbBtnInspect.href = "javascript:FB.stopInspecting(this)";
         fbBtnInspect.className = "fbBtnInspectActive";
         
-        addEvent(document, "mousemove", Firebug.Inspector.onInspecting)
-        addEvent(window, "click", Firebug.Inspector.onInspectingClick)
+        addEvent(fbInspectFrame, "mousemove", Firebug.Inspector.onInspecting)
+        addEvent(fbInspectFrame, "click", Firebug.Inspector.onInspectingClick)
     },
     
     stopInspecting: function()
     {
+        offlineFragment.appendChild(fbInspectFrame);
+        
         fbBtnInspect.href = "javascript:FB.startInspecting(this)";
         fbBtnInspect.className = "";
         
         if (outlineVisible) this.hideOutline();
-        removeEvent(document, "mousemove", Firebug.Inspector.onInspecting)
-        removeEvent(window, "click", Firebug.Inspector.onInspectingClick)
+        removeEvent(fbInspectFrame, "mousemove", Firebug.Inspector.onInspecting)
+        removeEvent(fbInspectFrame, "click", Firebug.Inspector.onInspectingClick)
     },
+    
     
     onInspectingClick: function(e)
     {
-        e = e || event || window;
-        var targ;
+        fbInspectFrame.style.display = "none";    
+        var targ = Firebug.Inspector.getElementFromPoint(e.clientX, e.clientY);
+        fbInspectFrame.style.display = "block";    
+
+        // Avoid looking at text nodes in Opera
+        while (targ.nodeType != 1) targ = targ.parentNode;
         
-        if (e.target) targ = e.target;
-        else if (e.srcElement) targ = e.srcElement;
-        if (targ.nodeType == 3) // defeat Safari bug
-            targ = targ.parentNode;
-        
-        Firebug.Console.log(targ);
+        //Firebug.Console.log(targ);
         Firebug.Inspector.stopInspecting();
-        
-        cancelEvent(e, true);
-        return false;
     },
     
     onInspecting: function(e)
     {
-        e = e || event || window;
-        var targ;
-        
-        if (e.target) targ = e.target;
-        else if (e.srcElement) targ = e.srcElement;
-        if (targ.nodeType == 3) // defeat Safari bug
-            targ = targ.parentNode;
+        if (new Date().getTime() - lastInspecting > 30)
+        {
+            fbInspectFrame.style.display = "none";
+            var targ = Firebug.Inspector.getElementFromPoint(e.clientX, e.clientY);
+            fbInspectFrame.style.display = "block";    
+    
+            var id = targ.id;
+            if (id && /^fbOutline\w$/.test(id)) return;
+            if (id == "FirebugChrome") return;
             
-        var id = targ.id;
-        if (id && /^fbOutline\w$/.test(id)) return;
-        
-        var nodeName = targ.nodeName.toLowerCase();
-        if (" html head body ".indexOf(" "+nodeName+" ") != -1) { 
-          return;
+            // Avoid looking at text nodes in Opera
+            while (targ.nodeType != 1) targ = targ.parentNode;
+    
+            if (targ.nodeName.toLowerCase() == "body") return;
+    
+            //Firebug.Console.log(e.clientX, e.clientY, targ);
+            Firebug.Inspector.drawOutline(targ);
+            
+            if (targ[cacheID])
+                FBL.Firebug.HTML.selectTreeNode(""+targ[cacheID])
+            
+            lastInspecting = new Date().getTime();
         }
-        
-        //Firebug.Console.log(targ);
-
-        Firebug.Inspector.drawOutline(targ);      
     },
     
-    createOutlineInspector: function()
-    {
-      for (var name in outline)
-      {
-          var el = outlineElements[name] = document.createElement("div");
-          el.id = name;
-          el.style.cssText = resetStyle + outlineStyle[outline[name]];
-          offlineFragment.appendChild(el);
-      }
-    },
-    
+    //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    // Inspector Outline
     
     drawOutline: function(el)
     {
         if (!outlineVisible) this.showOutline();
         
-        if (isSafari)
-        {
-            var top = el.offsetTop;
-            var left = el.offsetLeft;
-            var height = el.offsetHeight;
-            var width = el.offsetWidth;
-        }
-        else 
-        {
-            var rect = el.getBoundingClientRect();
-            
-            // fix IE problem with offset when not in fullscreen mode
-            var offset = document.all ? document.body.clientTop || document.documentElement.clientTop: 0;
-      
-            var top = Math.round(rect.top - offset);
-            var left = Math.round(rect.left - offset);
-            var height = Math.round(rect.bottom - top - offset);
-            var width = Math.round(rect.right - left - offset);
-        }
+        var box = this.getElementBox(el);
+        
+        var top = box.top;
+        var left = box.left;
+        var height = box.height;
+        var width = box.width;
         
         var border = 2;
+        var o = outlineElements;
         
-        var els = outlineElements;
-        
-        els.fbOutlineT.style.top = top-border;
-        els.fbOutlineT.style.left = left;
-        els.fbOutlineT.style.width = width;
+        o.fbOutlineT.style.top = top-border + "px";
+        o.fbOutlineT.style.left = left + "px";
+        o.fbOutlineT.style.width = width + "px";
   
-        els.fbOutlineB.style.top = top+height;
-        els.fbOutlineB.style.left = left;
-        els.fbOutlineB.style.width = width;
+        o.fbOutlineB.style.top = top+height + "px";
+        o.fbOutlineB.style.left = left + "px";
+        o.fbOutlineB.style.width = width + "px";
         
-        els.fbOutlineL.style.top = top-border;
-        els.fbOutlineL.style.left = left-border;
-        els.fbOutlineL.style.height = height+2*border;
+        o.fbOutlineL.style.top = top-border + "px";
+        o.fbOutlineL.style.left = left-border + "px";
+        o.fbOutlineL.style.height = height+2*border + "px";
 
-        els.fbOutlineR.style.top = top-border;
-        els.fbOutlineR.style.left = left+width;
-        els.fbOutlineR.style.height = height+2*border;
+        o.fbOutlineR.style.top = top-border + "px";
+        o.fbOutlineR.style.left = left+width + "px";
+        o.fbOutlineR.style.height = height+2*border + "px";
     },
     
     hideOutline: function()
@@ -173,68 +135,46 @@ Firebug.Inspector =
     showOutline: function()
     {
         for (var name in outline)
+        {
             document.body.appendChild(outlineElements[name]);
+            //outlineElements[name].style.cssText = resetStyle + outlineStyle[outline[name]];
+        }
         
         outlineVisible = true;
     },
   
-    createBoxModelInspector: function()
-    {
-        boxModel = document.createElement("div");
-        boxModel.id = "fbBoxModel";
-        boxModelStyle = boxModel.style;
-        boxModelStyle.cssText = resetStyle + "opacity:0.8; _filter:alpha(opacity=80);";
-        
-        boxMargin = document.createElement("div");
-        boxMargin.id = "fbBoxMargin";
-        boxMarginStyle = boxMargin.style;
-        boxMarginStyle.cssText = resetStyle + "background: #EDFF64; height:100%; width:100%;";
-        boxModel.appendChild(boxMargin);
-        
-        boxPadding = document.createElement("div");
-        boxPadding.id = "fbBoxPadding";
-        boxPaddingStyle = boxPadding.style;
-        boxPaddingStyle.cssText = resetStyle + "background: SlateBlue;";
-        boxModel.appendChild(boxPadding);
-        
-        boxContent = document.createElement("div");
-        boxContent.id = "fbBoxContent";
-        boxContentStyle = boxContent.style;
-        boxContentStyle.cssText = resetStyle + "background: SkyBlue;";
-        boxModel.appendChild(boxContent);
-        
-        offlineFragment.appendChild(boxModel);
-    },
+    //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    // Box Model
     
-  
     drawBoxModel: function(el)
     {
         if (!boxModelVisible) this.showBoxModel();
         
-        var top = this.getOffset(el, "offsetTop");
-        var left = this.getOffset(el, "offsetLeft");
-        var height = el.offsetHeight;
-        var width = el.offsetWidth;
+        var box = this.getElementBox(el);
         
-        var margin = this.getCSSMeasurementBox(el, "margin");
-        var padding = this.getCSSMeasurementBox(el, "padding");
-    
-        boxModelStyle.top = top - margin.top;
-        boxModelStyle.left = left - margin.left;
-        boxModelStyle.height = height + margin.top + margin.bottom;
-        boxModelStyle.width = width + margin.left + margin.right;
+        var top = box.top;
+        var left = box.left;
+        var height = box.height;
+        var width = box.width;
+        
+        var margin = this.getMeasurementBox(el, "margin");
+        var padding = this.getMeasurementBox(el, "padding");
+
+        boxModelStyle.top = top - margin.top + "px";
+        boxModelStyle.left = left - margin.left + "px";
+        boxModelStyle.height = height + margin.top + margin.bottom + "px";
+        boxModelStyle.width = width + margin.left + margin.right + "px";
       
-        boxPaddingStyle.top = margin.top;
-        boxPaddingStyle.left = margin.left;
-        boxPaddingStyle.height = height;
-        boxPaddingStyle.width = width;
+        boxPaddingStyle.top = margin.top + "px";
+        boxPaddingStyle.left = margin.left + "px";
+        boxPaddingStyle.height = height + "px";
+        boxPaddingStyle.width = width + "px";
       
-        boxContentStyle.top = margin.top + padding.top;
-        boxContentStyle.left = margin.left + padding.left;
-        boxContentStyle.height = height - padding.top - padding.bottom;
-        boxContentStyle.width = width - padding.left - padding.right;
+        boxContentStyle.top = margin.top + padding.top + "px";
+        boxContentStyle.left = margin.left + padding.left + "px";
+        boxContentStyle.height = height - padding.top - padding.bottom + "px";
+        boxContentStyle.width = width - padding.left - padding.right + "px";
     },
-    
   
     hideBoxModel: function()
     {  
@@ -242,181 +182,235 @@ Firebug.Inspector =
         boxModelVisible = false;
     },
     
-  
     showBoxModel: function()
     {
         document.body.appendChild(boxModel);
         boxModelVisible = true;
     },
      
-  
-    calculatePixelsPerInch: function()
+    //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    // Measurement Funtions
+    
+    getMeasurement: function(el, name)
     {
-        var inch = document.createElement("div");
-        inch.style.cssText = resetStyle + "width:1in; height:1in; visibility: hidden;";
-        document.body.appendChild(inch);
+        var result = {value: 0, unit: "px"};
         
-        pixelsPerInch = {
-            x: inch.offsetWidth,
-            y: inch.offsetHeight
-        };
-        
-        document.body.removeChild(inch);
-    },
-    
-    
-    /**
-     * options.axis
-     * options.floatValue
-     */
-    getCSSMeasurementInPixels: function(el, name, options)
-    {
-        if (!el) return null;
-        
-        options = options || {axis: "x", floatValue: false};
-    
         var cssValue = this.getCSS(el, name);
-        
-        if(!cssValue) return 0;
+        if (!cssValue) return result;
+        if (cssValue.toLowerCase() == "auto") return result;
         
         var reMeasure = /(\d+\.?\d*)(.*)/;
         var m = cssValue.match(reMeasure);
         
         if (m)
         {
+            result.value = m[1]-0;
+            result.unit = m[2].toLowerCase();
+        }
         
-            var value = m[1]-0;
-            var unit = m[2].toLowerCase();
-            
-            if (unit == "px")
-                return value;
-              
-            else if (unit == "pt")
-                return this.pointsToPixels(value, options.axis, options.floatValue);
-              
-            if (unit == "em")
-                return this.emToPixels(el, value);
-              
-            else if (unit == "%")
-                return this.percentToPixels(el, value, options.axis);
-          
-        } else
-            return 0;
+        return result;        
     },
     
-  
-    getOffset: function(el, name)
+    getMeasurementInPixels: function(el, name)
     {
-        if (!el) return 0;
+        if (!el) return null;
         
-        var isVertical = /Top|Bottom$/.test(name);
-    
-        // When in "Standard" Compliance mode, IE6 doesn't count the document
-        // body margin when calculating offsetTop/offsetLeft, so we need to 
-        // calculate it manually
-        if (IEStantandMode)
-            var offset = isVertical ? 
-                this.getCSSMeasurementInPixels(document.body, "marginTop") :
-                this.getCSSMeasurementInPixels(document.body, "marginLeft");
-        else
-            var offset = 0;
-    
-        var value = el[name];
+        var m = this.getMeasurement(el, name);
+        var value = m.value;
+        var unit = m.unit;
         
-        var display = this.getCSS(el, "display");
-        var position = this.getCSS(el, "position");
+        if (unit == "px")
+            return value;
+          
+        else if (unit == "pt")
+            return this.pointsToPixels(name, value);
+          
+        if (unit == "em")
+            return this.emToPixels(el, value);
+          
+        else if (unit == "%")
+            return this.percentToPixels(el, value);
+    },
+
+    getElementPosition: function(el)
+    {
+        var left = 0
+        var top = 0;
         
-        if (!document.all || display != "inline" && position != "relative")
-            return offset + value;
-        else
-            return value + this.getOffset(el.parentNode, name);  
+        if (el.offsetParent)
+        {
+            do
+            {
+                left += el.offsetLeft;
+                top += el.offsetTop;
+            }
+            while (el = el.offsetParent);
+        }
+        return {left:left, top:top};      
     },
     
+    getWindowSize: function()
+    {
+        var width=0, height=0;
+        
+        if (typeof window.innerWidth == 'number')
+        {
+            // Non-IE
+            width = window.innerWidth;
+            height = window.innerHeight;
+        }
+        else if (document.documentElement && document.documentElement.clientHeight)
+        {
+            // IE 6+ in Standards Compliant Mode
+            width = document.documentElement.clientWidth;
+            height = document.documentElement.clientHeight;
+        }
+        else if (document.body && document.body.clientWidth)
+        {
+            // IE 4 compatible
+            width = document.body.clientWidth;
+            height = document.body.clientHeight;
+        }
+        
+        return {width: width, height: height};
+    },
     
-    getCSSMeasurementBox: function(el, name)
+    getWindowScrollPosition: function()
+    {
+        var top=0, left=0;
+        
+        if(typeof window.pageYOffset == 'number')
+        {
+            // Netscape
+            top = window.pageYOffset;
+            left = window.pageXOffset;
+        }
+        else if(document.body && document.body.scrollTop)
+        {
+            // DOM
+            top = document.body.scrollTop;
+            left = document.body.scrollLeft;
+        }
+        else if(document.documentElement && document.documentElement.scrollTop)
+        {
+            // IE6
+            top = document.documentElement.scrollTop;
+            left = document.documentElement.scrollLeft;
+        }
+        
+        return {top:top, left:left};
+    },
+    
+    getElementBox: function(el)
+    {
+        var result = {};
+        
+        if (el.getBoundingClientRect)
+        {
+            var rect = el.getBoundingClientRect();
+            
+            // fix IE problem with offset when not in fullscreen mode
+            var offset = isIE ? document.body.clientTop || document.documentElement.clientTop: 0;
+            
+            var scroll = this.getWindowScrollPosition();
+            
+            result.top = Math.round(rect.top - offset + scroll.top);
+            result.left = Math.round(rect.left - offset + scroll.left);
+            result.height = Math.round(rect.bottom - rect.top);
+            result.width = Math.round(rect.right - rect.left);
+        }
+        else 
+        {
+            var position = this.getElementPosition(el);
+            
+            result.top = position.top;
+            result.left = position.left;
+            result.height = el.offsetHeight;
+            result.width = el.offsetWidth;
+        }
+        
+        return result;
+    },
+    
+    getElementFromPoint: function(x, y)
+    {
+        if (isOpera || isSafari)
+        {
+            var scroll = this.getWindowScrollPosition();
+            return document.elementFromPoint(x + scroll.left, y + scroll.top);
+        }
+        else
+            return document.elementFromPoint(x, y);
+    },
+    
+    getMeasurementBox: function(el, name)
     {
         var sufixes = ["Top", "Left", "Bottom", "Right"];
         var result = [];
         
-        if (document.all)
-        {
-            var propName, cssValue;
-            var autoMargin = null;
-            
-            for(var i=0, sufix; sufix=sufixes[i]; i++)
-            {
-                propName = name + sufix;
-                
-                cssValue = el.currentStyle[propName] || el.style[propName]; 
-                
-                if (cssValue == "auto")
-                {
-                    autoMargin = autoMargin || this.getCSSAutoMarginBox(el);
-                    result[i] = autoMargin[sufix.toLowerCase()];
-                }
-                else
-                    result[i] = this.getCSSMeasurementInPixels(el, propName);
-                      
-            }
-        
-        }
-        else
-        {
-            for(var i=0, sufix; sufix=sufixes[i]; i++)
-                result[i] = this.getCSSMeasurementInPixels(el, name + sufix);
-        }
+        for(var i=0, sufix; sufix=sufixes[i]; i++)
+            result[i] = Math.round(this.getMeasurementInPixels(el, name + sufix));
         
         return {top:result[0], left:result[1], bottom:result[2], right:result[3]};
     }, 
     
-  
-    getCSSAutoMarginBox: function(el)
+    getFontSizeInPixels: function(el)
     {
-        if (isIE && " meta title input script link ".indexOf(" "+el.nodeName.toLowerCase()+" ") != -1)
-            return {top:0, left:0, bottom:0, right:0};
+        var size = this.getMeasurement(el, "fontSize");
         
-        var box = document.createElement("div");
-        box.style.cssText = "margin:0; padding:1px; border: 0; position:static; overflow:hidden; visibility: hidden;";
+        if (size.unit == "px") return size.value;
         
-        var clone = el.cloneNode(false);
-        var text = document.createTextNode("&nbsp;");
-        clone.appendChild(text);
+        // get font size, the dirty way
+        var computeDirtyFontSize = function(el, calibration)
+        {
+            var div = document.createElement("div");
+            var divStyle = offscreenStyle;
+
+            if (calibration)
+                divStyle +=  " font-size:"+calibration+"px;";
+            
+            div.style.cssText = divStyle;
+            div.innerHTML = "A";
+            el.appendChild(div);
+            
+            var value = div.offsetHeight;
+            el.removeChild(div);
+            return value;
+        }
         
-        box.appendChild(clone);
-    
-        document.body.appendChild(box);
+        // Calibration fails in some environments, so we're using a static value
+        // based in the test case result.
+        var rate = 200 / 225;
+        //var calibrationBase = 200;
+        //var calibrationValue = computeDirtyFontSize(el, calibrationBase);
+        //var rate = calibrationBase / calibrationValue;
         
-        var marginTop = clone.offsetTop - box.offsetTop - 1;
-        var marginBottom = box.offsetHeight - clone.offsetHeight - 2 - marginTop;
-        
-        var marginLeft = clone.offsetLeft - box.offsetLeft - 1;
-        var marginRight = box.offsetWidth - clone.offsetWidth - 2 - marginLeft;
-        
-        document.body.removeChild(box);
-        
-        return {top:marginTop, left:marginLeft, bottom:marginBottom, right:marginRight};
+        var value = computeDirtyFontSize(el);
+
+        return value * rate;
     },
     
+    
+    //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    // Unit Funtions
   
-    pointsToPixels: function(value, axis, returnFloat)
+    pointsToPixels: function(name, value)
     {
-        axis = axis || "x";
+        var axis = /Top$|Bottom$/.test(name) ? "y" : "x";
         
         var result = value * pixelsPerInch[axis] / 72;
         
         return returnFloat ? result : Math.round(result);
     },
-      
     
     emToPixels: function(el, value)
     {
         if (!el) return null;
         
-        var fontSize = this.getCSSMeasurementInPixels(el, "fontSize");
+        var fontSize = this.getFontSizeInPixels(el);
         
         return Math.round(value * fontSize);
     },
-    
     
     exToPixels: function(el, value)
     {
@@ -424,28 +418,32 @@ Firebug.Inspector =
         
         // get ex value, the dirty way
         var div = document.createElement("div");
-        div.style.position = "absolute";
-        div.style.width = value + "ex";
-        div.style.visibility = "hidden";
+        div.style.cssText = offscreenStyle + "width:"+value + "ex;";
         
-        document.body.appendChild(div);
-        
+        el.appendChild(div);
         var value = div.offsetWidth;
-        
-        document.body.removeChild(div);
+        el.removeChild(div);
         
         return value;
     },
-    
-  
+      
     percentToPixels: function(el, value)
     {
         if (!el) return null;
         
-        // TODO:
+        // get % value, the dirty way
+        var div = document.createElement("div");
+        div.style.cssText = offscreenStyle + "width:"+value + "%;";
+        
+        el.appendChild(div);
+        var value = div.offsetWidth;
+        el.removeChild(div);
+        
+        return value;
     },
     
-  
+    //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    
     getCSS: isIE ? function(el, name)
     {
         return el.currentStyle[name] || el.style[name] || undefined;
@@ -457,6 +455,138 @@ Firebug.Inspector =
     }
 
 };
+
+//************************************************************************************************
+// Inspector Internals
+
+
+//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+// Shared variables
+
+FBL.offlineFragment = null;
+
+
+//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+// Internal variables
+
+var IEStantandMode = document.all && document.compatMode == "CSS1Compat";
+var boxModelVisible = false;
+
+var pixelsPerInch, boxModel, boxModelStyle, boxMargin, boxMarginStyle, 
+boxPadding, boxPaddingStyle, boxContent, boxContentStyle;
+
+//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+var resetStyle = "margin:0; padding:0; border:0; position:absolute; overflow:hidden; display:block;";
+var offscreenStyle = resetStyle + "top:-1234px; left:-1234px;";
+
+var inspectStyle = resetStyle + "z-index: 2147483500;";
+var inspectFrameStyle = resetStyle + "z-index: 2147483550; top:0; left:0; background:url(http://pedrosimonetti.googlepages.com/pixel_transparent.gif);";
+//var inspectFrameStyle = resetStyle + "z-index: 2147483550; top: 0; left: 0; background: #ff0; opacity: 0.1; _filter: alpha(opacity=10);";
+
+var inspectModelStyle = inspectStyle + "opacity:0.8; _filter:alpha(opacity=80);";
+var inspectMarginStyle = inspectStyle + "background: #EDFF64; height:100%; width:100%;";
+var inspectPaddingStyle = inspectStyle + "background: SlateBlue;";
+var inspectContentStyle = inspectStyle + "background: SkyBlue;";
+
+
+var outlineStyle = { 
+    fbHorizontalLine: "background: #3875D7; height: 2px;",
+    fbVerticalLine: "background: #3875D7; width: 2px;"
+}
+
+//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+var lastInspecting = 0;
+var fbInspectFrame = null;
+var fbBtnInspect = null;
+
+
+//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+var outlineVisible = false;
+var outlineElements = {};
+var outline = {
+  "fbOutlineT": "fbHorizontalLine",
+  "fbOutlineL": "fbVerticalLine",
+  "fbOutlineB": "fbHorizontalLine",
+  "fbOutlineR": "fbVerticalLine"
+};
+
+
+//************************************************************************************************
+// Measurement Functions
+
+var calculatePixelsPerInch = function calculatePixelsPerInch()
+{
+    var inch = document.createElement("div");
+    inch.style.cssText = resetStyle + "width:1in; height:1in; position:absolute; top:-1234px; left:-1234px;";
+    document.body.appendChild(inch);
+    
+    window.pixelsPerInch = {
+        x: inch.offsetWidth,
+        y: inch.offsetHeight
+    };
+    
+    document.body.removeChild(inch);
+};
+
+
+//************************************************************************************************
+// Section
+
+
+var createOutlineInspector = function createOutlineInspector()
+{
+    fbInspectFrame = document.createElement("div");
+    fbInspectFrame.id = "fbInspectFrame";
+    fbInspectFrame.style.cssText = inspectFrameStyle;
+    offlineFragment.appendChild(fbInspectFrame);
+    
+    for (var name in outline)
+    {
+        var el = outlineElements[name] = document.createElement("div");
+        el.id = name;
+        el.style.cssText = inspectStyle + outlineStyle[outline[name]];
+        offlineFragment.appendChild(el);
+    }
+};
+
+var createBoxModelInspector = function createBoxModelInspector()
+{
+    boxModel = document.createElement("div");
+    boxModel.id = "fbBoxModel";
+    boxModelStyle = boxModel.style;
+    boxModelStyle.cssText = inspectModelStyle;
+    
+    boxMargin = document.createElement("div");
+    boxMargin.id = "fbBoxMargin";
+    boxMarginStyle = boxMargin.style;
+    boxMarginStyle.cssText = inspectMarginStyle;
+    boxModel.appendChild(boxMargin);
+    
+    boxPadding = document.createElement("div");
+    boxPadding.id = "fbBoxPadding";
+    boxPaddingStyle = boxPadding.style;
+    boxPaddingStyle.cssText = inspectPaddingStyle;
+    boxModel.appendChild(boxPadding);
+    
+    boxContent = document.createElement("div");
+    boxContent.id = "fbBoxContent";
+    boxContentStyle = boxContent.style;
+    boxContentStyle.cssText = inspectContentStyle;
+    boxModel.appendChild(boxContent);
+    
+    offlineFragment.appendChild(boxModel);
+};
+
+
+
+//************************************************************************************************
+// Section
+
+
+
 
 // ************************************************************************************************
 }});

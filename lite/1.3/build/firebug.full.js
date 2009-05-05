@@ -560,8 +560,7 @@ append(FBL,
     
     registerPublicNamespaces: function()
     {
-        var isFirebugInstalled = isFirefox && window.console && window.console.firebug;
-        FBL.NS = isFirebugInstalled ? FBL.alternateNS : "console";
+        FBL.NS = isFirefox ? FBL.alternateNS : FBL.consoleNS;
       
         window[NS] = ConsoleAPI;
         FBL.loaded = true;
@@ -2458,6 +2457,9 @@ append(ChromeAPI,
     
     startInspecting: function()
     {
+        if (selectedTab != 1)
+            this.showTab(1);
+          
         Firebug.Inspector.startInspecting();
     },
     
@@ -2652,8 +2654,8 @@ FBL.consoleBodyFrame = null;
 var sidePanelWidth = 300;
 
 
-//Internal variables
-var chromeRedrawSkipRate = isIE ? 30 : 0;
+// Internal variables
+var chromeRedrawSkipRate = isIE ? 30 : isOpera ? 50 : 0;
   
 var chromeReady = false;
 var selectedTab = 0; //Console
@@ -2661,7 +2663,7 @@ var selectedTab = 0; //Console
 var commandLineVisible = true;
 var rightPanelVisible = false;
 
-//Internal Cache
+// Internal Cache
 var fbTop = null;
 var fbContent = null;
 var fbContentStyle = null;
@@ -2707,8 +2709,7 @@ var topHeight = null;
 
 function waitForDocument()
 {
-    var console = window[FBL.consoleNS];
-    if (document.body && console && typeof window.FBL.loaded != "undefined")
+    if (document.body && FBL && typeof FBL.loaded != "undefined")
         onDocumentLoad();
     else
         setTimeout(waitForDocument, 100);
@@ -2946,8 +2947,15 @@ function onHSplitterMouseDown(event)
   
     for (var i = 0; i < frames.length; ++i)
     {
-        FBL.addEvent(frames[i].document, "mousemove", onHSplitterMouseMove);
-        FBL.addEvent(frames[i].document, "mouseup", onHSplitterMouseUp);
+        try
+        {
+            FBL.addEvent(frames[i].document, "mousemove", onHSplitterMouseMove);
+            FBL.addEvent(frames[i].document, "mouseup", onHSplitterMouseUp);
+        }
+        catch(E)
+        {
+            // Avoid acess denied
+        }
     }
     
     return false;
@@ -2972,28 +2980,28 @@ var onHSplitterMouseMove = function onHSplitterMouseMove(event)
         if (win != win.parent)
             clientY += win.frameElement ? win.frameElement.offsetTop : 0;
         
-        if (isIE && win == window)
-            clientY += document.body.scrollTop;
+        var size = Firebug.Inspector.getWindowSize();
         
-        var height = frame.offsetTop + frame.clientHeight;
+        var height = (isIE && win == top) ? height = size.height :
+                      frame.offsetTop + frame.clientHeight; 
+        
         var fixedHeight = topHeight + fbCommandLine.offsetHeight + 1;
         var y = Math.max(height - clientY + 7, topHeight);
-            y = Math.min(y, document.body.scrollHeight);
+            y = Math.min(y, size.height);
           
         frameStyle.height = y + "px";
         
         /*
         var t = event.srcElement || event.target;
         Firebug.Console.log(
+            "event.clientY:", event.clientY,
             "y: ", y, 
             "clientY: ", clientY, 
             "  height: ", height,
             "window: ", win.FBL,
-            "parent window: ", win.parent.FBL
+            "parent window: ", win.parent.FBL,
+            "frameoff: ", win.frameElement ? win.frameElement.offsetTop : -1
             ); /**/
-        
-        //Firebug.Console.dir(t.ownerDocument.parentWindow);
-        //Firebug.Console.log(y, " ", event.srcElement, ", ", event.srcElement.innerHTML);
         
         if (isIE && Chrome.context.fixIEPosition)
           Chrome.context.fixIEPosition();
@@ -3013,8 +3021,15 @@ function onHSplitterMouseUp(event)
   
     for (var i = 0; i < frames.length; ++i)
     {
-        FBL.removeEvent(frames[i].document, "mousemove", onHSplitterMouseMove);
-        FBL.removeEvent(frames[i].document, "mouseup", onHSplitterMouseUp);
+        try
+        {
+            FBL.removeEvent(frames[i].document, "mousemove", onHSplitterMouseMove);
+            FBL.removeEvent(frames[i].document, "mouseup", onHSplitterMouseUp);
+        }
+        catch(E)
+        {
+            // Avoid acess denied
+        }
     }
     
     Chrome.draw();
@@ -3130,7 +3145,7 @@ var chromeLoad = function chromeLoad(doc)
     {
         input.style.display = "none";
     };
-    addEvent(fbHTML, 'click', onTreeClick);
+    addEvent(fbHTML, 'click', Firebug.HTML.onTreeClick);
     addEvent(fbHTML, 'mousemove', onListMouseMove);
     addEvent(fbHTML, 'mouseout', onListMouseOut);
     /**/
@@ -3217,76 +3232,7 @@ function onListMouseMove(e)
     }
 }
 
-var selectedElement = null
-function selectElement(e)
-{
-    if (e != selectedElement)
-    {
-        if (selectedElement)
-            selectedElement.className = "objectBox-element";
-            
-        
-        e.className = e.className + " selectedElement";
 
-        if (FBL.isFirefox)
-            e.style.MozBorderRadius = "2px";
-        
-        else if (FBL.isSafari)
-            e.style.WebkitBorderRadius = "2px";
-        
-        selectedElement = e;
-    }
-}
-
-function onTreeClick(e)
-{
-    e = e || event;
-    var targ;
-    
-    if (e.target) targ = e.target;
-    else if (e.srcElement) targ = e.srcElement;
-    if (targ.nodeType == 3) // defeat Safari bug
-        targ = targ.parentNode;
-        
-    
-    if (targ.className.indexOf('nodeControl') != -1 || targ.className == 'nodeTag')
-    {
-        if(targ.className == 'nodeTag')
-        {
-            var control = FBL.isIE ? (targ.parentNode.previousSibling || targ) :
-                          (targ.previousSibling.previousSibling || targ);
-            
-            if (control.className.indexOf('nodeControl') == -1)
-                return;
-            
-            selectElement(targ.parentNode);
-        } else
-            control = targ;
-        
-        FBL.cancelEvent(e);
-        
-        var treeNode = FBL.isIE ? control.nextSibling : control.parentNode;
-        
-        if (control.className.indexOf(' nodeMaximized') != -1) {
-            control.className = 'nodeControl';
-            FBL.Firebug.HTML.removeTreeChildren(treeNode);
-        } else {
-            control.className = 'nodeControl nodeMaximized';
-            FBL.Firebug.HTML.appendTreeChildren(treeNode);
-        }
-    }
-    else if (targ.className == 'nodeValue' || targ.className == 'nodeName')
-    {
-        var input = FBL.Firebug.Chrome.document.getElementById('treeInput');
-        
-        input.style.display = "block";
-        input.style.left = targ.offsetLeft + 'px';
-        input.style.top = FBL.topHeight + targ.offsetTop - FBL.fbPanel1.scrollTop + 'px';
-        input.style.width = targ.offsetWidth + 6 + 'px';
-        input.value = targ.textContent || targ.innerText;
-        input.focus(); 
-    }
-}
 // ************************************************************************************************
 // ************************************************************************************************
 // ************************************************************************************************
@@ -3324,7 +3270,7 @@ Firebug.Chrome.Frame =
         if (isIE) {
             context.controllers.push([window, "scroll", context.fixIEPosition]);
             context.controllers.push([window, "resize", context.fixIEPosition]);
-            context.controllers.push([Chrome.document, "mousewheel", function(e){FBL.cancelEvent(e, true);}]);
+            //context.controllers.push([Chrome.document, "mousewheel", function(e){FBL.cancelEvent(e, true);}]);
         }
     
         frame.style.visibility = context.isVisible ? "visible" : "hidden";    
@@ -3369,11 +3315,21 @@ Firebug.Chrome.Frame =
     
     fixIEPosition: function()
     {
+        var size = Firebug.Inspector.getWindowSize();
+        var scroll = Firebug.Inspector.getWindowScrollPosition();
+        var maxHeight = size.height;
+        var height = frame.offsetHeight;
+        
+        frame.style.top = maxHeight - height + scroll.top + "px";
+        Chrome.draw();
+        
+        /*
         var maxHeight = document.body.clientHeight;
         var height = frame.offsetHeight;
         
         frame.style.top = maxHeight - height + document.body.scrollTop + "px";
         Chrome.draw();
+        /**/
     }
 };
 
@@ -3475,7 +3431,7 @@ FBL.ns(function() { with (FBL) {
 //----------------------------------------------------------------------------
 Firebug.Chrome.Injected = 
 {
-    CSS: '.fbBtnInspectActive{background:#aaa;color:#fff !important;}#fbTest{height:100%;}html,body{margin:0;padding:0;overflow:hidden;background:#fff;font-family:Lucida Grande,Tahoma,sans-serif;font-size:11px;}div.clear{clear:both;}#fbChrome{position:fixed;overflow:hidden;height:100%;width:100%;border-collapse:collapse;background:#fff;}#fbTop{height:50px;}#fbToolbar{position:absolute;z-index:5;width:100%;top:0;background:url(http://firebug.local:8740/1.3/skin/classic/sprite.png) #eee 0 0;height:27px;font-size:11px;}#fbPanelBars{top:27px;position:absolute;z-index:8;width:100%;background:url(http://firebug.local:8740/1.3/skin/classic/sprite.png) #d9d9d9 0 -27px;height:23px;}#fbContent{height:100%;vertical-align:top;}#fbBottom{height:18px;background:#fff;}#fbToolbarIcon{position:absolute;top:5px;left:10px;}#fbToolbarIcon a{display:block;height:20px;width:20px;background:url(http://firebug.local:8740/1.3/skin/classic/sprite.png) #eee 0 -134px;text-decoration:none;cursor:default;}#fbToolbarButtons{position:absolute;top:5px;left:35px;}#fbToolbarButtons span{margin:0;padding:0;}#fbToolbarButtons a{text-decoration:none;display:block;float:left;color:#000;margin:1px;padding:3px 7px 3px;cursor:default;}#fbToolbarButtons a:hover{color:#333;margin:0;_margin:0 1px 1px;border:1px solid #fff;border-bottom:1px solid #bbb;border-right:1px solid #bbb;_padding:3px 6px 3px 6px;}#mainButtons{position:absolute;right:4px;top:7px;z-index:11;}#fbPanelBar1{width:255px; z-index:8;left:0;white-space:nowrap;background:url(http://firebug.local:8740/1.3/skin/classic/sprite.png) #d9d9d9 0 -27px;position:absolute;left:4px;}#fbPanelBar2Box{background:url(http://firebug.local:8740/1.3/skin/classic/sprite.png) #d9d9d9 0 -27px;position:absolute;height:23px;width:300px; z-index:9;right:0;}#fbPanelBar2{position:absolute;width:290px; height:23px;padding-left:10px;}#fbPanelBox1,#fbPanelBox2{max-height:inherit;height:100%;font-size:11px;}#fbPanelBox2{background:#fff;}#fbPanelBox2{width:300px;background:#fff;}* html #fbPanel1{position:absolute;}#fbPanel2{padding-left:6px;background:#fff;}.hide{overflow:hidden !important;position:fixed !important;display:none !important;visibility:hidden !important;}#fbCommand{height:18px;}#fbCommandBox{width:100%;height:19px;_height:18px;bottom:0;overflow:hidden;z-index:9;position:absolute;background:#fff;border:0;border-top:1px solid #ccc;}#fbCommandIcon{position:absolute;color:#00f;top:2px;left:7px;display:inline;font:11px Monaco,monospace;z-index:10;}#fbCommandLine{position:absolute;width:100%;height:19px;top:0;left:0;border:0;margin:0;padding:2px 0 2px 32px;font:11px Monaco,monospace;z-index:9;}#fbBottom[fixFirefox]{position:fixed;bottom:0;left:0;width:100%;z-index:10;}#fbBottom[fixFirefox] #fbCommand{display:block;}div.fbFitHeight{padding:0 1px;max-height:inherit;height:100%;overflow:auto;}#mainButtons a{font-size:1px;width:16px;height:16px;display:block;float:left;text-decoration:none;cursor:default;}#close{background:url(http://firebug.local:8740/1.3/skin/classic/sprite.png) 0 -119px;}#close:hover{background:url(http://firebug.local:8740/1.3/skin/classic/sprite.png) -16px -119px;}#detach{background:url(http://firebug.local:8740/1.3/skin/classic/sprite.png) -32px -119px;}#detach:hover{background:url(http://firebug.local:8740/1.3/skin/classic/sprite.png) -48px -119px;}.tab{text-decoration:none;display:block;float:left;width:auto;float:left;cursor:default;font-family:Lucida Grande,Tahoma,sans-serif;font-size:11px;font-weight:bold;height:23px;color:#565656;}.toolbarPanel span{display:block;float:left;}.toolbarPanel .tabL,.toolbarPanel .tabR{height:23px;width:8px;}.toolbarPanel .tabText{padding:4px 1px 0;}.tab:hover{background:url(http://firebug.local:8740/1.3/skin/classic/sprite.png) 0 -73px;}.tab:hover .tabL{background:url(http://firebug.local:8740/1.3/skin/classic/sprite.png) -16px -96px;}.tab:hover .tabR{background:url(http://firebug.local:8740/1.3/skin/classic/sprite.png) -24px -96px;}.selectedTab{background:url(http://firebug.local:8740/1.3/skin/classic/sprite.png) #e5e5e5 0 -50px !important;color:#000;}.selectedTab .tabL{background:url(http://firebug.local:8740/1.3/skin/classic/sprite.png) 0 -96px !important;}.selectedTab .tabR{background:url(http://firebug.local:8740/1.3/skin/classic/sprite.png) -8px -96px !important;}#fbHSplitter{position:absolute;left:0;top:0;width:100%;height:15px;font-size:10px;cursor:n-resize !important;background:url(http://firebug.local:8740/1.3/skin/classic/pixel_transparent.gif);z-index:9;}.fbVSplitter{background:#eee;color:#000;border:1px solid #777;border-width:0 1px;width:4px;_width:6px;cursor:e-resize;overflow:hidden;right:294px;text-decoration:none;z-index:9;position:absolute;height:100%;top:27px;}div.lineNo{font:11px Monaco,monospace;float:left;display:inline;position:relative;margin:0;padding:0 5px 0 20px;background:#eee;color:#888;border-right:1px solid #ccc;text-align:right;}pre.nodeCode{font:11px Monaco,monospace;margin:0;padding-left:10px;overflow:hidden;_width:100%;}.nodeControl{margin-top:3px;margin-left:-14px;float:left;_position:absolute;_margin-left:-11px;width:9px;height:9px;overflow:hidden;cursor:default;background:url(http://firebug.local:8740/1.3/skin/classic/tree_open.gif);}div.nodeMaximized{background:url(http://firebug.local:8740/1.3/skin/classic/tree_close.gif);}div.objectBox-element{padding:1px 3px;}.objectBox-selector{cursor:default;}.selectedElement{background:highlight;color:#fff !important;}.selectedElement span{color:#fff !important;}@media screen and (-webkit-min-device-pixel-ratio:0){.selectedElement{background:#316AC5;color:#fff !important;}}.logRow *{font-size:11px;}.logRow{position:relative;border-bottom:1px solid #D7D7D7;padding:2px 4px 1px 6px;background-color:#FFFFFF;}.logRow-command{font-family:Monaco,monospace;color:blue;}.objectBox-string,.objectBox-text,.objectBox-number,.objectBox-function,.objectLink-element,.objectLink-textNode,.objectLink-function,.objectBox-stackTrace,.objectLink-profile{font-family:Monaco,monospace;}.objectBox-null{padding:0 2px;border:1px solid #666666;background-color:#888888;color:#FFFFFF;}.objectBox-string{color:red;white-space:pre;}.objectBox-number{color:#000088;}.objectBox-function{color:DarkGreen;}.objectBox-object{color:DarkGreen;font-weight:bold;font-family:Lucida Grande,sans-serif;}.objectBox-array{color:#000;}.logRow-info,.logRow-error,.logRow-warning{background:#fff no-repeat 2px 2px;padding-left:20px;padding-bottom:3px;}.logRow-info{background-image:url(http://firebug.local:8740/1.3/skin/classic/infoIcon.png);}.logRow-warning{background-color:cyan;background-image:url(http://firebug.local:8740/1.3/skin/classic/warningIcon.png);}.logRow-error{background-color:LightYellow;background-image:url(http://firebug.local:8740/1.3/skin/classic/errorIcon.png);color:#f00;}.errorMessage{vertical-align:top;color:#f00;}.objectBox-sourceLink{position:absolute;right:4px;top:2px;padding-left:8px;font-family:Lucida Grande,sans-serif;font-weight:bold;color:#0000FF;}.logRow-group{background:#EEEEEE;border-bottom:none;}.logGroup{background:#EEEEEE;}.logGroupBox{margin-left:24px;border-top:1px solid #D7D7D7;border-left:1px solid #D7D7D7;}.selectorTag,.selectorId,.selectorClass{font-family:Monaco,monospace;font-weight:normal;}.selectorTag{color:#0000FF;}.selectorId{color:DarkBlue;}.selectorClass{color:red;}.objectBox-element{font-family:Monaco,monospace;color:#000088;}.nodeChildren{padding-left:26px;}.nodeTag{color:blue;cursor:pointer;}.nodeValue{color:#FF0000;font-weight:normal;}.nodeText,.nodeComment{margin:0 2px;vertical-align:top;}.nodeText{color:#333333;}.nodeComment{color:DarkGreen;}.log-object{_position:relative;_height:100%;}.property{position:relative;clear:both;height:15px;}.propertyNameCell{vertical-align:top;float:left;width:28%;position:absolute;left:0;z-index:0;}.propertyValueCell{float:right;width:68%;background:#fff;position:absolute;_position:relative;padding-left:5px;display:table-cell;right:0;z-index:1;}.propertyName{font-weight:bold;}.FirebugPopup{height:100% !important;}.FirebugPopup #mainButtons{display:none !important;}.FirebugPopup #mainButtons{display:none !important;}.FirebugPopup #fbHSplitter{display:none !important;}.FirebugPopup #fbCommandBox{height:18px !important;_height:17px !important;}',
+    CSS: '.fbBtnInspectActive{background:#aaa;color:#fff !important;}html,body{margin:0;padding:0;overflow:hidden;background:#fff;font-family:Lucida Grande,Tahoma,sans-serif;font-size:11px;}div.clear{clear:both;}#fbChrome{position:fixed;overflow:hidden;height:100%;width:100%;border-collapse:collapse;background:#fff;}#fbTop{height:50px;}#fbToolbar{position:absolute;z-index:5;width:100%;top:0;background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) #eee 0 0;height:27px;font-size:11px;}#fbPanelBars{top:27px;position:absolute;z-index:8;width:100%;background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) #d9d9d9 0 -27px;height:23px;}#fbContent{height:100%;vertical-align:top;}#fbBottom{height:18px;background:#fff;}#fbToolbarIcon{position:absolute;top:5px;left:10px;}#fbToolbarIcon a{display:block;height:20px;width:20px;background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) #eee 0 -134px;text-decoration:none;cursor:default;}#fbToolbarButtons{position:absolute;top:5px;left:35px;}#fbToolbarButtons span{margin:0;padding:0;}#fbToolbarButtons a{text-decoration:none;display:block;float:left;color:#000;margin:1px;padding:3px 7px 3px;cursor:default;}#fbToolbarButtons a:hover{color:#333;margin:0;_margin:0 1px 1px;border:1px solid #fff;border-bottom:1px solid #bbb;border-right:1px solid #bbb;_padding:3px 6px 3px 6px;}#mainButtons{position:absolute;right:4px;top:7px;z-index:11;}#fbPanelBar1{width:255px; z-index:8;left:0;white-space:nowrap;background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) #d9d9d9 0 -27px;position:absolute;left:4px;}#fbPanelBar2Box{background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) #d9d9d9 0 -27px;position:absolute;height:23px;width:300px; z-index:9;right:0;}#fbPanelBar2{position:absolute;width:290px; height:23px;padding-left:10px;}#fbPanelBox1,#fbPanelBox2{max-height:inherit;height:100%;font-size:11px;}#fbPanelBox2{background:#fff;}#fbPanelBox2{width:300px;background:#fff;}* html #fbPanel1{position:absolute;}#fbPanel2{padding-left:6px;background:#fff;}.hide{overflow:hidden !important;position:fixed !important;display:none !important;visibility:hidden !important;}#fbCommand{height:18px;}#fbCommandBox{width:100%;height:19px;_height:18px;bottom:0;overflow:hidden;z-index:9;position:absolute;background:#fff;border:0;border-top:1px solid #ccc;}#fbCommandIcon{position:absolute;color:#00f;top:2px;left:7px;display:inline;font:11px Monaco,monospace;z-index:10;}#fbCommandLine{position:absolute;width:100%;height:19px;top:0;left:0;border:0;margin:0;padding:2px 0 2px 32px;font:11px Monaco,monospace;z-index:9;}#fbBottom[fixFirefox]{position:fixed;bottom:0;left:0;width:100%;z-index:10;}#fbBottom[fixFirefox] #fbCommand{display:block;}div.fbFitHeight{padding:0 1px;max-height:inherit;height:100%;overflow:auto;}#mainButtons a{font-size:1px;width:16px;height:16px;display:block;float:left;text-decoration:none;cursor:default;}#close{background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) 0 -119px;}#close:hover{background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) -16px -119px;}#detach{background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) -32px -119px;}#detach:hover{background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) -48px -119px;}.tab{text-decoration:none;display:block;float:left;width:auto;float:left;cursor:default;font-family:Lucida Grande,Tahoma,sans-serif;font-size:11px;font-weight:bold;height:23px;color:#565656;}.toolbarPanel span{display:block;float:left;}.toolbarPanel .tabL,.toolbarPanel .tabR{height:23px;width:8px;}.toolbarPanel .tabText{padding:4px 1px 0;}.tab:hover{background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) 0 -73px;}.tab:hover .tabL{background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) -16px -96px;}.tab:hover .tabR{background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) -24px -96px;}.selectedTab{background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) #e5e5e5 0 -50px !important;color:#000;}.selectedTab .tabL{background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) 0 -96px !important;}.selectedTab .tabR{background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) -8px -96px !important;}#fbHSplitter{position:absolute;left:0;top:0;width:100%;height:15px;font-size:10px;cursor:n-resize !important;background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/pixel_transparent.gif);z-index:9;}.fbVSplitter{background:#eee;color:#000;border:1px solid #777;border-width:0 1px;width:4px;_width:6px;cursor:e-resize;overflow:hidden;right:294px;text-decoration:none;z-index:9;position:absolute;height:100%;top:27px;}div.lineNo{font:11px Monaco,monospace;float:left;display:inline;position:relative;margin:0;padding:0 5px 0 20px;background:#eee;color:#888;border-right:1px solid #ccc;text-align:right;}pre.nodeCode{font:11px Monaco,monospace;margin:0;padding-left:10px;overflow:hidden;_width:100%;}.nodeControl{margin-top:3px;margin-left:-14px;float:left;_position:absolute;_margin-left:-11px;width:9px;height:9px;overflow:hidden;cursor:default;background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/tree_open.gif);}div.nodeMaximized{background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/tree_close.gif);}div.objectBox-element{padding:1px 3px;}.objectBox-selector{cursor:default;}.selectedElement{background:highlight;color:#fff !important;}.selectedElement span{color:#fff !important;}@media screen and (-webkit-min-device-pixel-ratio:0){.selectedElement{background:#316AC5;color:#fff !important;}}.logRow *{font-size:11px;}.logRow{position:relative;border-bottom:1px solid #D7D7D7;padding:2px 4px 1px 6px;background-color:#FFFFFF;}.logRow-command{font-family:Monaco,monospace;color:blue;}.objectBox-string,.objectBox-text,.objectBox-number,.objectBox-function,.objectLink-element,.objectLink-textNode,.objectLink-function,.objectBox-stackTrace,.objectLink-profile{font-family:Monaco,monospace;}.objectBox-null{padding:0 2px;border:1px solid #666666;background-color:#888888;color:#FFFFFF;}.objectBox-string{color:red;white-space:pre;}.objectBox-number{color:#000088;}.objectBox-function{color:DarkGreen;}.objectBox-object{color:DarkGreen;font-weight:bold;font-family:Lucida Grande,sans-serif;}.objectBox-array{color:#000;}.logRow-info,.logRow-error,.logRow-warning{background:#fff no-repeat 2px 2px;padding-left:20px;padding-bottom:3px;}.logRow-info{background-image:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/infoIcon.png);}.logRow-warning{background-color:cyan;background-image:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/warningIcon.png);}.logRow-error{background-color:LightYellow;background-image:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/errorIcon.png);color:#f00;}.errorMessage{vertical-align:top;color:#f00;}.objectBox-sourceLink{position:absolute;right:4px;top:2px;padding-left:8px;font-family:Lucida Grande,sans-serif;font-weight:bold;color:#0000FF;}.logRow-group{background:#EEEEEE;border-bottom:none;}.logGroup{background:#EEEEEE;}.logGroupBox{margin-left:24px;border-top:1px solid #D7D7D7;border-left:1px solid #D7D7D7;}.selectorTag,.selectorId,.selectorClass{font-family:Monaco,monospace;font-weight:normal;}.selectorTag{color:#0000FF;}.selectorId{color:DarkBlue;}.selectorClass{color:red;}.objectBox-element{font-family:Monaco,monospace;color:#000088;}.nodeChildren{padding-left:26px;}.nodeTag{color:blue;cursor:pointer;}.nodeValue{color:#FF0000;font-weight:normal;}.nodeText,.nodeComment{margin:0 2px;vertical-align:top;}.nodeText{color:#333333;}.nodeComment{color:DarkGreen;}.log-object{_position:relative;_height:100%;}.property{position:relative;clear:both;height:15px;}.propertyNameCell{vertical-align:top;float:left;width:28%;position:absolute;left:0;z-index:0;}.propertyValueCell{float:right;width:68%;background:#fff;position:absolute;_position:relative;padding-left:5px;display:table-cell;right:0;z-index:1;}.propertyName{font-weight:bold;}.FirebugPopup{height:100% !important;}.FirebugPopup #mainButtons{display:none !important;}.FirebugPopup #mainButtons{display:none !important;}.FirebugPopup #fbHSplitter{display:none !important;}.FirebugPopup #fbCommandBox{height:18px !important;_height:17px !important;}',
     HTML: '<table id="fbChrome" cellpadding="0" cellspacing="0" border="0"><tbody><tr><td id="fbTop" colspan="2"><div id="mainButtons"><a id="detach" href="javascript:FB.detach()">&nbsp;</a><a id="close" href="javascript:FB.close()">&nbsp;</a></div><div id="fbHSplitter">&nbsp;</div><!-- Toolbar buttons and Status Bar --><div id="fbToolbar"><div id="fbToolbarIcon"><a title="Firebug Lite Homepage" href="http://getfirebug.com/lite.html">&nbsp;</a></div><div id="fbToolbarButtons"><span><a id="fbBtnInspect" href="javascript:FB.startInspecting(this)">Inspect</a></span><span><a href="javascript:FB.clear()">Clear</a></span></div></div><!-- PanelBars - Tabs --><div id="fbPanelBars"><div id="fbPanelBar1" class="toolbarPanel"><a id="tc" class="tab selectedTab" href="javascript:FB.showTab(0)"><span class="tabL"></span><span class="tabText">Console</span><span class="tabR"></span></a><a id="th" class="tab" href="javascript:FB.showTab(1)"><span class="tabL"></span><span class="tabText">HTML</span><span class="tabR"></span></a><a class="tab" href="javascript:void(0)"><span class="tabL"></span><span class="tabText">CSS</span><span class="tabR"></span></a><a class="tab" href="javascript:void(0)"><span class="tabL"></span><span class="tabText">Script</span><span class="tabR"></span></a><a class="tab" href="javascript:void(0)"><span class="tabL"></span><span class="tabText">DOM</span><span class="tabR"></span></a></div><div id="fbPanelBar2Box" class="hide"><div id="fbPanelBar2" class="toolbarPanel"><a class="tab selectedTab" href="javascript:void(0);"><span class="tabL"></span><span class="tabText">Style</span><span class="tabR"></span></a><a class="tab" href="javascript:void(0)"><span class="tabL"></span><span class="tabText">Layout</span><span class="tabR"></span></a><a class="tab" href="javascript:void(0)"><span class="tabL"></span><span class="tabText">DOM</span><span class="tabR"></span></a></div></div></div></td></tr><!-- Main interface content --><tr id="fbContent"><td id="fbPanelBox1"><div id="fbPanel1" class="fbFitHeight"><div id="fbConsole"></div><div id="fbHTML"></div></div></td><td id="fbPanelBox2" class="hide"><div id="fbVSplitter" class="fbVSplitter">&nbsp;</div><div id="fbPanel2" class="fbFitHeight"><div id="fbTest"></div></div></td></tr><!-- Command Line --><tr id="fbBottom"><td id="fbCommand" colspan="2"><div id="fbCommandBox"><div id="fbCommandIcon">&gt;&gt;&gt;</div><input id="fbCommandLine" name="fbCommandLine" type="text"/></div></td></tr></tbody></table>'
     
 };
@@ -3487,34 +3443,8 @@ Firebug.Chrome.Injected =
 FBL.ns(function() { with (FBL) {
 // ************************************************************************************************
 
-/*============================================================================
-  inspector
-*===========================================================================*/
-var pixelsPerInch, boxModel, boxModelStyle, boxMargin, boxMarginStyle, 
-  boxPadding, boxPaddingStyle, boxContent, boxContentStyle, offlineFragment;
-
-var IEStantandMode = document.all && document.compatMode == "CSS1Compat";
-var resetStyle = "margin:0; padding:0; border: 0; position:absolute; overflow:hidden; display:block; z-index: 2147483500;";
-var boxModelVisible = false;
-
-
-var fbBtnInspect = null;
-var outlineVisible = false;
-var outlineElements = {};
-var outline = {
-    "fbOutlineT": "fbHorizontalLine",
-    "fbOutlineL": "fbVerticalLine",
-    "fbOutlineB": "fbHorizontalLine",
-    "fbOutlineR": "fbVerticalLine"
-};
-var outlineStyle = { 
-    fbHorizontalLine: "background: #3875D7; height: 2px;",
-    fbVerticalLine: "background: #3875D7; width: 2px;"
-}
-  
-
-
-FBL.offlineFragment = null;
+//************************************************************************************************
+// Inspector Module
 
 Firebug.Inspector =
 {  
@@ -3522,9 +3452,10 @@ Firebug.Inspector =
     onReady: function()
     {
         offlineFragment = document.createDocumentFragment();
-        this.calculatePixelsPerInch();
-        this.createBoxModelInspector();
-        this.createOutlineInspector();
+        
+        calculatePixelsPerInch();
+        createBoxModelInspector();
+        createOutlineInspector();
     },
     
     onChromeReady: function()
@@ -3532,120 +3463,107 @@ Firebug.Inspector =
         fbBtnInspect = UI$("fbBtnInspect");
     },    
   
+    //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    // Inspect functions
+    
     startInspecting: function()
     {
+        document.body.appendChild(fbInspectFrame);
+        fbInspectFrame.style.width = document.body.scrollWidth + "px";
+        fbInspectFrame.style.height = document.body.scrollHeight + "px";
+
         fbBtnInspect.href = "javascript:FB.stopInspecting(this)";
         fbBtnInspect.className = "fbBtnInspectActive";
         
-        addEvent(document, "mousemove", Firebug.Inspector.onInspecting)
-        addEvent(window, "click", Firebug.Inspector.onInspectingClick)
+        addEvent(fbInspectFrame, "mousemove", Firebug.Inspector.onInspecting)
+        addEvent(fbInspectFrame, "click", Firebug.Inspector.onInspectingClick)
     },
     
     stopInspecting: function()
     {
+        offlineFragment.appendChild(fbInspectFrame);
+        
         fbBtnInspect.href = "javascript:FB.startInspecting(this)";
         fbBtnInspect.className = "";
         
         if (outlineVisible) this.hideOutline();
-        removeEvent(document, "mousemove", Firebug.Inspector.onInspecting)
-        removeEvent(window, "click", Firebug.Inspector.onInspectingClick)
+        removeEvent(fbInspectFrame, "mousemove", Firebug.Inspector.onInspecting)
+        removeEvent(fbInspectFrame, "click", Firebug.Inspector.onInspectingClick)
     },
+    
     
     onInspectingClick: function(e)
     {
-        e = e || event || window;
-        var targ;
+        fbInspectFrame.style.display = "none";    
+        var targ = Firebug.Inspector.getElementFromPoint(e.clientX, e.clientY);
+        fbInspectFrame.style.display = "block";    
+
+        // Avoid looking at text nodes in Opera
+        while (targ.nodeType != 1) targ = targ.parentNode;
         
-        if (e.target) targ = e.target;
-        else if (e.srcElement) targ = e.srcElement;
-        if (targ.nodeType == 3) // defeat Safari bug
-            targ = targ.parentNode;
-        
-        Firebug.Console.log(targ);
+        //Firebug.Console.log(targ);
         Firebug.Inspector.stopInspecting();
-        
-        cancelEvent(e, true);
-        return false;
     },
     
     onInspecting: function(e)
     {
-        e = e || event || window;
-        var targ;
-        
-        if (e.target) targ = e.target;
-        else if (e.srcElement) targ = e.srcElement;
-        if (targ.nodeType == 3) // defeat Safari bug
-            targ = targ.parentNode;
+        if (new Date().getTime() - lastInspecting > 30)
+        {
+            fbInspectFrame.style.display = "none";
+            var targ = Firebug.Inspector.getElementFromPoint(e.clientX, e.clientY);
+            fbInspectFrame.style.display = "block";    
+    
+            var id = targ.id;
+            if (id && /^fbOutline\w$/.test(id)) return;
+            if (id == "FirebugChrome") return;
             
-        var id = targ.id;
-        if (id && /^fbOutline\w$/.test(id)) return;
-        
-        var nodeName = targ.nodeName.toLowerCase();
-        if (" html head body ".indexOf(" "+nodeName+" ") != -1) { 
-          return;
+            // Avoid looking at text nodes in Opera
+            while (targ.nodeType != 1) targ = targ.parentNode;
+    
+            if (targ.nodeName.toLowerCase() == "body") return;
+    
+            //Firebug.Console.log(e.clientX, e.clientY, targ);
+            Firebug.Inspector.drawOutline(targ);
+            
+            if (targ[cacheID])
+                FBL.Firebug.HTML.selectTreeNode(""+targ[cacheID])
+            
+            lastInspecting = new Date().getTime();
         }
-        
-        //Firebug.Console.log(targ);
-
-        Firebug.Inspector.drawOutline(targ);      
     },
     
-    createOutlineInspector: function()
-    {
-      for (var name in outline)
-      {
-          var el = outlineElements[name] = document.createElement("div");
-          el.id = name;
-          el.style.cssText = resetStyle + outlineStyle[outline[name]];
-          offlineFragment.appendChild(el);
-      }
-    },
-    
+    //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    // Inspector Outline
     
     drawOutline: function(el)
     {
         if (!outlineVisible) this.showOutline();
         
-        if (isSafari)
-        {
-            var top = el.offsetTop;
-            var left = el.offsetLeft;
-            var height = el.offsetHeight;
-            var width = el.offsetWidth;
-        }
-        else 
-        {
-            var rect = el.getBoundingClientRect();
-            
-            // fix IE problem with offset when not in fullscreen mode
-            var offset = document.all ? document.body.clientTop || document.documentElement.clientTop: 0;
-      
-            var top = Math.round(rect.top - offset);
-            var left = Math.round(rect.left - offset);
-            var height = Math.round(rect.bottom - top - offset);
-            var width = Math.round(rect.right - left - offset);
-        }
+        var box = this.getElementBox(el);
+        
+        var top = box.top;
+        var left = box.left;
+        var height = box.height;
+        var width = box.width;
         
         var border = 2;
+        var o = outlineElements;
         
-        var els = outlineElements;
-        
-        els.fbOutlineT.style.top = top-border;
-        els.fbOutlineT.style.left = left;
-        els.fbOutlineT.style.width = width;
+        o.fbOutlineT.style.top = top-border + "px";
+        o.fbOutlineT.style.left = left + "px";
+        o.fbOutlineT.style.width = width + "px";
   
-        els.fbOutlineB.style.top = top+height;
-        els.fbOutlineB.style.left = left;
-        els.fbOutlineB.style.width = width;
+        o.fbOutlineB.style.top = top+height + "px";
+        o.fbOutlineB.style.left = left + "px";
+        o.fbOutlineB.style.width = width + "px";
         
-        els.fbOutlineL.style.top = top-border;
-        els.fbOutlineL.style.left = left-border;
-        els.fbOutlineL.style.height = height+2*border;
+        o.fbOutlineL.style.top = top-border + "px";
+        o.fbOutlineL.style.left = left-border + "px";
+        o.fbOutlineL.style.height = height+2*border + "px";
 
-        els.fbOutlineR.style.top = top-border;
-        els.fbOutlineR.style.left = left+width;
-        els.fbOutlineR.style.height = height+2*border;
+        o.fbOutlineR.style.top = top-border + "px";
+        o.fbOutlineR.style.left = left+width + "px";
+        o.fbOutlineR.style.height = height+2*border + "px";
     },
     
     hideOutline: function()
@@ -3659,68 +3577,46 @@ Firebug.Inspector =
     showOutline: function()
     {
         for (var name in outline)
+        {
             document.body.appendChild(outlineElements[name]);
+            //outlineElements[name].style.cssText = resetStyle + outlineStyle[outline[name]];
+        }
         
         outlineVisible = true;
     },
   
-    createBoxModelInspector: function()
-    {
-        boxModel = document.createElement("div");
-        boxModel.id = "fbBoxModel";
-        boxModelStyle = boxModel.style;
-        boxModelStyle.cssText = resetStyle + "opacity:0.8; _filter:alpha(opacity=80);";
-        
-        boxMargin = document.createElement("div");
-        boxMargin.id = "fbBoxMargin";
-        boxMarginStyle = boxMargin.style;
-        boxMarginStyle.cssText = resetStyle + "background: #EDFF64; height:100%; width:100%;";
-        boxModel.appendChild(boxMargin);
-        
-        boxPadding = document.createElement("div");
-        boxPadding.id = "fbBoxPadding";
-        boxPaddingStyle = boxPadding.style;
-        boxPaddingStyle.cssText = resetStyle + "background: SlateBlue;";
-        boxModel.appendChild(boxPadding);
-        
-        boxContent = document.createElement("div");
-        boxContent.id = "fbBoxContent";
-        boxContentStyle = boxContent.style;
-        boxContentStyle.cssText = resetStyle + "background: SkyBlue;";
-        boxModel.appendChild(boxContent);
-        
-        offlineFragment.appendChild(boxModel);
-    },
+    //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    // Box Model
     
-  
     drawBoxModel: function(el)
     {
         if (!boxModelVisible) this.showBoxModel();
         
-        var top = this.getOffset(el, "offsetTop");
-        var left = this.getOffset(el, "offsetLeft");
-        var height = el.offsetHeight;
-        var width = el.offsetWidth;
+        var box = this.getElementBox(el);
         
-        var margin = this.getCSSMeasurementBox(el, "margin");
-        var padding = this.getCSSMeasurementBox(el, "padding");
-    
-        boxModelStyle.top = top - margin.top;
-        boxModelStyle.left = left - margin.left;
-        boxModelStyle.height = height + margin.top + margin.bottom;
-        boxModelStyle.width = width + margin.left + margin.right;
+        var top = box.top;
+        var left = box.left;
+        var height = box.height;
+        var width = box.width;
+        
+        var margin = this.getMeasurementBox(el, "margin");
+        var padding = this.getMeasurementBox(el, "padding");
+
+        boxModelStyle.top = top - margin.top + "px";
+        boxModelStyle.left = left - margin.left + "px";
+        boxModelStyle.height = height + margin.top + margin.bottom + "px";
+        boxModelStyle.width = width + margin.left + margin.right + "px";
       
-        boxPaddingStyle.top = margin.top;
-        boxPaddingStyle.left = margin.left;
-        boxPaddingStyle.height = height;
-        boxPaddingStyle.width = width;
+        boxPaddingStyle.top = margin.top + "px";
+        boxPaddingStyle.left = margin.left + "px";
+        boxPaddingStyle.height = height + "px";
+        boxPaddingStyle.width = width + "px";
       
-        boxContentStyle.top = margin.top + padding.top;
-        boxContentStyle.left = margin.left + padding.left;
-        boxContentStyle.height = height - padding.top - padding.bottom;
-        boxContentStyle.width = width - padding.left - padding.right;
+        boxContentStyle.top = margin.top + padding.top + "px";
+        boxContentStyle.left = margin.left + padding.left + "px";
+        boxContentStyle.height = height - padding.top - padding.bottom + "px";
+        boxContentStyle.width = width - padding.left - padding.right + "px";
     },
-    
   
     hideBoxModel: function()
     {  
@@ -3728,181 +3624,235 @@ Firebug.Inspector =
         boxModelVisible = false;
     },
     
-  
     showBoxModel: function()
     {
         document.body.appendChild(boxModel);
         boxModelVisible = true;
     },
      
-  
-    calculatePixelsPerInch: function()
+    //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    // Measurement Funtions
+    
+    getMeasurement: function(el, name)
     {
-        var inch = document.createElement("div");
-        inch.style.cssText = resetStyle + "width:1in; height:1in; visibility: hidden;";
-        document.body.appendChild(inch);
+        var result = {value: 0, unit: "px"};
         
-        pixelsPerInch = {
-            x: inch.offsetWidth,
-            y: inch.offsetHeight
-        };
-        
-        document.body.removeChild(inch);
-    },
-    
-    
-    /**
-     * options.axis
-     * options.floatValue
-     */
-    getCSSMeasurementInPixels: function(el, name, options)
-    {
-        if (!el) return null;
-        
-        options = options || {axis: "x", floatValue: false};
-    
         var cssValue = this.getCSS(el, name);
-        
-        if(!cssValue) return 0;
+        if (!cssValue) return result;
+        if (cssValue.toLowerCase() == "auto") return result;
         
         var reMeasure = /(\d+\.?\d*)(.*)/;
         var m = cssValue.match(reMeasure);
         
         if (m)
         {
+            result.value = m[1]-0;
+            result.unit = m[2].toLowerCase();
+        }
         
-            var value = m[1]-0;
-            var unit = m[2].toLowerCase();
-            
-            if (unit == "px")
-                return value;
-              
-            else if (unit == "pt")
-                return this.pointsToPixels(value, options.axis, options.floatValue);
-              
-            if (unit == "em")
-                return this.emToPixels(el, value);
-              
-            else if (unit == "%")
-                return this.percentToPixels(el, value, options.axis);
-          
-        } else
-            return 0;
+        return result;        
     },
     
-  
-    getOffset: function(el, name)
+    getMeasurementInPixels: function(el, name)
     {
-        if (!el) return 0;
+        if (!el) return null;
         
-        var isVertical = /Top|Bottom$/.test(name);
-    
-        // When in "Standard" Compliance mode, IE6 doesn't count the document
-        // body margin when calculating offsetTop/offsetLeft, so we need to 
-        // calculate it manually
-        if (IEStantandMode)
-            var offset = isVertical ? 
-                this.getCSSMeasurementInPixels(document.body, "marginTop") :
-                this.getCSSMeasurementInPixels(document.body, "marginLeft");
-        else
-            var offset = 0;
-    
-        var value = el[name];
+        var m = this.getMeasurement(el, name);
+        var value = m.value;
+        var unit = m.unit;
         
-        var display = this.getCSS(el, "display");
-        var position = this.getCSS(el, "position");
+        if (unit == "px")
+            return value;
+          
+        else if (unit == "pt")
+            return this.pointsToPixels(name, value);
+          
+        if (unit == "em")
+            return this.emToPixels(el, value);
+          
+        else if (unit == "%")
+            return this.percentToPixels(el, value);
+    },
+
+    getElementPosition: function(el)
+    {
+        var left = 0
+        var top = 0;
         
-        if (!document.all || display != "inline" && position != "relative")
-            return offset + value;
-        else
-            return value + this.getOffset(el.parentNode, name);  
+        if (el.offsetParent)
+        {
+            do
+            {
+                left += el.offsetLeft;
+                top += el.offsetTop;
+            }
+            while (el = el.offsetParent);
+        }
+        return {left:left, top:top};      
     },
     
+    getWindowSize: function()
+    {
+        var width=0, height=0;
+        
+        if (typeof window.innerWidth == 'number')
+        {
+            // Non-IE
+            width = window.innerWidth;
+            height = window.innerHeight;
+        }
+        else if (document.documentElement && document.documentElement.clientHeight)
+        {
+            // IE 6+ in Standards Compliant Mode
+            width = document.documentElement.clientWidth;
+            height = document.documentElement.clientHeight;
+        }
+        else if (document.body && document.body.clientWidth)
+        {
+            // IE 4 compatible
+            width = document.body.clientWidth;
+            height = document.body.clientHeight;
+        }
+        
+        return {width: width, height: height};
+    },
     
-    getCSSMeasurementBox: function(el, name)
+    getWindowScrollPosition: function()
+    {
+        var top=0, left=0;
+        
+        if(typeof window.pageYOffset == 'number')
+        {
+            // Netscape
+            top = window.pageYOffset;
+            left = window.pageXOffset;
+        }
+        else if(document.body && document.body.scrollTop)
+        {
+            // DOM
+            top = document.body.scrollTop;
+            left = document.body.scrollLeft;
+        }
+        else if(document.documentElement && document.documentElement.scrollTop)
+        {
+            // IE6
+            top = document.documentElement.scrollTop;
+            left = document.documentElement.scrollLeft;
+        }
+        
+        return {top:top, left:left};
+    },
+    
+    getElementBox: function(el)
+    {
+        var result = {};
+        
+        if (el.getBoundingClientRect)
+        {
+            var rect = el.getBoundingClientRect();
+            
+            // fix IE problem with offset when not in fullscreen mode
+            var offset = isIE ? document.body.clientTop || document.documentElement.clientTop: 0;
+            
+            var scroll = this.getWindowScrollPosition();
+            
+            result.top = Math.round(rect.top - offset + scroll.top);
+            result.left = Math.round(rect.left - offset + scroll.left);
+            result.height = Math.round(rect.bottom - rect.top);
+            result.width = Math.round(rect.right - rect.left);
+        }
+        else 
+        {
+            var position = this.getElementPosition(el);
+            
+            result.top = position.top;
+            result.left = position.left;
+            result.height = el.offsetHeight;
+            result.width = el.offsetWidth;
+        }
+        
+        return result;
+    },
+    
+    getElementFromPoint: function(x, y)
+    {
+        if (isOpera || isSafari)
+        {
+            var scroll = this.getWindowScrollPosition();
+            return document.elementFromPoint(x + scroll.left, y + scroll.top);
+        }
+        else
+            return document.elementFromPoint(x, y);
+    },
+    
+    getMeasurementBox: function(el, name)
     {
         var sufixes = ["Top", "Left", "Bottom", "Right"];
         var result = [];
         
-        if (document.all)
-        {
-            var propName, cssValue;
-            var autoMargin = null;
-            
-            for(var i=0, sufix; sufix=sufixes[i]; i++)
-            {
-                propName = name + sufix;
-                
-                cssValue = el.currentStyle[propName] || el.style[propName]; 
-                
-                if (cssValue == "auto")
-                {
-                    autoMargin = autoMargin || this.getCSSAutoMarginBox(el);
-                    result[i] = autoMargin[sufix.toLowerCase()];
-                }
-                else
-                    result[i] = this.getCSSMeasurementInPixels(el, propName);
-                      
-            }
-        
-        }
-        else
-        {
-            for(var i=0, sufix; sufix=sufixes[i]; i++)
-                result[i] = this.getCSSMeasurementInPixels(el, name + sufix);
-        }
+        for(var i=0, sufix; sufix=sufixes[i]; i++)
+            result[i] = Math.round(this.getMeasurementInPixels(el, name + sufix));
         
         return {top:result[0], left:result[1], bottom:result[2], right:result[3]};
     }, 
     
-  
-    getCSSAutoMarginBox: function(el)
+    getFontSizeInPixels: function(el)
     {
-        if (isIE && " meta title input script link ".indexOf(" "+el.nodeName.toLowerCase()+" ") != -1)
-            return {top:0, left:0, bottom:0, right:0};
+        var size = this.getMeasurement(el, "fontSize");
         
-        var box = document.createElement("div");
-        box.style.cssText = "margin:0; padding:1px; border: 0; position:static; overflow:hidden; visibility: hidden;";
+        if (size.unit == "px") return size.value;
         
-        var clone = el.cloneNode(false);
-        var text = document.createTextNode("&nbsp;");
-        clone.appendChild(text);
+        // get font size, the dirty way
+        var computeDirtyFontSize = function(el, calibration)
+        {
+            var div = document.createElement("div");
+            var divStyle = offscreenStyle;
+
+            if (calibration)
+                divStyle +=  " font-size:"+calibration+"px;";
+            
+            div.style.cssText = divStyle;
+            div.innerHTML = "A";
+            el.appendChild(div);
+            
+            var value = div.offsetHeight;
+            el.removeChild(div);
+            return value;
+        }
         
-        box.appendChild(clone);
-    
-        document.body.appendChild(box);
+        // Calibration fails in some environments, so we're using a static value
+        // based in the test case result.
+        var rate = 200 / 225;
+        //var calibrationBase = 200;
+        //var calibrationValue = computeDirtyFontSize(el, calibrationBase);
+        //var rate = calibrationBase / calibrationValue;
         
-        var marginTop = clone.offsetTop - box.offsetTop - 1;
-        var marginBottom = box.offsetHeight - clone.offsetHeight - 2 - marginTop;
-        
-        var marginLeft = clone.offsetLeft - box.offsetLeft - 1;
-        var marginRight = box.offsetWidth - clone.offsetWidth - 2 - marginLeft;
-        
-        document.body.removeChild(box);
-        
-        return {top:marginTop, left:marginLeft, bottom:marginBottom, right:marginRight};
+        var value = computeDirtyFontSize(el);
+
+        return value * rate;
     },
     
+    
+    //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    // Unit Funtions
   
-    pointsToPixels: function(value, axis, returnFloat)
+    pointsToPixels: function(name, value)
     {
-        axis = axis || "x";
+        var axis = /Top$|Bottom$/.test(name) ? "y" : "x";
         
         var result = value * pixelsPerInch[axis] / 72;
         
         return returnFloat ? result : Math.round(result);
     },
-      
     
     emToPixels: function(el, value)
     {
         if (!el) return null;
         
-        var fontSize = this.getCSSMeasurementInPixels(el, "fontSize");
+        var fontSize = this.getFontSizeInPixels(el);
         
         return Math.round(value * fontSize);
     },
-    
     
     exToPixels: function(el, value)
     {
@@ -3910,28 +3860,32 @@ Firebug.Inspector =
         
         // get ex value, the dirty way
         var div = document.createElement("div");
-        div.style.position = "absolute";
-        div.style.width = value + "ex";
-        div.style.visibility = "hidden";
+        div.style.cssText = offscreenStyle + "width:"+value + "ex;";
         
-        document.body.appendChild(div);
-        
+        el.appendChild(div);
         var value = div.offsetWidth;
-        
-        document.body.removeChild(div);
+        el.removeChild(div);
         
         return value;
     },
-    
-  
+      
     percentToPixels: function(el, value)
     {
         if (!el) return null;
         
-        // TODO:
+        // get % value, the dirty way
+        var div = document.createElement("div");
+        div.style.cssText = offscreenStyle + "width:"+value + "%;";
+        
+        el.appendChild(div);
+        var value = div.offsetWidth;
+        el.removeChild(div);
+        
+        return value;
     },
     
-  
+    //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    
     getCSS: isIE ? function(el, name)
     {
         return el.currentStyle[name] || el.style[name] || undefined;
@@ -3943,6 +3897,138 @@ Firebug.Inspector =
     }
 
 };
+
+//************************************************************************************************
+// Inspector Internals
+
+
+//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+// Shared variables
+
+FBL.offlineFragment = null;
+
+
+//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+// Internal variables
+
+var IEStantandMode = document.all && document.compatMode == "CSS1Compat";
+var boxModelVisible = false;
+
+var pixelsPerInch, boxModel, boxModelStyle, boxMargin, boxMarginStyle, 
+boxPadding, boxPaddingStyle, boxContent, boxContentStyle;
+
+//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+var resetStyle = "margin:0; padding:0; border:0; position:absolute; overflow:hidden; display:block;";
+var offscreenStyle = resetStyle + "top:-1234px; left:-1234px;";
+
+var inspectStyle = resetStyle + "z-index: 2147483500;";
+var inspectFrameStyle = resetStyle + "z-index: 2147483550; top:0; left:0; background:url(http://pedrosimonetti.googlepages.com/pixel_transparent.gif);";
+//var inspectFrameStyle = resetStyle + "z-index: 2147483550; top: 0; left: 0; background: #ff0; opacity: 0.1; _filter: alpha(opacity=10);";
+
+var inspectModelStyle = inspectStyle + "opacity:0.8; _filter:alpha(opacity=80);";
+var inspectMarginStyle = inspectStyle + "background: #EDFF64; height:100%; width:100%;";
+var inspectPaddingStyle = inspectStyle + "background: SlateBlue;";
+var inspectContentStyle = inspectStyle + "background: SkyBlue;";
+
+
+var outlineStyle = { 
+    fbHorizontalLine: "background: #3875D7; height: 2px;",
+    fbVerticalLine: "background: #3875D7; width: 2px;"
+}
+
+//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+var lastInspecting = 0;
+var fbInspectFrame = null;
+var fbBtnInspect = null;
+
+
+//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+var outlineVisible = false;
+var outlineElements = {};
+var outline = {
+  "fbOutlineT": "fbHorizontalLine",
+  "fbOutlineL": "fbVerticalLine",
+  "fbOutlineB": "fbHorizontalLine",
+  "fbOutlineR": "fbVerticalLine"
+};
+
+
+//************************************************************************************************
+// Measurement Functions
+
+var calculatePixelsPerInch = function calculatePixelsPerInch()
+{
+    var inch = document.createElement("div");
+    inch.style.cssText = resetStyle + "width:1in; height:1in; position:absolute; top:-1234px; left:-1234px;";
+    document.body.appendChild(inch);
+    
+    window.pixelsPerInch = {
+        x: inch.offsetWidth,
+        y: inch.offsetHeight
+    };
+    
+    document.body.removeChild(inch);
+};
+
+
+//************************************************************************************************
+// Section
+
+
+var createOutlineInspector = function createOutlineInspector()
+{
+    fbInspectFrame = document.createElement("div");
+    fbInspectFrame.id = "fbInspectFrame";
+    fbInspectFrame.style.cssText = inspectFrameStyle;
+    offlineFragment.appendChild(fbInspectFrame);
+    
+    for (var name in outline)
+    {
+        var el = outlineElements[name] = document.createElement("div");
+        el.id = name;
+        el.style.cssText = inspectStyle + outlineStyle[outline[name]];
+        offlineFragment.appendChild(el);
+    }
+};
+
+var createBoxModelInspector = function createBoxModelInspector()
+{
+    boxModel = document.createElement("div");
+    boxModel.id = "fbBoxModel";
+    boxModelStyle = boxModel.style;
+    boxModelStyle.cssText = inspectModelStyle;
+    
+    boxMargin = document.createElement("div");
+    boxMargin.id = "fbBoxMargin";
+    boxMarginStyle = boxMargin.style;
+    boxMarginStyle.cssText = inspectMarginStyle;
+    boxModel.appendChild(boxMargin);
+    
+    boxPadding = document.createElement("div");
+    boxPadding.id = "fbBoxPadding";
+    boxPaddingStyle = boxPadding.style;
+    boxPaddingStyle.cssText = inspectPaddingStyle;
+    boxModel.appendChild(boxPadding);
+    
+    boxContent = document.createElement("div");
+    boxContent.id = "fbBoxContent";
+    boxContentStyle = boxContent.style;
+    boxContentStyle.cssText = inspectContentStyle;
+    boxModel.appendChild(boxContent);
+    
+    offlineFragment.appendChild(boxModel);
+};
+
+
+
+//************************************************************************************************
+// Section
+
+
+
 
 // ************************************************************************************************
 }});
@@ -4088,8 +4174,14 @@ Firebug.HTML =
         
         var uid = treeNode.attributes[cacheID].value;
         var parentNode = documentCache[uid];
+        
+        if (parentNode.childNodes.length == 0) return;
+        
         var treeNext = treeNode.nextSibling;
         var treeParent = treeNode.parentNode;
+        
+        var control = isIE ? treeNode.previousSibling : treeNode.firstChild;
+        control.className = 'nodeControl nodeMaximized';
         
         var html = [];
         var children = doc.createElement("div");
@@ -4105,6 +4197,7 @@ Firebug.HTML =
             parentNode.nodeName.toLowerCase() + '&gt;</span>'
         
         treeParent.insertBefore(closeElement, treeNext);
+        
     },
     
     removeTreeChildren: function(treeNode)
@@ -4112,10 +4205,123 @@ Firebug.HTML =
         var children = treeNode.nextSibling;
         var closeTag = children.nextSibling;
         
+        var control = isIE ? treeNode.previousSibling : treeNode.firstChild;
+        control.className = 'nodeControl';
+        
         children.parentNode.removeChild(children);  
         closeTag.parentNode.removeChild(closeTag);  
+    },
+    
+    isTreeNodeVisible: function(id)
+    {
+        return UI$(id);
+    },
+    
+    selectTreeNode: function(id)
+    {
+        id = ""+id;
+        var node, stack = [];
+        while(id && !this.isTreeNodeVisible(id))
+        {
+            stack.push(id);
+            
+            var node = documentCache[id].parentNode;
+
+            if (node && typeof node[cacheID] != "undefined")
+                id = ""+node[cacheID];
+            else
+                break;
+        }
+        
+        stack.push(id);
+        
+        while(stack.length > 0)
+        {
+            id = stack.pop();
+            node = UI$(id);
+            
+            if (stack.length > 0 && documentCache[id].childNodes.length > 0)
+              this.appendTreeChildren(node);
+        }
+        
+        selectElement(node);
+        
+        consoleBodyFrame.scrollTop = Math.round(node.offsetTop - consoleBodyFrame.clientHeight/2);
     }
     
+}
+
+var selectedElement = null
+function selectElement(e)
+{
+    if (e != selectedElement)
+    {
+        if (selectedElement)
+            selectedElement.className = "objectBox-element";
+            
+        
+        e.className = e.className + " selectedElement";
+
+        if (FBL.isFirefox)
+            e.style.MozBorderRadius = "2px";
+        
+        else if (FBL.isSafari)
+            e.style.WebkitBorderRadius = "2px";
+        
+        selectedElement = e;
+    }
+}
+
+// TODO : Refactor
+Firebug.HTML.onTreeClick = function (e)
+{
+    e = e || event;
+    var targ;
+    
+    if (e.target) targ = e.target;
+    else if (e.srcElement) targ = e.srcElement;
+    if (targ.nodeType == 3) // defeat Safari bug
+        targ = targ.parentNode;
+        
+    
+    if (targ.className.indexOf('nodeControl') != -1 || targ.className == 'nodeTag')
+    {
+        if(targ.className == 'nodeTag')
+        {
+            var control = FBL.isIE ? (targ.parentNode.previousSibling || targ) :
+                          (targ.previousSibling.previousSibling || targ);
+
+            selectElement(targ.parentNode);
+            
+            if (control.className.indexOf('nodeControl') == -1)
+                return;
+            
+        } else
+            control = targ;
+        
+        FBL.cancelEvent(e);
+        
+        var treeNode = FBL.isIE ? control.nextSibling : control.parentNode;
+        
+        //FBL.Firebug.Console.log(treeNode);
+        
+        if (control.className.indexOf(' nodeMaximized') != -1) {
+            FBL.Firebug.HTML.removeTreeChildren(treeNode);
+        } else {
+            FBL.Firebug.HTML.appendTreeChildren(treeNode);
+        }
+    }
+    else if (targ.className == 'nodeValue' || targ.className == 'nodeName')
+    {
+        var input = FBL.Firebug.Chrome.document.getElementById('treeInput');
+        
+        input.style.display = "block";
+        input.style.left = targ.offsetLeft + 'px';
+        input.style.top = FBL.topHeight + targ.offsetTop - FBL.fbPanel1.scrollTop + 'px';
+        input.style.width = targ.offsetWidth + 6 + 'px';
+        input.value = targ.textContent || targ.innerText;
+        input.focus(); 
+    }
 }
 
 // ************************************************************************************************

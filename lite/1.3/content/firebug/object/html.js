@@ -139,8 +139,14 @@ Firebug.HTML =
         
         var uid = treeNode.attributes[cacheID].value;
         var parentNode = documentCache[uid];
+        
+        if (parentNode.childNodes.length == 0) return;
+        
         var treeNext = treeNode.nextSibling;
         var treeParent = treeNode.parentNode;
+        
+        var control = isIE ? treeNode.previousSibling : treeNode.firstChild;
+        control.className = 'nodeControl nodeMaximized';
         
         var html = [];
         var children = doc.createElement("div");
@@ -156,6 +162,7 @@ Firebug.HTML =
             parentNode.nodeName.toLowerCase() + '&gt;</span>'
         
         treeParent.insertBefore(closeElement, treeNext);
+        
     },
     
     removeTreeChildren: function(treeNode)
@@ -163,10 +170,123 @@ Firebug.HTML =
         var children = treeNode.nextSibling;
         var closeTag = children.nextSibling;
         
+        var control = isIE ? treeNode.previousSibling : treeNode.firstChild;
+        control.className = 'nodeControl';
+        
         children.parentNode.removeChild(children);  
         closeTag.parentNode.removeChild(closeTag);  
+    },
+    
+    isTreeNodeVisible: function(id)
+    {
+        return UI$(id);
+    },
+    
+    selectTreeNode: function(id)
+    {
+        id = ""+id;
+        var node, stack = [];
+        while(id && !this.isTreeNodeVisible(id))
+        {
+            stack.push(id);
+            
+            var node = documentCache[id].parentNode;
+
+            if (node && typeof node[cacheID] != "undefined")
+                id = ""+node[cacheID];
+            else
+                break;
+        }
+        
+        stack.push(id);
+        
+        while(stack.length > 0)
+        {
+            id = stack.pop();
+            node = UI$(id);
+            
+            if (stack.length > 0 && documentCache[id].childNodes.length > 0)
+              this.appendTreeChildren(node);
+        }
+        
+        selectElement(node);
+        
+        consoleBodyFrame.scrollTop = Math.round(node.offsetTop - consoleBodyFrame.clientHeight/2);
     }
     
+}
+
+var selectedElement = null
+function selectElement(e)
+{
+    if (e != selectedElement)
+    {
+        if (selectedElement)
+            selectedElement.className = "objectBox-element";
+            
+        
+        e.className = e.className + " selectedElement";
+
+        if (FBL.isFirefox)
+            e.style.MozBorderRadius = "2px";
+        
+        else if (FBL.isSafari)
+            e.style.WebkitBorderRadius = "2px";
+        
+        selectedElement = e;
+    }
+}
+
+// TODO : Refactor
+Firebug.HTML.onTreeClick = function (e)
+{
+    e = e || event;
+    var targ;
+    
+    if (e.target) targ = e.target;
+    else if (e.srcElement) targ = e.srcElement;
+    if (targ.nodeType == 3) // defeat Safari bug
+        targ = targ.parentNode;
+        
+    
+    if (targ.className.indexOf('nodeControl') != -1 || targ.className == 'nodeTag')
+    {
+        if(targ.className == 'nodeTag')
+        {
+            var control = FBL.isIE ? (targ.parentNode.previousSibling || targ) :
+                          (targ.previousSibling.previousSibling || targ);
+
+            selectElement(targ.parentNode);
+            
+            if (control.className.indexOf('nodeControl') == -1)
+                return;
+            
+        } else
+            control = targ;
+        
+        FBL.cancelEvent(e);
+        
+        var treeNode = FBL.isIE ? control.nextSibling : control.parentNode;
+        
+        //FBL.Firebug.Console.log(treeNode);
+        
+        if (control.className.indexOf(' nodeMaximized') != -1) {
+            FBL.Firebug.HTML.removeTreeChildren(treeNode);
+        } else {
+            FBL.Firebug.HTML.appendTreeChildren(treeNode);
+        }
+    }
+    else if (targ.className == 'nodeValue' || targ.className == 'nodeName')
+    {
+        var input = FBL.Firebug.Chrome.document.getElementById('treeInput');
+        
+        input.style.display = "block";
+        input.style.left = targ.offsetLeft + 'px';
+        input.style.top = FBL.topHeight + targ.offsetTop - FBL.fbPanel1.scrollTop + 'px';
+        input.style.width = targ.offsetWidth + 6 + 'px';
+        input.value = targ.textContent || targ.innerText;
+        input.focus(); 
+    }
 }
 
 // ************************************************************************************************
