@@ -46,8 +46,8 @@
 #Firebug .Nav .Tab:hover, #Firebug .Nav .Selected { border:1px outset #ccc !important; border-top-color:transparent !important;  }
 #Firebug .Nav .Selected { color:#111; cursor:default; background-color:#f2f2f2; }
 #Firebug .Nav .Settings { float:right; }
-#Firebug .Nav .Settings  .Options { text-decoration:none; padding-left:24px; background:url(firebug.gif) no-repeat 65px -151px; border:0 !important; opacity:0.7; filter:Alpha(Opacity=70); }
-#Firebug .Nav .Settings  .Options:hover, #Firebug .ButtonContainer .Options:active { border:0 !important; background-color:transparent; opacity:1; filter:Alpha(Opacity=100); }
+#Firebug .Nav .Settings .Options { text-decoration:none; padding-left:24px; background:url(firebug.gif) no-repeat 65px -151px; border:0 !important; opacity:0.7; filter:Alpha(Opacity=70); }
+#Firebug .Nav .Settings .Options:hover, #Firebug .ButtonContainer .Options:active { border:0 !important; background-color:transparent; opacity:1; filter:Alpha(Opacity=100); }
 
 
 /*

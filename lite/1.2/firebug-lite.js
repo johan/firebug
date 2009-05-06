@@ -8,7 +8,6 @@ var firebug = {
     "dIndex":"console", 
     "height":295,
     "hideDOMFunctions":false,
-    "liteFilename":null,
     "openInPopup": false,
     "override":false,
     "ml":false,
@@ -24,6 +23,7 @@ var firebug = {
     "extConsole":null,
     "init":false,
     "isPopup":false,
+    "liteFilename":null,
     "minimized":false,
     "popupWin":null,
     "targetWindow":undefined
@@ -456,10 +456,15 @@ var firebug = {
       fe.override=elSet.cbxOverride.element.checked;
       fe.showIconWhenHidden=elSet.cbxShowIcon.element.checked;
       fe.openInPopup=elSet.cbxOpenInPopup.element.checked;
-      fe.textNodeChars=elSet.textNodeChars.element.value;
+      
+      if(isFinite(elSet.textNodeChars.element.value)&&elSet.textNodeChars.element.value>0) {
+        fe.textNodeChars=elSet.textNodeChars.element.value;
+      } else {
+        fe.textNodeChars=0;
+      }
 
       if(firebug.internal.isPopup) {
-        window.opener.firebug.env = lib.util.Hash.clone(fe);
+        window.opener.firebug.env = firebug.lib.util.Hash.clone(fe);
       }
 
       with(firebug) {
@@ -655,23 +660,24 @@ var firebug = {
     },
     newWindow: function() {
       var interval,scripts,script,scriptPath,
-          fe=firebug.env;
+          fe=firebug.env,
+          fi=firebug.internal;
 
-      if (!firebug.internal.popupWin) {
+      if (!fi.popupWin) {
         scripts = document.getElementsByTagName('script');
         
-        firebug.internal.popupWin = window.open("", "_firebug", 
+        fi.popupWin = window.open("", "_firebug", 
           "status=0,menubar=0,resizable=1,top="+fe.popupTop+",left="+fe.popupLeft+",width=" + fe.popupWidth + 
           ",height=" + fe.popupHeight + ",scrollbars=0,addressbar=0,outerWidth="+fe.popupWidth+",outerHeight="+fe.popupHeight+
           "toolbar=0,location=0,directories=0,dialog=0");
         
-        if(!firebug.internal.popupWin) {
+        if(!fi.popupWin) {
           alert("Firebug Lite could not open a pop-up window, most likely because of a popup blocker.\nPlease enable popups for this domain");
         } else {
           firebug.settings.hide();
-        
+
           for (i=0,len=scripts.length; i<len; i++) {
-            if (scripts[i].src.indexOf(fe.liteFilename) > -1) {
+            if (scripts[i].src.indexOf(fi.liteFilename) > -1) {
               scriptPath = scripts[i].src;
               break;
             }
@@ -679,15 +685,15 @@ var firebug = {
 
           if (scriptPath) {
             done = false;
-            script = firebug.internal.popupWin.document.createElement('script');
+            script = fi.popupWin.document.createElement('script');
             script.type = 'text/javascript';
             script.src = scriptPath;
 
             script[firebug.lib.env.ie?"onreadystatechange":"onload"] = function(){
               if(!done && (!firebug.lib.env.ie || this.readyState == "complete" || this.readyState=="loaded")){
                 done = true;
-                if(firebug.internal.popupWin.firebug) {
-                  with(firebug.internal.popupWin.firebug) {
+                if(fi.popupWin.firebug) {
+                  with(fi.popupWin.firebug) {
                     internal.isPopup = true;
                     env.css = fe.css;
                     init();
@@ -723,8 +729,8 @@ var firebug = {
               firebug.el.mainiframe.environment.addStyle({"display": "none"});
             }
           } else {
-            alert("Unable to detect the following script \"" + fe.liteFilename +
-                  "\" ... if the script has been renamed then please set the value of firebug.env.liteFilename to reflect this change");
+            alert("Unable to detect the following script \"" + firebug.internal.liteFilename +
+                  "\" ... if the script has been renamed then please set the value of firebug.internal.liteFilename to reflect this change");
             firebug.internal.popupWin.close();
             firebug.internal.popupWin=null;
           }
@@ -1532,7 +1538,7 @@ var firebug = {
         with(firebug){
           d.scripts.index = _index;
           el.left.scripts.container.update("");
-          var i=1,script = document.getElementsByTagName("script")[_index],uri = script.src||document.location.href,source;
+          var i=0,script = document.getElementsByTagName("script")[_index],uri = script.src||document.location.href,source;
           try {
             if(uri!=document.location.href){
               source = internal.cache[uri]||lib.xhr.get(uri).responseText;
@@ -1546,7 +1552,7 @@ var firebug = {
             
             if(d.scripts.lineNumbers){
               source = source.replace(/(^)|\n/g,function(_ch){
-                i+=1;
+                i++;
                 return "\n"+i+" ";
               });
             }
@@ -2556,7 +2562,7 @@ var firebug = {
       var script = scriptsIncluded[i],
           src = getFileName(script.src);
       if(src){
-        env.liteFilename = src[1];
+        internal.liteFilename = src;
         break;
       }
     }

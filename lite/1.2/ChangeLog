@@ -1,11 +1,21 @@
 == Firebug Lite Change Log ==
 
+2009-05-06 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
+  * firebug-lite.css: Fixed options dropdown arrow
+  * firebug-lite.js: Script line numbering started at 2, changed it so that it starts at 1
+                     Moved env.liteFilename to internal vars as it is no longer necessary for users to change this value
+                     Fixed error when getting script name
+                     Fixed lib.util.Hash.clone (it was called out of scope)
+                     Added check for valid value when reading textNodeChars
+
 2009-05-06 Azer Koculu <azer@kodfabrik.com>
   * firebug-lite.js: Changed filename search.
-  		     Moved initializer part into a new function scope.
+                     Moved initializer part into a new function scope.
                      Added 'firebugIgnore' filter to dom explorer.
-		     Setted firebugIgnore attributes in container elements.
-		     Optimized source code displayer in scripts tab.
+                     Setted firebugIgnore attributes in container elements.
+                     Optimized source code displayer in scripts tab.
+                     Refactored script line numbering code
+                     Changed code for getting script name
 
 2009-05-02 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
   * firebug-lite.js: Issue 1713: If FB Lite is loaded over https IE warns of unsecured items being loaded
