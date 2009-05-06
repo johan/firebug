@@ -1,5 +1,12 @@
 == Firebug Lite Change Log ==
 
+2009-05-06 Azer Koculu <azer@kodfabrik.com>
+  * firebug-lite.js: Changed filename search.
+  		     Moved initializer part into a new function scope.
+                     Added 'firebugIgnore' filter to dom explorer.
+		     Setted firebugIgnore attributes in container elements.
+		     Optimized source code displayer in scripts tab.
+
 2009-05-02 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
   * firebug-lite.js: Issue 1713: If FB Lite is loaded over https IE warns of unsecured items being loaded
                      Issue 1703: Firebug lite incorrect reports the evaluation result of "undefined" as "null"

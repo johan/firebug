@@ -149,7 +149,7 @@
  * Scripts
  */
 
-#Firebug .Left .Scripts { display:none; height:225px; *height:235px; overflow:scroll; font:12px Verdana, Geneva, Arial, Helvetica, sans-serif; }
+#Firebug .Left .Scripts { display:none; height:225px; *height:235px; overflow:scroll; font:12px Verdana, Geneva, Arial, Helvetica, sans-serif; white-space:pre; }
 #Firebug .Left .Scripts .LineNumber { float:left; width:30px; height:20px; padding:0 2px 0 0; background:#eee; color:#666; font-family:Courier; text-align:right; border-right:1px solid #ccc; }
 #Firebug .Left .Scripts .CodeContainer { padding:5px; }
 #Firebug .Left .Scripts .Code { height:20px; }
@@ -215,4 +215,4 @@
 
 #Firebug .Clear { clear:both; height:0px; font-size:0px; }
 
-#firebugIconDiv {width:38px;height:38px;right:15pt;bottom:5pt;border:2px solid #000;display:none;position:fixed;background-image:url(firebug_logo.png);text-decoration:underline;cursor:pointer;filter:alpha(opacity:60);opacity:.6;z-index:99999998;}
+#firebugIconDiv { width:38px;height:38px;right:15pt;bottom:5pt;border:2px solid #000;display:none;position:fixed;background-image:url(firebug_logo.png);text-decoration:underline;cursor:pointer;filter:alpha(opacity:60);opacity:.6;z-index:99999998;}

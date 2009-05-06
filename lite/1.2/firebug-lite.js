@@ -1,8 +1,8 @@
 var firebug = {
-  version:[1.23,20090502],
+  version:[1.23,20090506],
   el:{}, 
   env:{ 
-    "css":"http://fbug.googlecode.com/svn/trunk/lite/1.2/firebug-lite.css", 
+    "css":"http://getfirebug.com/releases/lite/1.2/firebug-lite.css", 
     "debug":true,
     "detectFirebug":true,
     "dIndex":"console", 
@@ -113,14 +113,14 @@ var firebug = {
       /* 
        * Firebug Icon
        */
-      el.firebugIcon = new lib.element("div").attribute.set("id","firebugIconDiv").attribute.set("title",iconTitle).attribute.set("alt",iconTitle).event.addListener("mousedown",win.iconClicked).insert(document.body);
+      el.firebugIcon = new lib.element("div").attribute.set('firebugIgnore',true).attribute.set("id","firebugIconDiv").attribute.set("title",iconTitle).attribute.set("alt",iconTitle).event.addListener("mousedown",win.iconClicked).insert(document.body);
       
       /* 
        * main interface
        */
       el.content = {};
-      el.mainiframe = new lib.element("IFRAME").attribute.set("id","FirebugIFrame").environment.addStyle({ "display":"none", "width":lib.util.GetViewport().width+"px" }).insert(document.body);
-      el.main = new lib.element("DIV").attribute.set("id","Firebug").environment.addStyle({ "display":"none", "width":lib.util.GetViewport().width+"px" }).insert(document.body);
+      el.mainiframe = new lib.element("IFRAME").attribute.set("id","FirebugIFrame").attribute.set('firebugIgnore',true).environment.addStyle({ "display":"none", "width":lib.util.GetViewport().width+"px" }).insert(document.body);
+      el.main = new lib.element("DIV").attribute.set("id","Firebug").attribute.set('firebugIgnore',true).environment.addStyle({ "display":"none", "width":lib.util.GetViewport().width+"px" }).insert(document.body);
       if(!internal.isPopup){
         el.resizer = new lib.element("DIV").attribute.addClass("Resizer").event.addListener("mousedown",win.resizer.start).insert(el.main);
       }
@@ -170,8 +170,8 @@ var firebug = {
       /*
        * inspector
        */
-      el.borderInspector = new lib.element("DIV").attribute.set("id","FirebugBorderInspector").event.addListener("click",listen.inspector).insert(document.body);
-      el.bgInspector = new lib.element("DIV").attribute.set("id","FirebugBGInspector").insert(document.body);
+      el.borderInspector = new lib.element("DIV").attribute.set("id","FirebugBorderInspector").attribute.set('firebugIgnore',true).event.addListener("click",listen.inspector).insert(document.body);
+      el.bgInspector = new lib.element("DIV").attribute.set("id","FirebugBGInspector").attribute.set('firebugIgnore',true).insert(document.body);
 
       /*
        * console
@@ -459,18 +459,7 @@ var firebug = {
       fe.textNodeChars=elSet.textNodeChars.element.value;
 
       if(firebug.internal.isPopup) {
-        ofe=window.opener.firebug.env;
-        ofe.debug=fe.debug;
-        ofe.detectFirebug=fe.detectFirebug;
-        ofe.hideDOMFunctions=fe.hideDOMFunctions;
-        ofe.override=fe.override;
-        ofe.showIconWhenHidden=fe.showIconWhenHidden;
-        ofe.openInPopup=fe.openInPopup;
-        ofe.textNodeChars=fe.textNodeChars;
-        ofe.popupTop=fe.popupTop;
-        ofe.popupLeft=fe.popupLeft;
-        ofe.popupWidth=fe.popupWidth;
-        ofe.popupHeight=fe.popupHeight;
+        window.opener.firebug.env = lib.util.Hash.clone(fe);
       }
 
       with(firebug) {
@@ -1423,7 +1412,7 @@ var firebug = {
             } 
             var item = element.childNodes[i];
 
-            if (item.nodeType != Node.TEXT_NODE){
+            if (item.nodeType != Node.TEXT_NODE && !item.getAttribute('firebugIgnore')){
               var container = new lib.element().attribute.addClass("Block").insert(parent), 
                   link = new lib.element("A").attribute.addClass("Link").insert(container), 
                   spacer = new lib.element("SPAN").attribute.addClass("Spacer").update("&nbsp;").insert(link),
@@ -1511,7 +1500,7 @@ var firebug = {
             "top":pos.offsetTop-(_bgInspector?0:2)+"px", "left":pos.offsetLeft-(_bgInspector?0:2)+"px",
             "display":"block"
           });
-9
+
           if(!_bgInspector){
             d.inspector.el = _element;
           }
@@ -1543,7 +1532,7 @@ var firebug = {
         with(firebug){
           d.scripts.index = _index;
           el.left.scripts.container.update("");
-          var i,script = document.getElementsByTagName("script")[_index],uri = script.src||document.location.href,source;
+          var i=1,script = document.getElementsByTagName("script")[_index],uri = script.src||document.location.href,source;
           try {
             if(uri!=document.location.href){
               source = internal.cache[uri]||lib.xhr.get(uri).responseText;
@@ -1554,17 +1543,15 @@ var firebug = {
             source = source.replace(/<|>/g,function(_ch){
               return ({"<":"&#60;",">":"&#62;"})[_ch];
             });
-          
-            source = source.split(/[\n\r]|<br \/>/);
-            if(!d.scripts.lineNumbers) {
-              for (i = 0; i < source.length; i++) {
-                el.left.scripts.container.child.add(new lib.element("DIV").attribute.addClass("Code").update(source[i]), new lib.element("DIV").attribute.addClass('Clear'));
-              };
-            } else {
-              for (i = 0; i < source.length; i++) {
-                el.left.scripts.container.child.add(new lib.element("DIV").child.add(new lib.element("DIV").attribute.addClass("LineNumber").update(i + 1), new lib.element("DIV").attribute.addClass("Code").update("&nbsp;" + source[i]), new lib.element("DIV").attribute.addClass('Clear')));
-              };
-            };
+            
+            if(d.scripts.lineNumbers){
+              source = source.replace(/(^)|\n/g,function(_ch){
+                i+=1;
+                return "\n"+i+" ";
+              });
+            }
+
+            el.left.scripts.container.update(source);
           } catch(e){
             el.left.scripts.container.child.add(
               new lib.element("DIV").attribute.addClass("CodeContainer").update("<em>Access to restricted URI denied</em>")
@@ -1876,7 +1863,6 @@ var firebug = {
         for(var i=0, len=source.length; i<len; i++){
           var item = source[i]+"}", rule = !lib.env.ie?item:item.split(/{|}/),
               styleSheet = document.styleSheets[0];
-          console.log(rule);
           if(item.match(/.+\{.+\}/)){
             if(lib.env.ie)
               styleSheet.addRule(rule[0],rule[1]);
@@ -2563,8 +2549,18 @@ var firebug = {
   );
 })(firebug);
 
-with(firebug){
-  env.liteFilename = document.getElementsByTagName("script")[document.getElementsByTagName("script").length-1].src.match(/([^\\|^\/]+\.\w+\w?)(\?\w*)?$/)[0];
-  initConsole();
-  lib.util.Init.push(firebug.init);
-}
+(function(){
+  with(firebug){
+    var scriptsIncluded = document.getElementsByTagName('script');
+    for(var i=scriptsIncluded.length-1; i>=0; i--){
+      var script = scriptsIncluded[i],
+          src = getFileName(script.src);
+      if(src){
+        env.liteFilename = src[1];
+        break;
+      }
+    }
+    initConsole();
+    lib.util.Init.push(firebug.init);
+  }
+})();
