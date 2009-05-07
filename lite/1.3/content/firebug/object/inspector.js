@@ -27,8 +27,10 @@ Firebug.Inspector =
     startInspecting: function()
     {
         document.body.appendChild(fbInspectFrame);
-        fbInspectFrame.style.width = document.body.scrollWidth + "px";
-        fbInspectFrame.style.height = document.body.scrollHeight + "px";
+        
+        var size = this.getWindowScrollSize();
+        fbInspectFrame.style.width = size.width + "px";
+        fbInspectFrame.style.height = size.height + "px";
 
         fbBtnInspect.href = "javascript:FB.stopInspecting(this)";
         fbBtnInspect.className = "fbBtnInspectActive";
@@ -259,13 +261,33 @@ Firebug.Inspector =
             width = window.innerWidth;
             height = window.innerHeight;
         }
-        else if (document.documentElement && document.documentElement.clientHeight)
+        else if ((el=document.documentElement) && (el.clientHeight || el.clientWidth))
         {
             // IE 6+ in Standards Compliant Mode
             width = document.documentElement.clientWidth;
             height = document.documentElement.clientHeight;
         }
-        else if (document.body && document.body.clientWidth)
+        else if ((el=document.body) && (el.clientHeight || el.clientWidth))
+        {
+            // IE 4 compatible
+            width = document.body.clientWidth;
+            height = document.body.clientHeight;
+        }
+        
+        return {width: width, height: height};
+    },
+    
+    getWindowScrollSize: function()
+    {
+        var width=0, height=0, el;
+        
+        if ((el=document.documentElement) && (el.scrollHeight || el.scrollWidth))
+        {
+            // IE 6+ in Standards Compliant Mode
+            width = document.documentElement.clientWidth;
+            height = document.documentElement.clientHeight;
+        }
+        else if ((el=document.body) && (el.scrollHeight || el.scrollWidth))
         {
             // IE 4 compatible
             width = document.body.clientWidth;

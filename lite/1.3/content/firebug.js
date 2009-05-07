@@ -118,7 +118,7 @@ append(FBL,
         }
         else
         {
-            //throw "N�o foi poss�vel encontrar o caminho automaticamente!";
+            throw "Firebug error: Library path not found";
         }
     },
     

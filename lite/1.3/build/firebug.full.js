@@ -554,7 +554,7 @@ append(FBL,
         }
         else
         {
-            //throw "N�o foi poss�vel encontrar o caminho automaticamente!";
+            throw "Firebug error: Library path not found";
         }
     },
     
@@ -2594,7 +2594,7 @@ var Chrome = Firebug.Chrome =
         // Fix Firefox problem with table rows with 100% height (fit height)
         if (isFirefox)
         {
-          fbContentStyle.maxHeight = Math.max(y - fixedHeight, 0)+ "px";
+            fbContentStyle.maxHeight = Math.max(y - fixedHeight, 0)+ "px";
         }
   
         var width = frame.offsetLeft + frame.clientWidth;
@@ -3469,8 +3469,10 @@ Firebug.Inspector =
     startInspecting: function()
     {
         document.body.appendChild(fbInspectFrame);
-        fbInspectFrame.style.width = document.body.scrollWidth + "px";
-        fbInspectFrame.style.height = document.body.scrollHeight + "px";
+        
+        var size = this.getWindowScrollSize();
+        fbInspectFrame.style.width = size.width + "px";
+        fbInspectFrame.style.height = size.height + "px";
 
         fbBtnInspect.href = "javascript:FB.stopInspecting(this)";
         fbBtnInspect.className = "fbBtnInspectActive";
@@ -3701,13 +3703,33 @@ Firebug.Inspector =
             width = window.innerWidth;
             height = window.innerHeight;
         }
-        else if (document.documentElement && document.documentElement.clientHeight)
+        else if ((el=document.documentElement) && (el.clientHeight || el.clientWidth))
         {
             // IE 6+ in Standards Compliant Mode
             width = document.documentElement.clientWidth;
             height = document.documentElement.clientHeight;
         }
-        else if (document.body && document.body.clientWidth)
+        else if ((el=document.body) && (el.clientHeight || el.clientWidth))
+        {
+            // IE 4 compatible
+            width = document.body.clientWidth;
+            height = document.body.clientHeight;
+        }
+        
+        return {width: width, height: height};
+    },
+    
+    getWindowScrollSize: function()
+    {
+        var width=0, height=0, el;
+        
+        if ((el=document.documentElement) && (el.scrollHeight || el.scrollWidth))
+        {
+            // IE 6+ in Standards Compliant Mode
+            width = document.documentElement.clientWidth;
+            height = document.documentElement.clientHeight;
+        }
+        else if ((el=document.body) && (el.scrollHeight || el.scrollWidth))
         {
             // IE 4 compatible
             width = document.body.clientWidth;
@@ -3965,7 +3987,7 @@ var calculatePixelsPerInch = function calculatePixelsPerInch()
     inch.style.cssText = resetStyle + "width:1in; height:1in; position:absolute; top:-1234px; left:-1234px;";
     document.body.appendChild(inch);
     
-    window.pixelsPerInch = {
+    pixelsPerInch = {
         x: inch.offsetWidth,
         y: inch.offsetHeight
     };

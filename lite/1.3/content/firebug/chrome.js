@@ -203,7 +203,7 @@ var Chrome = Firebug.Chrome =
         // Fix Firefox problem with table rows with 100% height (fit height)
         if (isFirefox)
         {
-          fbContentStyle.maxHeight = Math.max(y - fixedHeight, 0)+ "px";
+            fbContentStyle.maxHeight = Math.max(y - fixedHeight, 0)+ "px";
         }
   
         var width = frame.offsetLeft + frame.clientWidth;
