@@ -523,7 +523,7 @@ var calculatePixelsPerInch = function calculatePixelsPerInch()
     inch.style.cssText = resetStyle + "width:1in; height:1in; position:absolute; top:-1234px; left:-1234px;";
     document.body.appendChild(inch);
     
-    window.pixelsPerInch = {
+    pixelsPerInch = {
         x: inch.offsetWidth,
         y: inch.offsetHeight
     };
