@@ -253,25 +253,22 @@ Firebug.Inspector =
     
     getWindowSize: function()
     {
-        var width=0, height=0;
+        var width=0, height=0, el;
         
         if (typeof window.innerWidth == 'number')
         {
-            // Non-IE
             width = window.innerWidth;
             height = window.innerHeight;
         }
         else if ((el=document.documentElement) && (el.clientHeight || el.clientWidth))
         {
-            // IE 6+ in Standards Compliant Mode
-            width = document.documentElement.clientWidth;
-            height = document.documentElement.clientHeight;
+            width = el.clientWidth;
+            height = el.clientHeight;
         }
         else if ((el=document.body) && (el.clientHeight || el.clientWidth))
         {
-            // IE 4 compatible
-            width = document.body.clientWidth;
-            height = document.body.clientHeight;
+            width = el.clientWidth;
+            height = el.clientHeight;
         }
         
         return {width: width, height: height};
@@ -283,15 +280,13 @@ Firebug.Inspector =
         
         if ((el=document.documentElement) && (el.scrollHeight || el.scrollWidth))
         {
-            // IE 6+ in Standards Compliant Mode
-            width = document.documentElement.clientWidth;
-            height = document.documentElement.clientHeight;
+            width = el.scrollWidth;
+            height = el.scrollHeight;
         }
         else if ((el=document.body) && (el.scrollHeight || el.scrollWidth))
         {
-            // IE 4 compatible
-            width = document.body.clientWidth;
-            height = document.body.clientHeight;
+            width = el.scrollWidth;
+            height = el.scrollHeight;
         }
         
         return {width: width, height: height};
@@ -299,25 +294,22 @@ Firebug.Inspector =
     
     getWindowScrollPosition: function()
     {
-        var top=0, left=0;
+        var top=0, left=0, el;
         
         if(typeof window.pageYOffset == 'number')
         {
-            // Netscape
             top = window.pageYOffset;
             left = window.pageXOffset;
         }
-        else if(document.body && document.body.scrollTop)
+        else if((el=document.body) && (el.scrollTop || el.scrollLeft))
         {
-            // DOM
-            top = document.body.scrollTop;
-            left = document.body.scrollLeft;
+            top = el.scrollTop;
+            left = el.scrollLeft;
         }
-        else if(document.documentElement && document.documentElement.scrollTop)
+        else if((el=document.documentElement) && (el.scrollTop || el.scrollLeft))
         {
-            // IE6
-            top = document.documentElement.scrollTop;
-            left = document.documentElement.scrollLeft;
+            top = el.scrollTop;
+            left = el.scrollLeft;
         }
         
         return {top:top, left:left};
