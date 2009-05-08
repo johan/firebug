@@ -1,4 +1,7 @@
 == Firebug Lite Change Log ==
+2009-05-08 Azer Koculu <azer@kodfabrik.com>
+  * deploy: A shell script that copies source files whose names starts
+  with "firebug" to getfirebug.com's repo.
 
 2009-05-06 Mike Ratcliffe <sabine.michael.ratcliffe@gmail.com>
   * firebug-lite.css: Fixed options dropdown arrow
