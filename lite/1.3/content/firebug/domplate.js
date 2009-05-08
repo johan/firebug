@@ -1,8 +1,9 @@
 // Problems in IE
 // FIXED - eval return
-// addEventListener problem in IE
+// FIXED - addEventListener problem in IE
+// FIXED doc.createRange?
+//
 // class reserved word
-// doc.createRange?
 // test all honza examples in IE6 and IE7
 
 
@@ -25,7 +26,7 @@ function DomplateLoop()
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
-//(function() {
+(function() {
 
 var womb = null;
 
@@ -470,7 +471,8 @@ DomplateTag.prototype =
             {
                 var val = this.listeners[i+1];
                 var arg = generateArg(val, path, args);
-                blocks.push('node.addEventListener("', this.listeners[i], '", __bind__(this, ', arg, '), false);');
+                //blocks.push('node.addEventListener("', this.listeners[i], '", __bind__(this, ', arg, '), false);');
+                blocks.push('addEvent(node, "', this.listeners[i], '", __bind__(this, ', arg, '), false);');
             }
         }
 
@@ -860,6 +862,14 @@ function extend(l, r)
         l[n] = r[n];
 }
 
+function addEvent(object, name, handler)
+{
+    if (document.all)
+        object.attachEvent("on"+name, handler);
+    else
+        object.addEventListener(name, handler, false);
+}
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 function ArrayIterator(array)
@@ -944,16 +954,18 @@ var Renderer =
         var html = this.renderHTML(args, outputs, self);
 
         var doc = before.ownerDocument;
-        var range = doc.createRange();
-        range.selectNode(doc.body);
-        var frag = range.createContextualFragment(html);
-
-        var root = frag.firstChild;
-        if (before.nextSibling)
-            before.parentNode.insertBefore(frag, before.nextSibling);
-        else
-            before.parentNode.appendChild(frag);
-
+        if (!womb || womb.ownerDocument != doc)
+            womb = doc.createElement("div");
+        
+        womb.innerHTML = html;
+  
+        root = womb.firstChild;
+        while (womb.firstChild)
+            if (before.nextSibling)
+                before.parentNode.insertBefore(womb.firstChild, before.nextSibling);
+            else
+                before.parentNode.appendChild(womb.firstChild);
+        
         var domArgs = [root, this.tag.context, 0];
         domArgs.push.apply(domArgs, this.tag.domArgs);
         domArgs.push.apply(domArgs, outputs);
@@ -1045,4 +1057,4 @@ defineTags(
     "span", "strong", "table", "tbody", "td", "textarea", "tfoot", "th", "thead", "tr", "tt", "ul", "iframe"
 );
 
-//})();
+})();
