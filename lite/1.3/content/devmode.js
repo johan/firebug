@@ -317,6 +317,9 @@ var modules =
     "lib.js",
     
     "firebug.js",
+
+    "firebug/domplate.js",
+    //"firebug/test.js",
     
     "firebug/object/reps.js",
     "firebug/object/selector.js",
