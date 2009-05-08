@@ -112,14 +112,14 @@ DomplateTag.prototype =
                     this.listeners = [];
                 this.listeners.push(eventName, val);
             }
-            else if (name[0] == "_")
+            else if (name.indexOf("_") == 0)
             {
                 var propName = name.substr(1);
                 if (!this.props)
                     this.props = {};
                 this.props[propName] = val;
             }
-            else if (name[0] == "$")
+            else if (name.indexOf("$") == 0)
             {
                 var className = name.substr(1);
                 if (!this.classes)
