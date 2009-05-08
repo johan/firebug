@@ -907,8 +907,8 @@ var Renderer =
         table.innerHTML = html;
 
         var tbody = table.firstChild;
-        var parent = before.localName == "TR" ? before.parentNode : before;
-        var after = before.localName == "TR" ? before.nextSibling : null;
+        var parent = before.tagName == "TR" ? before.parentNode : before;
+        var after = before.tagName == "TR" ? before.nextSibling : null;
 
         var firstRow = tbody.firstChild, lastRow;
         while (tbody.firstChild)
@@ -921,7 +921,7 @@ var Renderer =
         }
 
         var offset = 0;
-        if (before.localName == "TR")
+        if (before.tagName == "TR")
         {
             var node = firstRow.parentNode.firstChild;
             for (; node && node != firstRow; node = node.nextSibling)
