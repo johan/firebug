@@ -26,9 +26,10 @@ Firebug.Inspector =
     
     startInspecting: function()
     {
-        document.body.appendChild(fbInspectFrame);
+        createInspectorFrame();
         
         var size = this.getWindowScrollSize();
+        
         fbInspectFrame.style.width = size.width + "px";
         fbInspectFrame.style.height = size.height + "px";
 
@@ -41,7 +42,7 @@ Firebug.Inspector =
     
     stopInspecting: function()
     {
-        offlineFragment.appendChild(fbInspectFrame);
+        destroyInspectorFrame();
         
         fbBtnInspect.href = "javascript:FB.startInspecting(this)";
         fbBtnInspect.className = "";
@@ -549,14 +550,21 @@ var calculatePixelsPerInch = function calculatePixelsPerInch()
 //************************************************************************************************
 // Section
 
-
-var createOutlineInspector = function createOutlineInspector()
+var createInspectorFrame = function createInspectorFrame()
 {
     fbInspectFrame = document.createElement("div");
     fbInspectFrame.id = "fbInspectFrame";
     fbInspectFrame.style.cssText = inspectFrameStyle;
-    offlineFragment.appendChild(fbInspectFrame);
-    
+    document.body.appendChild(fbInspectFrame);
+}
+
+var destroyInspectorFrame = function createInspectorFrame()
+{
+    document.body.removeChild(fbInspectFrame);
+}
+
+var createOutlineInspector = function createOutlineInspector()
+{
     for (var name in outline)
     {
         var el = outlineElements[name] = document.createElement("div");
