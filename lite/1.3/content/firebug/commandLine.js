@@ -97,9 +97,23 @@ var CommandLine = Firebug.CommandLine =
     
     evaluate: function(expr)
     {
-      //var cmd = "with(window){ (function() { return " + expr + " \n}).apply(window); }";
       var cmd = "(function() { with(FBL.CommandLineAPI){ return " + expr + " } }).apply(window)";
-      return this.eval(cmd);
+      var r;
+      
+      // Try executing the command, expecting that it returns a value
+      try
+      {
+          r = this.eval(cmd);
+      }
+      // If syntax error happens, it may be a command (if, for, while) that
+      // can't be returned by a function, so try it again without the return
+      catch(E)
+      {
+          cmd = "(function() { with(FBL.CommandLineAPI){ " + expr + " } }).apply(window)";
+          r = this.eval(cmd);
+      }
+      
+      return r;
     },
     
     eval: new Function("return window.eval.apply(window, arguments)"),
