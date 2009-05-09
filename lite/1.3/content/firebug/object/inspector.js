@@ -37,7 +37,7 @@ Firebug.Inspector =
         fbBtnInspect.className = "fbBtnInspectActive";
         
         addEvent(fbInspectFrame, "mousemove", Firebug.Inspector.onInspecting)
-        addEvent(fbInspectFrame, "click", Firebug.Inspector.onInspectingClick)
+        addEvent(fbInspectFrame, "mousedown", Firebug.Inspector.onInspectingClick)
     },
     
     stopInspecting: function()
@@ -49,7 +49,7 @@ Firebug.Inspector =
         
         if (outlineVisible) this.hideOutline();
         removeEvent(fbInspectFrame, "mousemove", Firebug.Inspector.onInspecting)
-        removeEvent(fbInspectFrame, "click", Firebug.Inspector.onInspectingClick)
+        removeEvent(fbInspectFrame, "mousedown", Firebug.Inspector.onInspectingClick)
     },
     
     
@@ -58,6 +58,11 @@ Firebug.Inspector =
         fbInspectFrame.style.display = "none";    
         var targ = Firebug.Inspector.getElementFromPoint(e.clientX, e.clientY);
         fbInspectFrame.style.display = "block";    
+
+        // Avoid inspecting the outline, and the FirebugChrome
+        var id = targ.id;
+        if (id && /^fbOutline\w$/.test(id)) return;
+        if (id == "FirebugChrome") return;
 
         // Avoid looking at text nodes in Opera
         while (targ.nodeType != 1) targ = targ.parentNode;
@@ -74,6 +79,7 @@ Firebug.Inspector =
             var targ = Firebug.Inspector.getElementFromPoint(e.clientX, e.clientY);
             fbInspectFrame.style.display = "block";    
     
+            // Avoid inspecting the outline, and the FirebugChrome
             var id = targ.id;
             if (id && /^fbOutline\w$/.test(id)) return;
             if (id == "FirebugChrome") return;
@@ -129,6 +135,8 @@ Firebug.Inspector =
     
     hideOutline: function()
     {
+        if (!outlineVisible) return;
+        
         for (var name in outline)
             offlineFragment.appendChild(outlineElements[name]);
 
@@ -137,11 +145,10 @@ Firebug.Inspector =
     
     showOutline: function()
     {
+        if (outlineVisible) return;
+        
         for (var name in outline)
-        {
             document.body.appendChild(outlineElements[name]);
-            //outlineElements[name].style.cssText = resetStyle + outlineStyle[outline[name]];
-        }
         
         outlineVisible = true;
     },
@@ -278,8 +285,9 @@ Firebug.Inspector =
     getWindowScrollSize: function()
     {
         var width=0, height=0, el;
-        
-        if ((el=document.documentElement) && (el.scrollHeight || el.scrollWidth))
+
+        if (!isIEQuiksMode && (el=document.documentElement) && 
+           (el.scrollHeight || el.scrollWidth))
         {
             width = el.scrollWidth;
             height = el.scrollHeight;
@@ -484,7 +492,6 @@ FBL.offlineFragment = null;
 //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 // Internal variables
 
-var IEStantandMode = document.all && document.compatMode == "CSS1Compat";
 var boxModelVisible = false;
 
 var pixelsPerInch, boxModel, boxModelStyle, boxMargin, boxMarginStyle, 

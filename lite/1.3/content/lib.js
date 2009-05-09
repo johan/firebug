@@ -76,7 +76,8 @@ this.isIE      = userAgent.indexOf("MSIE") != -1;
 this.isIE6     = /msie 6/i.test(navigator.appVersion);
 this.isOpera   = userAgent.indexOf("Opera") != -1;
 this.isSafari  = userAgent.indexOf("AppleWebKit") != -1;
-
+this.isIEStantandMode = document.all && document.compatMode == "CSS1Compat";
+this.isIEQuiksMode = document.all && document.compatMode == "BackCompat";
 
 
 // ************************************************************************************************

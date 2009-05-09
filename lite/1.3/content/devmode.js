@@ -1,5 +1,45 @@
 /*
 
+
+
+styleCache = {};
+
+// First style to add to cache is the inline styles
+for(cid in documentCache)
+{
+    styleCache[cid] = [];
+    styleCache[cid].push();
+}
+
+// for each stylesheet 
+for(stylesheet in stylesheets)
+{
+    // look at each rule
+    for(rule in stylesheet)
+    {
+        // get the rule's selector, and find all elements in document
+        var els = Firebug.Selector(rule.selector);
+        
+        // for each element found
+        for(var i=0, el; el=els[i]; i++)
+        {
+            var cid = el[cacheID];
+            
+            // Add style info in the cache stack of styles of the element 
+            styleCache[cid].push({
+                selector: rule.selector,
+                stylesheet: stylesheet,
+                lineNumber: getLineNumber(rule, stylesheet),
+                fileName: getFileName(rule, stylesheet),
+                style
+            });
+        }
+    }
+
+}
+
+
+
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
@@ -298,6 +338,73 @@ function isElement(o){
 
 
 */
+
+
+function getInlineStyles(el)
+{
+    var style = el.style;
+    var r = {}, l, prop;
+    
+    // Good browsers first
+    if (l = style.length)
+    {
+        for(var i=0; i<l; i++)
+        {
+            prop = style[i];
+            r[toCamelCase(prop)] = style.getPropertyValue(prop);
+        }
+    }
+    // Sad browsers last
+    else
+    {
+      for(var prop in style)
+        if (ignoreIEStyleProperties.indexOf(prop) == -1 && 
+            isIEInlineStyleProperty(el, prop))
+                r[prop] = style[prop];
+    }
+    
+    return r;
+}
+
+var ignoreIEStyleProperties = " cssText accelerator ";
+function isIEInlineStyleProperty(el, prop)
+{
+    var r = false;
+    
+    if (typeof el.style[prop] == "string")
+    {
+        r = !!el.style[prop];
+    }
+    
+    return r;
+}
+
+
+function toCamelCase(s)
+{
+    return s.replace(_selectorCaseMatch, _toCamelCaseReplaceFn);
+}
+
+function toSelectorCase(s)
+{
+  return s.replace(_camelCaseMatch, "-$1").toLowerCase();
+  
+}
+
+var _camelCaseMatch = /([A-Z])/g;
+var _selectorCaseMatch = /\-(.)/g; 
+function _toCamelCaseReplaceFn(m,g)
+{
+    return g.toUpperCase();
+}
+
+
+
+
+
+/**/
+
+
 
 (function(){
 
