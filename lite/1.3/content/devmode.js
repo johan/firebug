@@ -1,6 +1,19 @@
 /*
 
 
+TODO
+
+frame, frameStyle, consoleFrame, consoleBody
+
+context
+
+persitent popups
+library loading in different windows
+
+
+
+
+
 
 styleCache = {};
 
@@ -422,12 +435,9 @@ var skinURL = "";
 var modules = 
 [
     "lib.js",
-    
     "firebug.js",
 
-    "firebug/domplate.js",
-    //"firebug/test.js",
-    
+    //"firebug/domplate.js",
     "firebug/object/reps.js",
     "firebug/object/selector.js",
     
@@ -573,7 +583,8 @@ function loadModules() {
 
 function findLocation() 
 {
-    var rePath = /^(.*\/)[^\/]+\.\w+.*$/;
+    var reFirebugFile = /(firebug(\.\w+)?\.js|devmode\.js)$/;
+    var rePath = /^(.*\/)/;
     var reProtocol = /^\w+:\/\//;
     var head = document.documentElement.firstChild;
     var path = null;
@@ -581,7 +592,7 @@ function findLocation()
     for(var i=0, c=head.childNodes, ci; ci=c[i]; i++)
     {
         if ( ci.nodeName == "SCRIPT" && 
-            (ci.src.indexOf("devmode.js") != -1) )
+             reFirebugFile.test(ci.src) )
         {
           
             if (reProtocol.test(ci.src)) {
@@ -594,8 +605,8 @@ function findLocation()
                 // relative path
                 var r = rePath.exec(ci.src);
                 var src = r ? r[1] : ci.src;
-                var rel = /^((\.\.\/)+)(.*)/.exec(src);
-                var lastFolder = /^(.*\/)\w+\/$/;
+                var rel = /^((?:\.\.\/)+)(.*)/.exec(src);
+                var lastFolder = /^(.*\/)[^\/]+\/$/;
                 path = rePath.exec(location.href)[1];
                 
                 if (rel)
@@ -605,7 +616,7 @@ function findLocation()
                     while (j-- > 0)
                         path = lastFolder.exec(path)[1];
 
-                    path += rel[3];
+                    path += rel[2];
                 }
             }
             
@@ -613,10 +624,12 @@ function findLocation()
         }
     }
     
-    if (path && /content\/$/.test(path))
+    var m = path.match(/([^\/]+)\/$/);
+    
+    if (path && m)
     {
         sourceURL = path;
-        baseURL = path.substr(0, path.length-8);
+        baseURL = path.substr(0, path.length - m[1].length - 1);
         skinURL = baseURL + "skin/classic/";
     }
     else

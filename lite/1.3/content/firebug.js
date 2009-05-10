@@ -68,15 +68,16 @@ append(FBL,
     
     findLocation: function() 
     {
-        var rePath = /^(.*\/)[^\/]+\.\w+.*$/;
+        var reFirebugFile = /(firebug(\.\w+)?\.js|devmode\.js)$/;
+        var rePath = /^(.*\/)/;
         var reProtocol = /^\w+:\/\//;
         var head = document.documentElement.firstChild;
-        var path = "";
+        var path = null;
         
         for(var i=0, c=head.childNodes, ci; ci=c[i]; i++)
         {
             if ( ci.nodeName == "SCRIPT" && 
-                 /firebug.*\.js/.test(ci.src) )
+                 reFirebugFile.test(ci.src) )
             {
               
                 if (reProtocol.test(ci.src)) {
@@ -89,8 +90,8 @@ append(FBL,
                     // relative path
                     var r = rePath.exec(ci.src);
                     var src = r ? r[1] : ci.src;
-                    var rel = /^((\.\.\/)+)(.*)/.exec(src);
-                    var lastFolder = /^(.*\/)\w+\/$/;
+                    var rel = /^((?:\.\.\/)+)(.*)/.exec(src);
+                    var lastFolder = /^(.*\/)[^\/]+\/$/;
                     path = rePath.exec(location.href)[1];
                     
                     if (rel)
@@ -99,8 +100,8 @@ append(FBL,
                         var p;
                         while (j-- > 0)
                             path = lastFolder.exec(path)[1];
-
-                        path += rel[3];
+  
+                        path += rel[2];
                     }
                 }
                 
