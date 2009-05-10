@@ -56,8 +56,23 @@ for(stylesheet in stylesheets)
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
+DOMPLATE
 
-Fixed bug in getLocation function, the relative path calculation wasn't working in all cases. 
+
+IE problems with templates
+
+1 - class name attributes of objects
+
+2 - colon after the last property of a object
+
+3 - event handlers  
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+
+---Core----
+FIXED: Fixed bug in getLocation function, the relative path calculation wasn't working in all cases. 
 
 
 
