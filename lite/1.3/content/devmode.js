@@ -57,6 +57,10 @@ for(stylesheet in stylesheets)
 -------------------------------------------------------------------------------
 
 
+Fixed bug in getLocation function, the relative path calculation wasn't working in all cases. 
+
+
+
 ---Core----
 TODO: Better handling of switching tab contexts (selectedTab, rightPanelVisible)
 TODO: Check if there's a problem using the Sizzle selector engine in the code
