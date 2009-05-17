@@ -285,17 +285,17 @@ div.fbFitHeight {
   color: #565656;
 }
 
-.toolbarPanel span {
+.fbPanelBar span {
   display: block;
   float: left;
 }
 
-.toolbarPanel .tabL,.toolbarPanel .tabR {
+.fbPanelBar .tabL,.fbPanelBar .tabR {
   height: 23px;
   width: 8px;
 }
 
-.toolbarPanel .tabText {
+.fbPanelBar .tabText {
   padding: 4px 1px 0;
 }
 

@@ -35,8 +35,8 @@ this.initialize = function()
 
 this.waitForInit = function()
 {
-    if (document.body && typeof FBL.onReady == "function")
-        FBL.onReady();
+    if (document.body && FBL && FBL.Firebug)
+      FBL.Firebug.initialize();
     else
         setTimeout(FBL.waitForInit, 200);
 }
@@ -122,7 +122,7 @@ this.$ = function(id, doc)
         return document.getElementById(id);
 };
 
-this.UI$ = function(id)
+this.$U = function(id)
 {
     if (FBL.Firebug.Chrome.document)
         return FBL.Firebug.Chrome.document.getElementById(id);
@@ -132,6 +132,11 @@ this.UI$ = function(id)
 
 // ************************************************************************************************
 // Event
+
+this.bind = function(object, fn)
+{
+    return function(){return fn.apply(object, arguments);};
+}
 
 this.addEvent = function(object, name, handler)
 {
@@ -167,6 +172,32 @@ this.cancelEvent = function(e, preventDefault)
         e.stopPropagation();
                 
 };
+
+
+//************************************************************************************************
+// class Names
+
+this.hasClass = function(object, name) {
+    return (' '+object.className+' ').indexOf(' '+name+' ') != -1;
+}
+
+this.addClass = function(object, name) {
+    if ((' '+object.className+' ').indexOf(' '+name+' ') == -1)
+        object.className = object.className ? object.className + ' ' + name : name; 
+}
+
+this.removeClass = function(object, name) {
+    object.className = (' ' + object.className + ' ').
+        replace(new RegExp('(\\S*)\\s+'+name+'\\s+(\\S*)', 'g'), '$1 $2').
+        replace(/^\s*|\s*$/g, '');
+}
+
+this.toggleClass = function(object, name) {
+    if ((' '+object.className+' ').indexOf(' '+name+' ') >= 0)
+        this.removeClass(object, name)
+    else
+        this.addClass(object, name);
+}
 
 
 //************************************************************************************************
@@ -472,20 +503,20 @@ FBL.skinURL = null;
 // ************************************************************************************************
 // Internal functions
 
-append(FBL,  
+append(FBL.Firebug,  
 {
-    onReady: function()
+    initialize: function()
     {
-        cacheDocument();
-        findLocation();
-        registerPublicNamespaces();
+        this.cacheDocument();
+        this.findLocation();
+        this.registerPublicNamespaces();
         
         var module;
         for(var name in Firebug)
         {
             module = Firebug[name];
-            if(typeof module.onReady == "function")
-                module.onReady();
+            if(typeof module.initialize == "function")
+                module.initialize();
         }
         
         if (isIE6)
@@ -2052,9 +2083,22 @@ var Console = Firebug.Console;
 // ************************************************************************************************
 // CommandLine
 
-var CommandLine = Firebug.CommandLine = 
+
+Firebug.CommandLine = function(element)
 {
-    _cmdElement: null,
+    this.element = element;
+    
+    if (isOpera)
+      fixOperaTabKey(this.element);
+    
+    this.onKeyDown = bind(this, this.onKeyDown);
+    addEvent(this.element, "keydown", this.onKeyDown);
+    window.onerror = this.onError;
+};
+
+Firebug.CommandLine.prototype = 
+{
+    element: null,
   
     _buffer: [],
     _bi: -1,
@@ -2087,32 +2131,18 @@ var CommandLine = Firebug.CommandLine =
     
     initialize: function(doc)
     {
-        if (this._cmdElement)
-        {
-            this.destroy();
-        }
-        
-        initializeCommandLineAPI();
-
-        this._cmdElement = doc.getElementById("fbCommandLine");
-        
-        if (isOpera)
-          fixOperaTabKey(this._cmdElement);
-        
-        addEvent(this._cmdElement, "keydown", this.onKeyDown);
-        window.onerror = this.onError;
     },
     
     destroy: function()
     {
-      removeEvent(this._cmdElement, "keydown", this.onKeyDown);
+      removeEvent(this.element, "keydown", this.onKeyDown);
       window.onerror = null;
-      this._cmdElement = null
+      this.element = null
     },
 
     execute: function()
     {
-        var cmd = this._cmdElement;
+        var cmd = this.element;
         var command = cmd.value;
         
         this._stack(command);
@@ -2165,7 +2195,7 @@ var CommandLine = Firebug.CommandLine =
     
     prevCommand: function()
     {
-        var cmd = this._cmdElement;
+        var cmd = this.element;
         var buffer = this._buffer;
         
         if (this._bi > 0 && buffer.length > 0)
@@ -2174,7 +2204,7 @@ var CommandLine = Firebug.CommandLine =
   
     nextCommand: function()
     {
-        var cmd = this._cmdElement;
+        var cmd = this.element;
         
         var buffer = this._buffer;
         var limit = buffer.length -1;
@@ -2192,7 +2222,7 @@ var CommandLine = Firebug.CommandLine =
   
     autocomplete: function(reverse)
     {
-        var cmd = this._cmdElement;
+        var cmd = this.element;
         
         var command = cmd.value;
         var offset = getExpressionOffset(command);
@@ -2310,7 +2340,7 @@ var CommandLine = Firebug.CommandLine =
     
     clear: function()
     {
-        CommandLine._cmdElement.value = "";
+        this.element.value = "";
     },
     
     onKeyDown: function(e)
@@ -2321,22 +2351,22 @@ var CommandLine = Firebug.CommandLine =
         
         /*tab, shift, control, alt*/
         if (code != 9 && code != 16 && code != 17 && code != 18)
-            CommandLine._completing = false;
+            this._completing = false;
     
         if (code == 13 /* enter */)
-            CommandLine.execute();
+            this.execute();
 
         else if (code == 27 /* ESC */)
-            setTimeout(CommandLine.clear, 0);
+            setTimeout(this.clear, 0);
           
         else if (code == 38 /* up */)
-            CommandLine.prevCommand();
+            this.prevCommand();
           
         else if (code == 40 /* down */)
-            CommandLine.nextCommand();
+            this.nextCommand();
           
         else if (code == 9 /* tab */)
-            CommandLine.autocomplete(e.shiftKey);
+            this.autocomplete(e.shiftKey);
           
         else
             return;
@@ -2504,7 +2534,7 @@ var Chrome = Firebug.Chrome =
     
     context: null,
     
-    onReady: function()
+    initialize: function()
     {
         addEvent(
             document, 
@@ -2668,7 +2698,7 @@ FBL.consoleBodyFrame = null;
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 var sidePanelWidth = 300;
-
+var commandLineModule = null;
 
 // Internal variables
 var chromeRedrawSkipRate = isIE ? 30 : isOpera ? 50 : 0;
@@ -2807,40 +2837,40 @@ function toggleRightPanel()
 
 var createContext = function createContext(doc, context)
 {
+    fbCommandLine = $U("fbCommandLine");
     if (Firebug.CommandLine)
-        Firebug.CommandLine.initialize(doc);
+        commandLineModule = new Firebug.CommandLine(fbCommandLine);
         
     Chrome.context = context;
     Chrome.context.document = doc;
     Chrome.document = doc;
     
-    fbTop = UI$("fbTop");
-    fbContent = UI$("fbContent");
+    fbTop = $U("fbTop");
+    fbContent = $U("fbContent");
     fbContentStyle = fbContent.style;
-    fbBottom = UI$("fbBottom");
+    fbBottom = $U("fbBottom");
     
-    fbBtnInspect = UI$("fbBtnInspect");
+    fbBtnInspect = $U("fbBtnInspect");
     
-    fbPanelBox1 = UI$("fbPanelBox1");
+    fbPanelBox1 = $U("fbPanelBox1");
     fbPanelBox1Style = fbPanelBox1.style;
-    fbPanelBox2 = UI$("fbPanelBox2");
+    fbPanelBox2 = $U("fbPanelBox2");
     fbPanelBox2Style = fbPanelBox2.style;
-    fbPanelBar2Box = UI$("fbPanelBar2Box");
+    fbPanelBar2Box = $U("fbPanelBar2Box");
     fbPanelBar2BoxStyle = fbPanelBar2Box.style;
     
-    fbHSplitter = UI$("fbHSplitter");
-    fbVSplitter = UI$("fbVSplitter");
+    fbHSplitter = $U("fbHSplitter");
+    fbVSplitter = $U("fbVSplitter");
     fbVSplitterStyle = fbVSplitter.style;
     
-    fbPanel1 = UI$("fbPanel1");
+    fbPanel1 = $U("fbPanel1");
     fbPanel1Style = fbPanel1.style;
-    tabR = fbPanel2 = UI$("fbPanel2");
+    tabR = fbPanel2 = $U("fbPanel2");
 
-    tabL = fbConsole = UI$("fbConsole");
+    tabL = fbConsole = $U("fbConsole");
     tabLStyle = fbConsoleStyle = fbConsole.style;
-    fbCommandLine = UI$("fbCommandLine");
     
-    fbHTML = UI$("fbHTML");
+    fbHTML = $U("fbHTML");
 
     consoleBody = fbConsole;
     consoleBodyFrame = fbPanel1;
@@ -2863,7 +2893,7 @@ var createContext = function createContext(doc, context)
         {
             Chrome.draw();
           
-            var fbChrome = UI$("fbChrome");
+            var fbChrome = $U("fbChrome");
             fbChrome.style.position = "absolute";
             fbChrome.style.marginTop = "-1px";
         }
@@ -2913,12 +2943,15 @@ var createContext = function createContext(doc, context)
 
 var destroyContext = function destroyContext(context)
 {
+    fbCommandLine = null;
+    if (Firebug.CommandLine)
+        commandLineModule.destroy;
+      
     chromeReady = false;
     Chrome.context.element = null;
     Chrome.frame = null;
     
     fbContent = null;
-    fbCommandLine = null;
     fbTop = null;
     fbBtnInspect = null;
     fbVSplitter = null;
@@ -3447,8 +3480,8 @@ FBL.ns(function() { with (FBL) {
 //----------------------------------------------------------------------------
 Firebug.Chrome.Injected = 
 {
-    CSS: '.fbBtnInspectActive{background:#aaa;color:#fff !important;}html,body{margin:0;padding:0;overflow:hidden;background:#fff;font-family:Lucida Grande,Tahoma,sans-serif;font-size:11px;}div.clear{clear:both;}#fbChrome{position:fixed;overflow:hidden;height:100%;width:100%;border-collapse:collapse;background:#fff;}#fbTop{height:50px;}#fbToolbar{position:absolute;z-index:5;width:100%;top:0;background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) #eee 0 0;height:27px;font-size:11px;}#fbPanelBars{top:27px;position:absolute;z-index:8;width:100%;background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) #d9d9d9 0 -27px;height:23px;}#fbContent{height:100%;vertical-align:top;}#fbBottom{height:18px;background:#fff;}#fbToolbarIcon{position:absolute;top:5px;left:10px;}#fbToolbarIcon a{display:block;height:20px;width:20px;background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) #eee 0 -134px;text-decoration:none;cursor:default;}#fbToolbarButtons{position:absolute;top:5px;left:35px;}#fbToolbarButtons span{margin:0;padding:0;}#fbToolbarButtons a{text-decoration:none;display:block;float:left;color:#000;margin:1px;padding:3px 7px 3px;cursor:default;}#fbToolbarButtons a:hover{color:#333;margin:0;_margin:0 1px 1px;border:1px solid #fff;border-bottom:1px solid #bbb;border-right:1px solid #bbb;_padding:3px 6px 3px 6px;}#mainButtons{position:absolute;right:4px;top:7px;z-index:11;}#fbPanelBar1{width:255px; z-index:8;left:0;white-space:nowrap;background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) #d9d9d9 0 -27px;position:absolute;left:4px;}#fbPanelBar2Box{background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) #d9d9d9 0 -27px;position:absolute;height:23px;width:300px; z-index:9;right:0;}#fbPanelBar2{position:absolute;width:290px; height:23px;padding-left:10px;}#fbPanelBox1,#fbPanelBox2{max-height:inherit;height:100%;font-size:11px;}#fbPanelBox2{background:#fff;}#fbPanelBox2{width:300px;background:#fff;}* html #fbPanel1{position:absolute;}#fbPanel2{padding-left:6px;background:#fff;}.hide{overflow:hidden !important;position:fixed !important;display:none !important;visibility:hidden !important;}#fbCommand{height:18px;}#fbCommandBox{width:100%;height:19px;_height:18px;bottom:0;overflow:hidden;z-index:9;position:absolute;background:#fff;border:0;border-top:1px solid #ccc;}#fbCommandIcon{position:absolute;color:#00f;top:2px;left:7px;display:inline;font:11px Monaco,monospace;z-index:10;}#fbCommandLine{position:absolute;width:100%;height:19px;top:0;left:0;border:0;margin:0;padding:2px 0 2px 32px;font:11px Monaco,monospace;z-index:9;}#fbBottom[fixFirefox]{position:fixed;bottom:0;left:0;width:100%;z-index:10;}#fbBottom[fixFirefox] #fbCommand{display:block;}div.fbFitHeight{padding:0 1px;max-height:inherit;height:100%;overflow:auto;}#mainButtons a{font-size:1px;width:16px;height:16px;display:block;float:left;text-decoration:none;cursor:default;}#close{background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) 0 -119px;}#close:hover{background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) -16px -119px;}#detach{background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) -32px -119px;}#detach:hover{background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) -48px -119px;}.tab{text-decoration:none;display:block;float:left;width:auto;float:left;cursor:default;font-family:Lucida Grande,Tahoma,sans-serif;font-size:11px;font-weight:bold;height:23px;color:#565656;}.toolbarPanel span{display:block;float:left;}.toolbarPanel .tabL,.toolbarPanel .tabR{height:23px;width:8px;}.toolbarPanel .tabText{padding:4px 1px 0;}.tab:hover{background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) 0 -73px;}.tab:hover .tabL{background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) -16px -96px;}.tab:hover .tabR{background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) -24px -96px;}.selectedTab{background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) #e5e5e5 0 -50px !important;color:#000;}.selectedTab .tabL{background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) 0 -96px !important;}.selectedTab .tabR{background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) -8px -96px !important;}#fbHSplitter{position:absolute;left:0;top:0;width:100%;height:15px;font-size:10px;cursor:n-resize !important;background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/pixel_transparent.gif);z-index:9;}.fbVSplitter{background:#eee;color:#000;border:1px solid #777;border-width:0 1px;width:4px;_width:6px;cursor:e-resize;overflow:hidden;right:294px;text-decoration:none;z-index:9;position:absolute;height:100%;top:27px;}div.lineNo{font:11px Monaco,monospace;float:left;display:inline;position:relative;margin:0;padding:0 5px 0 20px;background:#eee;color:#888;border-right:1px solid #ccc;text-align:right;}pre.nodeCode{font:11px Monaco,monospace;margin:0;padding-left:10px;overflow:hidden;_width:100%;}.nodeControl{margin-top:3px;margin-left:-14px;float:left;_position:absolute;_margin-left:-11px;width:9px;height:9px;overflow:hidden;cursor:default;background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/tree_open.gif);}div.nodeMaximized{background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/tree_close.gif);}div.objectBox-element{padding:1px 3px;}.objectBox-selector{cursor:default;}.selectedElement{background:highlight;color:#fff !important;}.selectedElement span{color:#fff !important;}@media screen and (-webkit-min-device-pixel-ratio:0){.selectedElement{background:#316AC5;color:#fff !important;}}.logRow *{font-size:11px;}.logRow{position:relative;border-bottom:1px solid #D7D7D7;padding:2px 4px 1px 6px;background-color:#FFFFFF;}.logRow-command{font-family:Monaco,monospace;color:blue;}.objectBox-string,.objectBox-text,.objectBox-number,.objectBox-function,.objectLink-element,.objectLink-textNode,.objectLink-function,.objectBox-stackTrace,.objectLink-profile{font-family:Monaco,monospace;}.objectBox-null{padding:0 2px;border:1px solid #666666;background-color:#888888;color:#FFFFFF;}.objectBox-string{color:red;white-space:pre;}.objectBox-number{color:#000088;}.objectBox-function{color:DarkGreen;}.objectBox-object{color:DarkGreen;font-weight:bold;font-family:Lucida Grande,sans-serif;}.objectBox-array{color:#000;}.logRow-info,.logRow-error,.logRow-warning{background:#fff no-repeat 2px 2px;padding-left:20px;padding-bottom:3px;}.logRow-info{background-image:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/infoIcon.png);}.logRow-warning{background-color:cyan;background-image:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/warningIcon.png);}.logRow-error{background-color:LightYellow;background-image:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/errorIcon.png);color:#f00;}.errorMessage{vertical-align:top;color:#f00;}.objectBox-sourceLink{position:absolute;right:4px;top:2px;padding-left:8px;font-family:Lucida Grande,sans-serif;font-weight:bold;color:#0000FF;}.logRow-group{background:#EEEEEE;border-bottom:none;}.logGroup{background:#EEEEEE;}.logGroupBox{margin-left:24px;border-top:1px solid #D7D7D7;border-left:1px solid #D7D7D7;}.selectorTag,.selectorId,.selectorClass{font-family:Monaco,monospace;font-weight:normal;}.selectorTag{color:#0000FF;}.selectorId{color:DarkBlue;}.selectorClass{color:red;}.objectBox-element{font-family:Monaco,monospace;color:#000088;}.nodeChildren{padding-left:26px;}.nodeTag{color:blue;cursor:pointer;}.nodeValue{color:#FF0000;font-weight:normal;}.nodeText,.nodeComment{margin:0 2px;vertical-align:top;}.nodeText{color:#333333;}.nodeComment{color:DarkGreen;}.log-object{_position:relative;_height:100%;}.property{position:relative;clear:both;height:15px;}.propertyNameCell{vertical-align:top;float:left;width:28%;position:absolute;left:0;z-index:0;}.propertyValueCell{float:right;width:68%;background:#fff;position:absolute;_position:relative;padding-left:5px;display:table-cell;right:0;z-index:1;}.propertyName{font-weight:bold;}.FirebugPopup{height:100% !important;}.FirebugPopup #mainButtons{display:none !important;}.FirebugPopup #mainButtons{display:none !important;}.FirebugPopup #fbHSplitter{display:none !important;}.FirebugPopup #fbCommandBox{height:18px !important;_height:17px !important;}',
-    HTML: '<table id="fbChrome" cellpadding="0" cellspacing="0" border="0"><tbody><tr><td id="fbTop" colspan="2"><div id="mainButtons"><a id="detach" href="javascript:FB.detach()">&nbsp;</a><a id="close" href="javascript:FB.close()">&nbsp;</a></div><div id="fbHSplitter">&nbsp;</div><!-- Toolbar buttons and Status Bar --><div id="fbToolbar"><div id="fbToolbarIcon"><a title="Firebug Lite Homepage" href="http://getfirebug.com/lite.html">&nbsp;</a></div><div id="fbToolbarButtons"><span><a id="fbBtnInspect" href="javascript:FB.startInspecting(this)">Inspect</a></span><span><a href="javascript:FB.clear()">Clear</a></span></div></div><!-- PanelBars - Tabs --><div id="fbPanelBars"><div id="fbPanelBar1" class="toolbarPanel"><a id="tc" class="tab selectedTab" href="javascript:FB.showTab(0)"><span class="tabL"></span><span class="tabText">Console</span><span class="tabR"></span></a><a id="th" class="tab" href="javascript:FB.showTab(1)"><span class="tabL"></span><span class="tabText">HTML</span><span class="tabR"></span></a><a class="tab" href="javascript:void(0)"><span class="tabL"></span><span class="tabText">CSS</span><span class="tabR"></span></a><a class="tab" href="javascript:void(0)"><span class="tabL"></span><span class="tabText">Script</span><span class="tabR"></span></a><a class="tab" href="javascript:void(0)"><span class="tabL"></span><span class="tabText">DOM</span><span class="tabR"></span></a></div><div id="fbPanelBar2Box" class="hide"><div id="fbPanelBar2" class="toolbarPanel"><a class="tab selectedTab" href="javascript:void(0);"><span class="tabL"></span><span class="tabText">Style</span><span class="tabR"></span></a><a class="tab" href="javascript:void(0)"><span class="tabL"></span><span class="tabText">Layout</span><span class="tabR"></span></a><a class="tab" href="javascript:void(0)"><span class="tabL"></span><span class="tabText">DOM</span><span class="tabR"></span></a></div></div></div></td></tr><!-- Main interface content --><tr id="fbContent"><td id="fbPanelBox1"><div id="fbPanel1" class="fbFitHeight"><div id="fbConsole"></div><div id="fbHTML"></div></div></td><td id="fbPanelBox2" class="hide"><div id="fbVSplitter" class="fbVSplitter">&nbsp;</div><div id="fbPanel2" class="fbFitHeight"><div id="fbTest"></div></div></td></tr><!-- Command Line --><tr id="fbBottom"><td id="fbCommand" colspan="2"><div id="fbCommandBox"><div id="fbCommandIcon">&gt;&gt;&gt;</div><input id="fbCommandLine" name="fbCommandLine" type="text"/></div></td></tr></tbody></table>'
+    CSS: '.fbBtnInspectActive{background:#aaa;color:#fff !important;}html,body{margin:0;padding:0;overflow:hidden;background:#fff;font-family:Lucida Grande,Tahoma,sans-serif;font-size:11px;}div.clear{clear:both;}#fbChrome{position:fixed;overflow:hidden;height:100%;width:100%;border-collapse:collapse;background:#fff;}#fbTop{height:50px;}#fbToolbar{position:absolute;z-index:5;width:100%;top:0;background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) #eee 0 0;height:27px;font-size:11px;}#fbPanelBars{top:27px;position:absolute;z-index:8;width:100%;background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) #d9d9d9 0 -27px;height:23px;}#fbContent{height:100%;vertical-align:top;}#fbBottom{height:18px;background:#fff;}#fbToolbarIcon{position:absolute;top:5px;left:10px;}#fbToolbarIcon a{display:block;height:20px;width:20px;background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) #eee 0 -134px;text-decoration:none;cursor:default;}#fbToolbarButtons{position:absolute;top:5px;left:35px;}#fbToolbarButtons span{margin:0;padding:0;}#fbToolbarButtons a{text-decoration:none;display:block;float:left;color:#000;margin:1px;padding:3px 7px 3px;cursor:default;}#fbToolbarButtons a:hover{color:#333;margin:0;_margin:0 1px 1px;border:1px solid #fff;border-bottom:1px solid #bbb;border-right:1px solid #bbb;_padding:3px 6px 3px 6px;}#mainButtons{position:absolute;right:4px;top:7px;z-index:11;}#fbPanelBar1{width:255px; z-index:8;left:0;white-space:nowrap;background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) #d9d9d9 0 -27px;position:absolute;left:4px;}#fbPanelBar2Box{background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) #d9d9d9 0 -27px;position:absolute;height:23px;width:300px; z-index:9;right:0;}#fbPanelBar2{position:absolute;width:290px; height:23px;padding-left:10px;}#fbPanelBox1,#fbPanelBox2{max-height:inherit;height:100%;font-size:11px;}#fbPanelBox2{background:#fff;}#fbPanelBox2{width:300px;background:#fff;}* html #fbPanel1{position:absolute;}#fbPanel2{padding-left:6px;background:#fff;}.hide{overflow:hidden !important;position:fixed !important;display:none !important;visibility:hidden !important;}#fbCommand{height:18px;}#fbCommandBox{width:100%;height:19px;_height:18px;bottom:0;overflow:hidden;z-index:9;position:absolute;background:#fff;border:0;border-top:1px solid #ccc;}#fbCommandIcon{position:absolute;color:#00f;top:2px;left:7px;display:inline;font:11px Monaco,monospace;z-index:10;}#fbCommandLine{position:absolute;width:100%;height:19px;top:0;left:0;border:0;margin:0;padding:2px 0 2px 32px;font:11px Monaco,monospace;z-index:9;}#fbBottom[fixFirefox]{position:fixed;bottom:0;left:0;width:100%;z-index:10;}#fbBottom[fixFirefox] #fbCommand{display:block;}div.fbFitHeight{padding:0 1px;max-height:inherit;height:100%;overflow:auto;}#mainButtons a{font-size:1px;width:16px;height:16px;display:block;float:left;text-decoration:none;cursor:default;}#close{background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) 0 -119px;}#close:hover{background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) -16px -119px;}#detach{background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) -32px -119px;}#detach:hover{background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) -48px -119px;}.tab{text-decoration:none;display:block;float:left;width:auto;float:left;cursor:default;font-family:Lucida Grande,Tahoma,sans-serif;font-size:11px;font-weight:bold;height:23px;color:#565656;}.fbPanelBar span{display:block;float:left;}.fbPanelBar .tabL,.fbPanelBar .tabR{height:23px;width:8px;}.fbPanelBar .tabText{padding:4px 1px 0;}.tab:hover{background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) 0 -73px;}.tab:hover .tabL{background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) -16px -96px;}.tab:hover .tabR{background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) -24px -96px;}.selectedTab{background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) #e5e5e5 0 -50px !important;color:#000;}.selectedTab .tabL{background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) 0 -96px !important;}.selectedTab .tabR{background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/sprite.png) -8px -96px !important;}#fbHSplitter{position:absolute;left:0;top:0;width:100%;height:15px;font-size:10px;cursor:n-resize !important;background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/pixel_transparent.gif);z-index:9;}.fbVSplitter{background:#eee;color:#000;border:1px solid #777;border-width:0 1px;width:4px;_width:6px;cursor:e-resize;overflow:hidden;right:294px;text-decoration:none;z-index:9;position:absolute;height:100%;top:27px;}div.lineNo{font:11px Monaco,monospace;float:left;display:inline;position:relative;margin:0;padding:0 5px 0 20px;background:#eee;color:#888;border-right:1px solid #ccc;text-align:right;}pre.nodeCode{font:11px Monaco,monospace;margin:0;padding-left:10px;overflow:hidden;_width:100%;}.nodeControl{margin-top:3px;margin-left:-14px;float:left;_position:absolute;_margin-left:-11px;width:9px;height:9px;overflow:hidden;cursor:default;background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/tree_open.gif);}div.nodeMaximized{background:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/tree_close.gif);}div.objectBox-element{padding:1px 3px;}.objectBox-selector{cursor:default;}.selectedElement{background:highlight;color:#fff !important;}.selectedElement span{color:#fff !important;}@media screen and (-webkit-min-device-pixel-ratio:0){.selectedElement{background:#316AC5;color:#fff !important;}}.logRow *{font-size:11px;}.logRow{position:relative;border-bottom:1px solid #D7D7D7;padding:2px 4px 1px 6px;background-color:#FFFFFF;}.logRow-command{font-family:Monaco,monospace;color:blue;}.objectBox-string,.objectBox-text,.objectBox-number,.objectBox-function,.objectLink-element,.objectLink-textNode,.objectLink-function,.objectBox-stackTrace,.objectLink-profile{font-family:Monaco,monospace;}.objectBox-null{padding:0 2px;border:1px solid #666666;background-color:#888888;color:#FFFFFF;}.objectBox-string{color:red;white-space:pre;}.objectBox-number{color:#000088;}.objectBox-function{color:DarkGreen;}.objectBox-object{color:DarkGreen;font-weight:bold;font-family:Lucida Grande,sans-serif;}.objectBox-array{color:#000;}.logRow-info,.logRow-error,.logRow-warning{background:#fff no-repeat 2px 2px;padding-left:20px;padding-bottom:3px;}.logRow-info{background-image:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/infoIcon.png);}.logRow-warning{background-color:cyan;background-image:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/warningIcon.png);}.logRow-error{background-color:LightYellow;background-image:url(http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/errorIcon.png);color:#f00;}.errorMessage{vertical-align:top;color:#f00;}.objectBox-sourceLink{position:absolute;right:4px;top:2px;padding-left:8px;font-family:Lucida Grande,sans-serif;font-weight:bold;color:#0000FF;}.logRow-group{background:#EEEEEE;border-bottom:none;}.logGroup{background:#EEEEEE;}.logGroupBox{margin-left:24px;border-top:1px solid #D7D7D7;border-left:1px solid #D7D7D7;}.selectorTag,.selectorId,.selectorClass{font-family:Monaco,monospace;font-weight:normal;}.selectorTag{color:#0000FF;}.selectorId{color:DarkBlue;}.selectorClass{color:red;}.objectBox-element{font-family:Monaco,monospace;color:#000088;}.nodeChildren{padding-left:26px;}.nodeTag{color:blue;cursor:pointer;}.nodeValue{color:#FF0000;font-weight:normal;}.nodeText,.nodeComment{margin:0 2px;vertical-align:top;}.nodeText{color:#333333;}.nodeComment{color:DarkGreen;}.log-object{_position:relative;_height:100%;}.property{position:relative;clear:both;height:15px;}.propertyNameCell{vertical-align:top;float:left;width:28%;position:absolute;left:0;z-index:0;}.propertyValueCell{float:right;width:68%;background:#fff;position:absolute;_position:relative;padding-left:5px;display:table-cell;right:0;z-index:1;}.propertyName{font-weight:bold;}.FirebugPopup{height:100% !important;}.FirebugPopup #mainButtons{display:none !important;}.FirebugPopup #mainButtons{display:none !important;}.FirebugPopup #fbHSplitter{display:none !important;}.FirebugPopup #fbCommandBox{height:18px !important;_height:17px !important;}',
+    HTML: '<table id="fbChrome" cellpadding="0" cellspacing="0" border="0"><tbody><tr><td id="fbTop" colspan="2"><div id="mainButtons"><a id="detach" href="javascript:FB.detach()">&nbsp;</a><a id="close" href="javascript:FB.close()">&nbsp;</a></div><div id="fbHSplitter">&nbsp;</div><div id="fbToolbar"><div id="fbToolbarIcon"><a title="Firebug Lite Homepage" href="http://getfirebug.com/lite.html">&nbsp;</a></div><div id="fbToolbarButtons"><span><a id="fbBtnInspect" href="javascript:FB.startInspecting(this)">Inspect</a></span><span><a href="javascript:FB.clear()">Clear</a></span></div></div><div id="fbPanelBars"><div id="fbPanelBar1" class="fbPanelBar"><a id="tc" class="tab selectedTab" href="javascript:FB.showTab(0)"><span class="tabL"></span><span class="tabText">Console</span><span class="tabR"></span></a><a id="th" class="tab" href="javascript:FB.showTab(1)"><span class="tabL"></span><span class="tabText">HTML</span><span class="tabR"></span></a><a class="tab" href="javascript:void(0)"><span class="tabL"></span><span class="tabText">CSS</span><span class="tabR"></span></a><a class="tab" href="javascript:void(0)"><span class="tabL"></span><span class="tabText">Script</span><span class="tabR"></span></a><a class="tab" href="javascript:void(0)"><span class="tabL"></span><span class="tabText">DOM</span><span class="tabR"></span></a></div><div id="fbPanelBar2Box" class="hide"><div id="fbPanelBar2" class="fbPanelBar"><a class="tab selectedTab" href="javascript:void(0);"><span class="tabL"></span><span class="tabText">Style</span><span class="tabR"></span></a><a class="tab" href="javascript:void(0)"><span class="tabL"></span><span class="tabText">Layout</span><span class="tabR"></span></a><a class="tab" href="javascript:void(0)"><span class="tabL"></span><span class="tabText">DOM</span><span class="tabR"></span></a></div></div></div></td></tr><tr id="fbContent"><td id="fbPanelBox1"><div id="fbPanel1" class="fbFitHeight"><div id="fbConsole"></div><div id="fbHTML"></div></div></td><td id="fbPanelBox2" class="hide"><div id="fbVSplitter" class="fbVSplitter">&nbsp;</div><div id="fbPanel2" class="fbFitHeight"><div id="fbTest"></div></div></td></tr><tr id="fbBottom"><td id="fbCommand" colspan="2"><div id="fbCommandBox"><div id="fbCommandIcon">&gt;&gt;&gt;</div><input id="fbCommandLine" name="fbCommandLine" type="text"/></div></td></tr></tbody></table>'
     
 };
 
@@ -3459,13 +3492,712 @@ Firebug.Chrome.Injected =
 FBL.ns(function() { with (FBL) {
 // ************************************************************************************************
 
+// ************************************************************************************************
+
+Firebug.Panel =
+{
+    panelNode: null,
+    panelBar: null,
+    commandLine: null,
+    
+    toolButtons: null,
+    statusBar: null,
+
+    name: "HelloWorld",
+    title: "Hello World!",
+    
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    
+    searchable: false,
+    editable: true,
+    order: 2147483647,
+    statusSeparator: "<",
+
+    initialize: function(context, doc)
+    {
+        /*
+        this.context = context;
+        this.document = doc;
+
+        this.panelNode = doc.createElement("div");
+        this.panelNode.ownerPanel = this;
+
+        setClass(this.panelNode, "panelNode panelNode-"+this.name+" contextUID="+context.uid);
+        doc.body.appendChild(this.panelNode);
+
+        if (FBTrace.DBG_INITIALIZE)
+            FBTrace.sysout("firebug.initialize panelNode for "+this.name+"\n");
+
+        this.initializeNode(this.panelNode);
+        /**/
+    },
+
+    destroy: function(state) // Panel may store info on state
+    {
+        if (FBTrace.DBG_INITIALIZE)
+            FBTrace.sysout("firebug.destroy panelNode for "+this.name+"\n");
+
+        if (this.panelNode)
+            delete this.panelNode.ownerPanel;
+
+        this.destroyNode();
+    },
+
+    detach: function(oldChrome, newChrome)
+    {
+        this.lastScrollTop = this.panelNode.scrollTop;
+    },
+
+    reattach: function(doc)
+    {
+        this.document = doc;
+
+        if (this.panelNode)
+        {
+            this.panelNode = doc.adoptNode(this.panelNode, true);
+            this.panelNode.ownerPanel = this;
+            doc.body.appendChild(this.panelNode);
+            this.panelNode.scrollTop = this.lastScrollTop;
+            delete this.lastScrollTop;
+        }
+    },
+
+    // Called after module.initialize; addEventListener-s here
+    initializeNode: function(myPanelNode)
+    {
+    },
+
+    // removeEventListener-s here.
+    destroyNode: function()
+    {
+    },
+
+    show: function(state)  // persistedPanelState plus non-persisted hide() values
+    {
+    },
+
+    hide: function(state)  // store info on state for next show.
+    {
+    },
+
+    watchWindow: function(win)
+    {
+    },
+
+    unwatchWindow: function(win)
+    {
+    },
+
+    updateOption: function(name, value)
+    {
+    },
+
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+    /**
+     * Toolbar helpers
+     */
+    showToolbarButtons: function(buttonsId, show)
+    {
+        try
+        {
+            if (!this.context.browser) // XXXjjb this is bug. Somehow the panel context is not FirebugContext.
+            {
+              if (FBTrace.DBG_ERRORS)
+                FBTrace.sysout("firebug.Panel showToolbarButtons this.context has no browser, this:", this)
+                return;
+            }
+            var buttons = this.context.browser.chrome.$(buttonsId);
+            if (buttons)
+                collapse(buttons, show ? "false" : "true");
+        }
+        catch (exc)
+        {
+            if (FBTrace.DBG_ERRORS)
+            {
+                FBTrace.dumpProperties("firebug.Panel showToolbarButtons FAILS", exc);
+                if (!this.context.browser)FBTrace.dumpStack("firebug.Panel showToolbarButtons no browser");
+            }
+        }
+    },
+
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+    /**
+     * Returns a number indicating the view's ability to inspect the object.
+     *
+     * Zero means not supported, and higher numbers indicate specificity.
+     */
+    supportsObject: function(object)
+    {
+        return 0;
+    },
+
+    refresh: function()
+    {
+
+    },
+
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+    startInspecting: function()
+    {
+    },
+
+    stopInspecting: function(object, cancelled)
+    {
+    },
+
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+    search: function(text)
+    {
+    }
+
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+
+};
+
+//************************************************************************************************
+
+
+//************************************************************************************************
+
+Firebug.Module =
+{
+  /**
+   * Called when the window is opened.
+   */
+  initialize: function()
+  {
+  },
+
+  /**
+   * Called when the window is closed.
+   */
+  shutdown: function()
+  {
+
+  },
+
+  // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+  /**
+   * Called when a new context is created but before the page is loaded.
+   */
+  initContext: function(context)
+  {
+  },
+
+  /**
+   * Called after a context is detached to a separate window;
+   */
+  reattachContext: function(browser, context)
+  {
+  },
+
+  /**
+   * Called when a context is destroyed. Module may store info on persistedState for reloaded pages.
+   */
+  destroyContext: function(context, persistedState)
+  {
+  },
+
+  // Called when a FF tab is create or activated (user changes FF tab)
+  // Called after context is created or with context == null (to abort?)
+  showContext: function(browser, context)
+  {
+  },
+
+  /**
+   * Called after a context's page gets DOMContentLoaded
+   */
+  loadedContext: function(context)
+  {
+  },
+
+  // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+  showPanel: function(browser, panel)
+  {
+  },
+
+  showSidePanel: function(browser, panel)
+  {
+  },
+
+  // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+  updateOption: function(name, value)
+  {
+  },
+
+  getObjectByURL: function(context, url)
+  {
+  }
+};
+
+
+
+
+//************************************************************************************************
+//Panel Management
+
+Firebug.registerPanel = function()
+{
+
+};
+
+
+
+
+/*
+
+
+
+From Honza Tutorial
+----------------------------------------------------
+FBL.ns(function() { with (FBL) {
+var panelName = "HelloWorld";
+Firebug.HelloWorldModel = extend(Firebug.Module,
+{
+    showPanel: function(browser, panel) {
+        var isHwPanel = panel && panel.name == panelName;
+        var hwButtons = browser.chrome.$("fbHelloWorldButtons");
+        collapse(hwButtons, !isHwPanel);
+    },
+    onMyButton: function(context) {
+        alert("Hello World!");
+    }
+});
+
+function HelloWorldPanel() {}
+HelloWorldPanel.prototype = extend(Firebug.Panel,
+{
+    name: panelName,
+    title: "Hello World!",
+
+    initialize: function() {
+        Firebug.Panel.initialize.apply(this, arguments);
+    }
+});
+
+Firebug.registerModule(Firebug.HelloWorldModel);
+Firebug.registerPanel(HelloWorldPanel);
+
+}});
+----------------------------------------------------
+
+
+
+  */  
+  
+
+
+// ************************************************************************************************
+}});
+
+FBL.ns(function() { with (FBL) {
+// ************************************************************************************************
+
+//************************************************************************************************
+// Inspector Module
+Firebug.Context = function(window){
+  
+    this.window = window.window;
+    this.document = window.document;
+  
+};
+
+Firebug.Context.prototype =
+{  
+  
+    //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    // Window Methods
+    
+    getWindowSize: function()
+    {
+        var width=0, height=0, el;
+        
+        if (typeof this.window.innerWidth == 'number')
+        {
+            width = this.window.innerWidth;
+            height = this.window.innerHeight;
+        }
+        else if ((el=this.document.documentElement) && (el.clientHeight || el.clientWidth))
+        {
+            width = el.clientWidth;
+            height = el.clientHeight;
+        }
+        else if ((el=this.document.body) && (el.clientHeight || el.clientWidth))
+        {
+            width = el.clientWidth;
+            height = el.clientHeight;
+        }
+        
+        return {width: width, height: height};
+    },
+    
+    getWindowScrollSize: function()
+    {
+        var width=0, height=0, el;
+
+        if (!isIEQuiksMode && (el=this.document.documentElement) && 
+           (el.scrollHeight || el.scrollWidth))
+        {
+            width = el.scrollWidth;
+            height = el.scrollHeight;
+        }
+        else if ((el=this.document.body) && (el.scrollHeight || el.scrollWidth))
+        {
+            width = el.scrollWidth;
+            height = el.scrollHeight;
+        }
+        
+        return {width: width, height: height};
+    },
+    
+    getWindowScrollPosition: function()
+    {
+        var top=0, left=0, el;
+        
+        if(typeof this.window.pageYOffset == 'number')
+        {
+            top = this.window.pageYOffset;
+            left = this.window.pageXOffset;
+        }
+        else if((el=this.document.body) && (el.scrollTop || el.scrollLeft))
+        {
+            top = el.scrollTop;
+            left = el.scrollLeft;
+        }
+        else if((el=this.document.documentElement) && (el.scrollTop || el.scrollLeft))
+        {
+            top = el.scrollTop;
+            left = el.scrollLeft;
+        }
+        
+        return {top:top, left:left};
+    },
+    
+
+    //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    // Element Methods
+
+    getElementFromPoint: function(x, y)
+    {
+        if (isOpera || isSafari)
+        {
+            var scroll = this.getWindowScrollPosition();
+            return this.document.elementFromPoint(x + scroll.left, y + scroll.top);
+        }
+        else
+            return this.document.elementFromPoint(x, y);
+    },
+    
+    getElementPosition: function(el)
+    {
+        var left = 0
+        var top = 0;
+        
+        if (el.offsetParent)
+        {
+            do
+            {
+                left += el.offsetLeft;
+                top += el.offsetTop;
+            }
+            while (el = el.offsetParent);
+        }
+        return {left:left, top:top};      
+    },
+    
+    getElementBox: function(el)
+    {
+        var result = {};
+        
+        if (el.getBoundingClientRect)
+        {
+            var rect = el.getBoundingClientRect();
+            
+            // fix IE problem with offset when not in fullscreen mode
+            var offset = isIE ? this.document.body.clientTop || this.document.documentElement.clientTop: 0;
+            
+            var scroll = this.getWindowScrollPosition();
+            
+            result.top = Math.round(rect.top - offset + scroll.top);
+            result.left = Math.round(rect.left - offset + scroll.left);
+            result.height = Math.round(rect.bottom - rect.top);
+            result.width = Math.round(rect.right - rect.left);
+        }
+        else 
+        {
+            var position = this.getElementPosition(el);
+            
+            result.top = position.top;
+            result.left = position.left;
+            result.height = el.offsetHeight;
+            result.width = el.offsetWidth;
+        }
+        
+        return result;
+    },
+    
+
+    //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    // Measurement Methods
+    
+    getMeasurement: function(el, name)
+    {
+        var result = {value: 0, unit: "px"};
+        
+        var cssValue = this.getCSS(el, name);
+        if (!cssValue) return result;
+        if (cssValue.toLowerCase() == "auto") return result;
+        
+        var reMeasure = /(\d+\.?\d*)(.*)/;
+        var m = cssValue.match(reMeasure);
+        
+        if (m)
+        {
+            result.value = m[1]-0;
+            result.unit = m[2].toLowerCase();
+        }
+        
+        return result;        
+    },
+    
+    getMeasurementInPixels: function(el, name)
+    {
+        if (!el) return null;
+        
+        var m = this.getMeasurement(el, name);
+        var value = m.value;
+        var unit = m.unit;
+        
+        if (unit == "px")
+            return value;
+          
+        else if (unit == "pt")
+            return this.pointsToPixels(name, value);
+          
+        if (unit == "em")
+            return this.emToPixels(el, value);
+          
+        else if (unit == "%")
+            return this.percentToPixels(el, value);
+    },
+
+    getMeasurementBox: function(el, name)
+    {
+        var sufixes = ["Top", "Left", "Bottom", "Right"];
+        var result = [];
+        
+        for(var i=0, sufix; sufix=sufixes[i]; i++)
+            result[i] = Math.round(this.getMeasurementInPixels(el, name + sufix));
+        
+        return {top:result[0], left:result[1], bottom:result[2], right:result[3]};
+    }, 
+    
+    getFontSizeInPixels: function(el)
+    {
+        var size = this.getMeasurement(el, "fontSize");
+        
+        if (size.unit == "px") return size.value;
+        
+        // get font size, the dirty way
+        var computeDirtyFontSize = function(el, calibration)
+        {
+            var div = this.document.createElement("div");
+            var divStyle = offscreenStyle;
+
+            if (calibration)
+                divStyle +=  " font-size:"+calibration+"px;";
+            
+            div.style.cssText = divStyle;
+            div.innerHTML = "A";
+            el.appendChild(div);
+            
+            var value = div.offsetHeight;
+            el.removeChild(div);
+            return value;
+        }
+        
+        // Calibration fails in some environments, so we're using a static value
+        // based in the test case result.
+        var rate = 200 / 225;
+        //var calibrationBase = 200;
+        //var calibrationValue = computeDirtyFontSize(el, calibrationBase);
+        //var rate = calibrationBase / calibrationValue;
+        
+        var value = computeDirtyFontSize(el);
+
+        return value * rate;
+    },
+    
+    
+    //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    // Unit Funtions
+  
+    pointsToPixels: function(name, value)
+    {
+        var axis = /Top$|Bottom$/.test(name) ? "y" : "x";
+        
+        var result = value * pixelsPerInch[axis] / 72;
+        
+        return returnFloat ? result : Math.round(result);
+    },
+    
+    emToPixels: function(el, value)
+    {
+        if (!el) return null;
+        
+        var fontSize = this.getFontSizeInPixels(el);
+        
+        return Math.round(value * fontSize);
+    },
+    
+    exToPixels: function(el, value)
+    {
+        if (!el) return null;
+        
+        // get ex value, the dirty way
+        var div = this.document.createElement("div");
+        div.style.cssText = offscreenStyle + "width:"+value + "ex;";
+        
+        el.appendChild(div);
+        var value = div.offsetWidth;
+        el.removeChild(div);
+        
+        return value;
+    },
+      
+    percentToPixels: function(el, value)
+    {
+        if (!el) return null;
+        
+        // get % value, the dirty way
+        var div = this.document.createElement("div");
+        div.style.cssText = offscreenStyle + "width:"+value + "%;";
+        
+        el.appendChild(div);
+        var value = div.offsetWidth;
+        el.removeChild(div);
+        
+        return value;
+    },
+    
+    //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    
+    getCSS: isIE ? function(el, name)
+    {
+        return el.currentStyle[name] || el.style[name] || undefined;
+    }
+    : function(el, name)
+    {
+        return this.document.defaultView.getComputedStyle(el,null)[name] 
+            || el.style[name] || undefined;
+    }
+
+};
+
+//************************************************************************************************
+// Inspector Internals
+
+
+//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+// Shared variables
+
+FBL.offlineFragment = null;
+
+
+//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+// Internal variables
+
+var boxModelVisible = false;
+
+var pixelsPerInch, boxModel, boxModelStyle, boxMargin, boxMarginStyle, 
+boxPadding, boxPaddingStyle, boxContent, boxContentStyle;
+
+//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+var resetStyle = "margin:0; padding:0; border:0; position:absolute; overflow:hidden; display:block;";
+var offscreenStyle = resetStyle + "top:-1234px; left:-1234px;";
+
+var inspectStyle = resetStyle + "z-index: 2147483500;";
+var inspectFrameStyle = resetStyle + "z-index: 2147483550; top:0; left:0; background:url(http://pedrosimonetti.googlepages.com/pixel_transparent.gif);";
+//var inspectFrameStyle = resetStyle + "z-index: 2147483550; top: 0; left: 0; background: #ff0; opacity: 0.1; _filter: alpha(opacity=10);";
+
+var inspectModelStyle = inspectStyle + "opacity:0.8; _filter:alpha(opacity=80);";
+var inspectMarginStyle = inspectStyle + "background: #EDFF64; height:100%; width:100%;";
+var inspectPaddingStyle = inspectStyle + "background: SlateBlue;";
+var inspectContentStyle = inspectStyle + "background: SkyBlue;";
+
+
+var outlineStyle = { 
+    fbHorizontalLine: "background: #3875D7; height: 2px;",
+    fbVerticalLine: "background: #3875D7; width: 2px;"
+}
+
+//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+var lastInspecting = 0;
+var fbInspectFrame = null;
+var fbBtnInspect = null;
+
+
+//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+var outlineVisible = false;
+var outlineElements = {};
+var outline = {
+  "fbOutlineT": "fbHorizontalLine",
+  "fbOutlineL": "fbVerticalLine",
+  "fbOutlineB": "fbHorizontalLine",
+  "fbOutlineR": "fbVerticalLine"
+};
+
+
+//************************************************************************************************
+// Measurement Functions
+
+var calculatePixelsPerInch = function calculatePixelsPerInch()
+{
+    var inch = this.document.createElement("div");
+    inch.style.cssText = resetStyle + "width:1in; height:1in; position:absolute; top:-1234px; left:-1234px;";
+    this.document.body.appendChild(inch);
+    
+    pixelsPerInch = {
+        x: inch.offsetWidth,
+        y: inch.offsetHeight
+    };
+    
+    this.document.body.removeChild(inch);
+};
+
+
+
+
+//************************************************************************************************
+// Section
+
+
+
+
+// ************************************************************************************************
+}});
+
+FBL.ns(function() { with (FBL) {
+// ************************************************************************************************
+
 //************************************************************************************************
 // Inspector Module
 
 Firebug.Inspector =
 {  
   
-    onReady: function()
+    initialize: function()
     {
         offlineFragment = document.createDocumentFragment();
         
@@ -3476,7 +4208,7 @@ Firebug.Inspector =
     
     onChromeReady: function()
     {
-        fbBtnInspect = UI$("fbBtnInspect");
+        fbBtnInspect = $U("fbBtnInspect");
     },    
   
     //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -4259,7 +4991,7 @@ Firebug.HTML =
     
     isTreeNodeVisible: function(id)
     {
-        return UI$(id);
+        return $U(id);
     },
     
     selectTreeNode: function(id)
@@ -4283,7 +5015,7 @@ Firebug.HTML =
         while(stack.length > 0)
         {
             id = stack.pop();
-            node = UI$(id);
+            node = $U(id);
             
             if (stack.length > 0 && documentCache[id].childNodes.length > 0)
               this.appendTreeChildren(node);

@@ -24,6 +24,7 @@ Firebug.Panel =
 
     initialize: function(context, doc)
     {
+        /*
         this.context = context;
         this.document = doc;
 
@@ -37,6 +38,7 @@ Firebug.Panel =
             FBTrace.sysout("firebug.initialize panelNode for "+this.name+"\n");
 
         this.initializeNode(this.panelNode);
+        /**/
     },
 
     destroy: function(state) // Panel may store info on state

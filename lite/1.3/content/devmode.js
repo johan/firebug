@@ -504,7 +504,7 @@ var modules =
     "firebug/chrome/frame.js",
     "firebug/chrome/popup.js",
     "firebug/chrome/injected.js",
-    //"firebug/panel.js",
+    "firebug/panel.js",
     
     "firebug/context.js",
     
@@ -599,7 +599,10 @@ var API =
     
     compressHTML: function(html)
     {
+        var reHTMLComment = /(<!--([^-]|-(?!->))*-->)/g;
+        
         return html.replace(/^[\s\S]*<\s*body.*>\s*|\s*<\s*\/body.*>[\s\S]*$/gm, "").
+            replace(reHTMLComment, "").
             replace(/\s\s/gm, "").
             replace(/\s+</gm, "<").
             replace(/<\s+/gm, "<").
