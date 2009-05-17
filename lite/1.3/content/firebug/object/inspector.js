@@ -7,7 +7,7 @@ FBL.ns(function() { with (FBL) {
 Firebug.Inspector =
 {  
   
-    onReady: function()
+    initialize: function()
     {
         offlineFragment = document.createDocumentFragment();
         
@@ -18,7 +18,7 @@ Firebug.Inspector =
     
     onChromeReady: function()
     {
-        fbBtnInspect = UI$("fbBtnInspect");
+        fbBtnInspect = $U("fbBtnInspect");
     },    
   
     //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *

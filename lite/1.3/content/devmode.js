@@ -3,12 +3,42 @@
 
 TODO
 
+use of dispatch
+
 frame, frameStyle, consoleFrame, consoleBody
+
+create/destroy, initialize/shutdown. rename functions to this pattern.
+
+
+
 
 context
 
 persitent popups
 library loading in different windows
+
+
+
+
+Document Cache
+
+[ELEMENT_ID]
+    - element
+    - context
+    - styles
+    - MD5
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -40,11 +70,11 @@ for(stylesheet in stylesheets)
             
             // Add style info in the cache stack of styles of the element 
             styleCache[cid].push({
-                selector: rule.selector,
                 stylesheet: stylesheet,
                 lineNumber: getLineNumber(rule, stylesheet),
                 fileName: getFileName(rule, stylesheet),
-                style
+                selector: rule.selector,
+                styles: rule.styles
             });
         }
     }
@@ -72,11 +102,18 @@ IE problems with templates
 
 
 ---Core----
-FIXED: Fixed bug in getLocation function, the relative path calculation wasn't working in all cases. 
+FIXED: Fixed bug in getLocation function, the relative path calculation wasn't 
+       working in all cases. 
+
+FIXED: Fixed bug in commandLine. Commands that doesn't return a value (if, for,
+       while) wasn't being properly executed.
 
 
 
 ---Core----
+TODO: Problem with id conflits. The same attribute is being used in the document
+      elements and in the HTML Tree, in the user interface.
+
 TODO: Better handling of switching tab contexts (selectedTab, rightPanelVisible)
 TODO: Check if there's a problem using the Sizzle selector engine in the code
 
@@ -469,6 +506,8 @@ var modules =
     "firebug/chrome/injected.js",
     //"firebug/panel.js",
     
+    "firebug/context.js",
+    
     "firebug/object/inspector.js",
     "firebug/object/html.js",
     
@@ -678,12 +717,12 @@ function loadScript(url)
 function waitForFBL()
 {
     if(document.body && window.FBL)
-        onReady();
+        initialize();
     else
         setTimeout(waitForFBL, 200);
 }
 
-function onReady()
+function initialize()
 {
     FBL.dev = API;
 }

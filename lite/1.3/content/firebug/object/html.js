@@ -179,7 +179,7 @@ Firebug.HTML =
     
     isTreeNodeVisible: function(id)
     {
-        return UI$(id);
+        return $U(id);
     },
     
     selectTreeNode: function(id)
@@ -203,7 +203,7 @@ Firebug.HTML =
         while(stack.length > 0)
         {
             id = stack.pop();
-            node = UI$(id);
+            node = $U(id);
             
             if (stack.length > 0 && documentCache[id].childNodes.length > 0)
               this.appendTreeChildren(node);

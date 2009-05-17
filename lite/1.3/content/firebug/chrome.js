@@ -97,7 +97,7 @@ var Chrome = Firebug.Chrome =
     
     context: null,
     
-    onReady: function()
+    initialize: function()
     {
         addEvent(
             document, 
@@ -261,7 +261,7 @@ FBL.consoleBodyFrame = null;
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 var sidePanelWidth = 300;
-
+var commandLineModule = null;
 
 // Internal variables
 var chromeRedrawSkipRate = isIE ? 30 : isOpera ? 50 : 0;
@@ -400,40 +400,40 @@ function toggleRightPanel()
 
 var createContext = function createContext(doc, context)
 {
+    fbCommandLine = $U("fbCommandLine");
     if (Firebug.CommandLine)
-        Firebug.CommandLine.initialize(doc);
+        commandLineModule = new Firebug.CommandLine(fbCommandLine);
         
     Chrome.context = context;
     Chrome.context.document = doc;
     Chrome.document = doc;
     
-    fbTop = UI$("fbTop");
-    fbContent = UI$("fbContent");
+    fbTop = $U("fbTop");
+    fbContent = $U("fbContent");
     fbContentStyle = fbContent.style;
-    fbBottom = UI$("fbBottom");
+    fbBottom = $U("fbBottom");
     
-    fbBtnInspect = UI$("fbBtnInspect");
+    fbBtnInspect = $U("fbBtnInspect");
     
-    fbPanelBox1 = UI$("fbPanelBox1");
+    fbPanelBox1 = $U("fbPanelBox1");
     fbPanelBox1Style = fbPanelBox1.style;
-    fbPanelBox2 = UI$("fbPanelBox2");
+    fbPanelBox2 = $U("fbPanelBox2");
     fbPanelBox2Style = fbPanelBox2.style;
-    fbPanelBar2Box = UI$("fbPanelBar2Box");
+    fbPanelBar2Box = $U("fbPanelBar2Box");
     fbPanelBar2BoxStyle = fbPanelBar2Box.style;
     
-    fbHSplitter = UI$("fbHSplitter");
-    fbVSplitter = UI$("fbVSplitter");
+    fbHSplitter = $U("fbHSplitter");
+    fbVSplitter = $U("fbVSplitter");
     fbVSplitterStyle = fbVSplitter.style;
     
-    fbPanel1 = UI$("fbPanel1");
+    fbPanel1 = $U("fbPanel1");
     fbPanel1Style = fbPanel1.style;
-    tabR = fbPanel2 = UI$("fbPanel2");
+    tabR = fbPanel2 = $U("fbPanel2");
 
-    tabL = fbConsole = UI$("fbConsole");
+    tabL = fbConsole = $U("fbConsole");
     tabLStyle = fbConsoleStyle = fbConsole.style;
-    fbCommandLine = UI$("fbCommandLine");
     
-    fbHTML = UI$("fbHTML");
+    fbHTML = $U("fbHTML");
 
     consoleBody = fbConsole;
     consoleBodyFrame = fbPanel1;
@@ -456,7 +456,7 @@ var createContext = function createContext(doc, context)
         {
             Chrome.draw();
           
-            var fbChrome = UI$("fbChrome");
+            var fbChrome = $U("fbChrome");
             fbChrome.style.position = "absolute";
             fbChrome.style.marginTop = "-1px";
         }
@@ -506,12 +506,15 @@ var createContext = function createContext(doc, context)
 
 var destroyContext = function destroyContext(context)
 {
+    fbCommandLine = null;
+    if (Firebug.CommandLine)
+        commandLineModule.destroy;
+      
     chromeReady = false;
     Chrome.context.element = null;
     Chrome.frame = null;
     
     fbContent = null;
-    fbCommandLine = null;
     fbTop = null;
     fbBtnInspect = null;
     fbVSplitter = null;

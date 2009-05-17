@@ -35,20 +35,20 @@ FBL.skinURL = null;
 // ************************************************************************************************
 // Internal functions
 
-append(FBL,  
+append(FBL.Firebug,  
 {
-    onReady: function()
+    initialize: function()
     {
-        cacheDocument();
-        findLocation();
-        registerPublicNamespaces();
+        this.cacheDocument();
+        this.findLocation();
+        this.registerPublicNamespaces();
         
         var module;
         for(var name in Firebug)
         {
             module = Firebug[name];
-            if(typeof module.onReady == "function")
-                module.onReady();
+            if(typeof module.initialize == "function")
+                module.initialize();
         }
         
         if (isIE6)
