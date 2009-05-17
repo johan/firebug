@@ -7,9 +7,22 @@ var Console = Firebug.Console;
 // ************************************************************************************************
 // CommandLine
 
-var CommandLine = Firebug.CommandLine = 
+
+Firebug.CommandLine = function(element)
 {
-    _cmdElement: null,
+    this.element = element;
+    
+    if (isOpera)
+      fixOperaTabKey(this.element);
+    
+    this.onKeyDown = bind(this, this.onKeyDown);
+    addEvent(this.element, "keydown", this.onKeyDown);
+    window.onerror = this.onError;
+};
+
+Firebug.CommandLine.prototype = 
+{
+    element: null,
   
     _buffer: [],
     _bi: -1,
@@ -42,32 +55,18 @@ var CommandLine = Firebug.CommandLine =
     
     initialize: function(doc)
     {
-        if (this._cmdElement)
-        {
-            this.destroy();
-        }
-        
-        initializeCommandLineAPI();
-
-        this._cmdElement = doc.getElementById("fbCommandLine");
-        
-        if (isOpera)
-          fixOperaTabKey(this._cmdElement);
-        
-        addEvent(this._cmdElement, "keydown", this.onKeyDown);
-        window.onerror = this.onError;
     },
     
     destroy: function()
     {
-      removeEvent(this._cmdElement, "keydown", this.onKeyDown);
+      removeEvent(this.element, "keydown", this.onKeyDown);
       window.onerror = null;
-      this._cmdElement = null
+      this.element = null
     },
 
     execute: function()
     {
-        var cmd = this._cmdElement;
+        var cmd = this.element;
         var command = cmd.value;
         
         this._stack(command);
@@ -120,7 +119,7 @@ var CommandLine = Firebug.CommandLine =
     
     prevCommand: function()
     {
-        var cmd = this._cmdElement;
+        var cmd = this.element;
         var buffer = this._buffer;
         
         if (this._bi > 0 && buffer.length > 0)
@@ -129,7 +128,7 @@ var CommandLine = Firebug.CommandLine =
   
     nextCommand: function()
     {
-        var cmd = this._cmdElement;
+        var cmd = this.element;
         
         var buffer = this._buffer;
         var limit = buffer.length -1;
@@ -147,7 +146,7 @@ var CommandLine = Firebug.CommandLine =
   
     autocomplete: function(reverse)
     {
-        var cmd = this._cmdElement;
+        var cmd = this.element;
         
         var command = cmd.value;
         var offset = getExpressionOffset(command);
@@ -265,7 +264,7 @@ var CommandLine = Firebug.CommandLine =
     
     clear: function()
     {
-        CommandLine._cmdElement.value = "";
+        this.element.value = "";
     },
     
     onKeyDown: function(e)
@@ -276,22 +275,22 @@ var CommandLine = Firebug.CommandLine =
         
         /*tab, shift, control, alt*/
         if (code != 9 && code != 16 && code != 17 && code != 18)
-            CommandLine._completing = false;
+            this._completing = false;
     
         if (code == 13 /* enter */)
-            CommandLine.execute();
+            this.execute();
 
         else if (code == 27 /* ESC */)
-            setTimeout(CommandLine.clear, 0);
+            setTimeout(this.clear, 0);
           
         else if (code == 38 /* up */)
-            CommandLine.prevCommand();
+            this.prevCommand();
           
         else if (code == 40 /* down */)
-            CommandLine.nextCommand();
+            this.nextCommand();
           
         else if (code == 9 /* tab */)
-            CommandLine.autocomplete(e.shiftKey);
+            this.autocomplete(e.shiftKey);
           
         else
             return;
