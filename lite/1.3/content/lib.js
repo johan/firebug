@@ -35,8 +35,8 @@ this.initialize = function()
 
 this.waitForInit = function()
 {
-    if (document.body && typeof FBL.onReady == "function")
-        FBL.onReady();
+    if (document.body && FBL && FBL.Firebug)
+      FBL.Firebug.initialize();
     else
         setTimeout(FBL.waitForInit, 200);
 }
@@ -122,7 +122,7 @@ this.$ = function(id, doc)
         return document.getElementById(id);
 };
 
-this.UI$ = function(id)
+this.$U = function(id)
 {
     if (FBL.Firebug.Chrome.document)
         return FBL.Firebug.Chrome.document.getElementById(id);
@@ -132,6 +132,11 @@ this.UI$ = function(id)
 
 // ************************************************************************************************
 // Event
+
+this.bind = function(object, fn)
+{
+    return function(){return fn.apply(object, arguments);};
+}
 
 this.addEvent = function(object, name, handler)
 {
@@ -167,6 +172,32 @@ this.cancelEvent = function(e, preventDefault)
         e.stopPropagation();
                 
 };
+
+
+//************************************************************************************************
+// class Names
+
+this.hasClass = function(object, name) {
+    return (' '+object.className+' ').indexOf(' '+name+' ') != -1;
+}
+
+this.addClass = function(object, name) {
+    if ((' '+object.className+' ').indexOf(' '+name+' ') == -1)
+        object.className = object.className ? object.className + ' ' + name : name; 
+}
+
+this.removeClass = function(object, name) {
+    object.className = (' ' + object.className + ' ').
+        replace(new RegExp('(\\S*)\\s+'+name+'\\s+(\\S*)', 'g'), '$1 $2').
+        replace(/^\s*|\s*$/g, '');
+}
+
+this.toggleClass = function(object, name) {
+    if ((' '+object.className+' ').indexOf(' '+name+' ') >= 0)
+        this.removeClass(object, name)
+    else
+        this.addClass(object, name);
+}
 
 
 //************************************************************************************************
