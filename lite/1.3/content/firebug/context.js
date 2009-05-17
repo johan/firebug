@@ -20,17 +20,17 @@ Firebug.Context.prototype =
     {
         var width=0, height=0, el;
         
-        if (typeof window.innerWidth == 'number')
+        if (typeof this.window.innerWidth == 'number')
         {
-            width = window.innerWidth;
-            height = window.innerHeight;
+            width = this.window.innerWidth;
+            height = this.window.innerHeight;
         }
-        else if ((el=document.documentElement) && (el.clientHeight || el.clientWidth))
+        else if ((el=this.document.documentElement) && (el.clientHeight || el.clientWidth))
         {
             width = el.clientWidth;
             height = el.clientHeight;
         }
-        else if ((el=document.body) && (el.clientHeight || el.clientWidth))
+        else if ((el=this.document.body) && (el.clientHeight || el.clientWidth))
         {
             width = el.clientWidth;
             height = el.clientHeight;
@@ -43,13 +43,13 @@ Firebug.Context.prototype =
     {
         var width=0, height=0, el;
 
-        if (!isIEQuiksMode && (el=document.documentElement) && 
+        if (!isIEQuiksMode && (el=this.document.documentElement) && 
            (el.scrollHeight || el.scrollWidth))
         {
             width = el.scrollWidth;
             height = el.scrollHeight;
         }
-        else if ((el=document.body) && (el.scrollHeight || el.scrollWidth))
+        else if ((el=this.document.body) && (el.scrollHeight || el.scrollWidth))
         {
             width = el.scrollWidth;
             height = el.scrollHeight;
@@ -62,17 +62,17 @@ Firebug.Context.prototype =
     {
         var top=0, left=0, el;
         
-        if(typeof window.pageYOffset == 'number')
+        if(typeof this.window.pageYOffset == 'number')
         {
-            top = window.pageYOffset;
-            left = window.pageXOffset;
+            top = this.window.pageYOffset;
+            left = this.window.pageXOffset;
         }
-        else if((el=document.body) && (el.scrollTop || el.scrollLeft))
+        else if((el=this.document.body) && (el.scrollTop || el.scrollLeft))
         {
             top = el.scrollTop;
             left = el.scrollLeft;
         }
-        else if((el=document.documentElement) && (el.scrollTop || el.scrollLeft))
+        else if((el=this.document.documentElement) && (el.scrollTop || el.scrollLeft))
         {
             top = el.scrollTop;
             left = el.scrollLeft;
@@ -90,10 +90,10 @@ Firebug.Context.prototype =
         if (isOpera || isSafari)
         {
             var scroll = this.getWindowScrollPosition();
-            return document.elementFromPoint(x + scroll.left, y + scroll.top);
+            return this.document.elementFromPoint(x + scroll.left, y + scroll.top);
         }
         else
-            return document.elementFromPoint(x, y);
+            return this.document.elementFromPoint(x, y);
     },
     
     getElementPosition: function(el)
@@ -122,7 +122,7 @@ Firebug.Context.prototype =
             var rect = el.getBoundingClientRect();
             
             // fix IE problem with offset when not in fullscreen mode
-            var offset = isIE ? document.body.clientTop || document.documentElement.clientTop: 0;
+            var offset = isIE ? this.document.body.clientTop || this.document.documentElement.clientTop: 0;
             
             var scroll = this.getWindowScrollPosition();
             
@@ -209,7 +209,7 @@ Firebug.Context.prototype =
         // get font size, the dirty way
         var computeDirtyFontSize = function(el, calibration)
         {
-            var div = document.createElement("div");
+            var div = this.document.createElement("div");
             var divStyle = offscreenStyle;
 
             if (calibration)
@@ -263,7 +263,7 @@ Firebug.Context.prototype =
         if (!el) return null;
         
         // get ex value, the dirty way
-        var div = document.createElement("div");
+        var div = this.document.createElement("div");
         div.style.cssText = offscreenStyle + "width:"+value + "ex;";
         
         el.appendChild(div);
@@ -278,7 +278,7 @@ Firebug.Context.prototype =
         if (!el) return null;
         
         // get % value, the dirty way
-        var div = document.createElement("div");
+        var div = this.document.createElement("div");
         div.style.cssText = offscreenStyle + "width:"+value + "%;";
         
         el.appendChild(div);
@@ -296,7 +296,7 @@ Firebug.Context.prototype =
     }
     : function(el, name)
     {
-        return document.defaultView.getComputedStyle(el,null)[name] 
+        return this.document.defaultView.getComputedStyle(el,null)[name] 
             || el.style[name] || undefined;
     }
 
@@ -364,16 +364,16 @@ var outline = {
 
 var calculatePixelsPerInch = function calculatePixelsPerInch()
 {
-    var inch = document.createElement("div");
+    var inch = this.document.createElement("div");
     inch.style.cssText = resetStyle + "width:1in; height:1in; position:absolute; top:-1234px; left:-1234px;";
-    document.body.appendChild(inch);
+    this.document.body.appendChild(inch);
     
     pixelsPerInch = {
         x: inch.offsetWidth,
         y: inch.offsetHeight
     };
     
-    document.body.removeChild(inch);
+    this.document.body.removeChild(inch);
 };
 
 
