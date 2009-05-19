@@ -5,6 +5,17 @@ FBL.ns(function() { with (FBL) {
 
 Firebug.Panel =
 {
+    name: "HelloWorld",
+    title: "Hello World!",
+    
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    
+    options: {
+  
+    },
+    
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    
     panelNode: null,
     panelBar: null,
     commandLine: null,
@@ -12,9 +23,6 @@ Firebug.Panel =
     toolButtons: null,
     statusBar: null,
 
-    name: "HelloWorld",
-    title: "Hello World!",
-    
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
     
     searchable: false,
