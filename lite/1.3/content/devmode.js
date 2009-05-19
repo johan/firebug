@@ -409,6 +409,7 @@ function isElement(o){
 */
 
 
+/*
 function getInlineStyles(el)
 {
     var style = el.style;
@@ -487,31 +488,37 @@ var publishedURL = "";
 var baseURL = "";
 var sourceURL = "";
 var skinURL = "";
+var fullURL = "";
+var isApplicationContext = false;
 
-var modules = 
+var loaderModules = 
 [
     "lib.js",
+    "firebug/injectedWindow.js",
+    "firebug/boot.js"
+];
+
+var applicationModules = 
+[
+    "lib.js",
+    "firebug/injectedWindow.js",
     "firebug.js",
 
     //"firebug/domplate.js",
     "firebug/object/reps.js",
     "firebug/object/selector.js",
     
+    "firebug/chrome.js",
+    //"firebug/panel.js",
+    
     "firebug/console.js",
     "firebug/commandLine.js",
-
-    "firebug/chrome.js",
-    "firebug/chrome/frame.js",
-    "firebug/chrome/popup.js",
-    "firebug/chrome/injected.js",
-    "firebug/panel.js",
-    
-    "firebug/context.js",
     
     "firebug/object/inspector.js",
     "firebug/object/html.js",
     
     "firebug/boot.js"
+    /**/
 ];
 
 
@@ -636,7 +643,9 @@ function loadModules() {
     
     publishedURL = bookmarletMode ? bookmarletSkinURL : skinURL;
     
-    for (var i=0, module, m=modules; module=m[i]; i++)
+    var m = isApplicationContext ? applicationModules : loaderModules;
+    
+    for (var i=0, module; module=m[i]; i++)
         loadScript(sourceURL + module);
         
     waitForFBL();
@@ -644,7 +653,7 @@ function loadModules() {
 
 function findLocation() 
 {
-    var reFirebugFile = /(firebug(\.\w+)?\.js|devmode\.js)$/;
+    var reFirebugFile = /(firebug(?:\.\w+)?\.js|devmode\.js)(#.+)?$/;
     var rePath = /^(.*\/)/;
     var reProtocol = /^\w+:\/\//;
     var head = document.documentElement.firstChild;
@@ -652,10 +661,15 @@ function findLocation()
     
     for(var i=0, c=head.childNodes, ci; ci=c[i]; i++)
     {
+        var file = null;
+        
         if ( ci.nodeName == "SCRIPT" && 
-             reFirebugFile.test(ci.src) )
+             (file = reFirebugFile.exec(ci.src)) )
         {
           
+            var fileName = file[1];
+            var fileOptions = file[2];
+            
             if (reProtocol.test(ci.src)) {
                 // absolute path
                 path = rePath.exec(ci.src)[1];
@@ -692,6 +706,10 @@ function findLocation()
         sourceURL = path;
         baseURL = path.substr(0, path.length - m[1].length - 1);
         skinURL = baseURL + "skin/classic/";
+        fullURL = path + fileName;
+        
+        if (fileOptions == "#app")
+            isApplicationContext = true;
     }
     else
     {
@@ -727,7 +745,7 @@ function waitForFBL()
 
 function initialize()
 {
-    FBL.dev = API;
+    FBL.Dev = API;
 }
 
 loadModules();
