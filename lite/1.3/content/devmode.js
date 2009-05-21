@@ -493,20 +493,20 @@ var isApplicationContext = false;
 
 var loaderModules = 
 [
-    "lib.js",
-    "firebug/injectedWindow.js",
+    "firebug/lib.js",
+    "firebug/lib.injected.js",
     "firebug/boot.js"
 ];
 
 var applicationModules = 
 [
-    "lib.js",
-    "firebug/injectedWindow.js",
-    "firebug.js",
+    "firebug/lib.js",
+    "firebug/lib.injected.js",
+    "firebug/firebug.js",
 
     //"firebug/domplate.js",
-    "firebug/object/reps.js",
-    "firebug/object/selector.js",
+    "firebug/reps.js",
+    "firebug/selector.js",
     
     "firebug/chrome.js",
     //"firebug/panel.js",
@@ -514,8 +514,8 @@ var applicationModules =
     "firebug/console.js",
     "firebug/commandLine.js",
     
-    "firebug/object/inspector.js",
-    "firebug/object/html.js",
+    "firebug/inspector.js",
+    "firebug/html.js",
     
     "firebug/boot.js"
     /**/
