@@ -659,7 +659,7 @@ function findLocation()
         if ( ci.nodeName.toLowerCase() == "script" && 
              (file = reFirebugFile.exec(ci.src)) )
         {
-          
+                
             var fileName = file[1];
             var fileOptions = file[2];
             

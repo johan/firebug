@@ -486,11 +486,12 @@ Firebug.Inspector =
 //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 // Shared variables
 
-FBL.offlineFragment = null;
 
 
 //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 // Internal variables
+
+var offlineFragment = null;
 
 var boxModelVisible = false;
 

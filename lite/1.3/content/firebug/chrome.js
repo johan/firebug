@@ -4,6 +4,30 @@ FBL.ns(function() { with (FBL) {
   
 // ************************************************************************************************
 // Chrome API
+	
+var loadScript = function loadScript(doc, url)
+	{
+	    var agent = navigator.userAgent;
+
+	    if (isIE || isSafari)
+	    {
+	    		/*
+	    	  var fileref=doc.createElement('script')
+	    	  fileref.setAttribute("type","text/javascript")
+	    	  fileref.setAttribute("src", url)
+	    	  doc.getElementsByTagName("head")[0].appendChild(fileref);
+	    	  /**/
+	    	  
+  	    	doc.write('<scr'+'ipt src="' + url + '"><\/scr'+'ipt>');
+  	    	doc.close();
+	    }	       
+	    else
+	    {
+	        var script = doc.createElement("script");
+	        script.src = url;
+	        doc.getElementsByTagName("head")[0].appendChild(script);
+	    }
+	};
   
 Firebug.Chrome = {
 
@@ -16,28 +40,33 @@ Firebug.Chrome = {
     {
         context = context || new Context(window);
         
+        // wait loading the new window, then install the application on it
         var waitForWindowLoad = function()
         {
             if (win.document && win.document.body)
             {
+            	//loadScript(win.document, location.source + location.file + "#app");
+            	/*
                 var script = win.document.createElement("script");
-                script.src = location.source + "devmode.js#app";
-                win.document.documentElement.firstChild.appendChild(script);
+                script.src = location.source + location.file + "#app";
+            	win.document.getElementsByTagName("head")[0].appendChild(script);
+            	/**/
+                
                 waitForWindowApplicationLoad();
             } 
             else
                 setTimeout(waitForWindowLoad, 50);
         }
         
+        // wait loading the application, then initialize the application itself
         var waitForWindowApplicationLoad = function()
         {
-            if (win.window && win.window.FirebugApplicationInstanceLoaded)
+            if (_win && typeof _win.onFirebugApplicationLoad != "undefined")
             {
-                delete win.window.FirebugApplicationInstanceLoaded;
-                
-                win.window.FBL.browser = FBL.browser;
-                win.window.FBL.Firebug.chrome = FBL.Firebug.chrome;
-                win.window.FBL.Firebug.initialize();
+            	_win.onFirebugApplicationLoad({
+            		browser: FBL.browser,
+            		chrome: FBL.Firebug.chrome
+            	});
             } 
             else
                 setTimeout(waitForWindowApplicationLoad, 50);
@@ -46,16 +75,13 @@ Firebug.Chrome = {
         options = options || {};
         options = extend(WindowDefaultOptions, options);
         
-        var Win = null;
-        if (options.type == "frame")
-            Win = WindowFrame;
-        else if (options.type == "popup")
-            Win = WindowPopup;
-        
+        var Win = (options.type == "popup") ? WindowPopup : WindowFrame;
         var win = new Win(context, options);
+        var _win = win.window;
+        var _doc = win.document;
         FBL.Firebug.chrome = win;
         
-        waitForWindowLoad();      
+        waitForWindowLoad();
     },
     
     
@@ -143,10 +169,6 @@ Firebug.Chrome = {
 
 
 //************************************************************************************************
-// Application
-
-
-//************************************************************************************************
 // Base Window Class
 
 var WindowBase = extend(Context.prototype, {
@@ -162,6 +184,7 @@ var WindowFrame = function(context, options)
     
     element.setAttribute("id", options.id);
     element.setAttribute("frameBorder", "0");
+    element.style.border = "0";
     element.style.visibility = "hidden";
     element.style.zIndex = "2147483647"; // MAX z-index = 2147483647
     element.style.position = FBL.isIE6 ? "absolute" : "fixed";
@@ -181,6 +204,7 @@ var WindowFrame = function(context, options)
       
     if (injectedMode)
     {
+        doc.write("<scr"+"ipt src='" + FBL.location.app + "'><\/scr"+"ipt>");
         doc.write('<style>'+ FBL.Application.Injected.CSS + '</style>');
         doc.write(FBL.Application.Injected.HTML);
         doc.close();
@@ -208,7 +232,7 @@ var WindowPopup = function(context, options)
         ",left=0,height=",
         height,
         ",width=",
-        screen.width-10, // Opera opens popup in a new tab if it's too big
+        screen.width-10, // Opera opens popup in a new tab if it's too big!
         ",resizable"          
       ].join("");
     

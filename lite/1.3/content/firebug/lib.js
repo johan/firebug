@@ -46,7 +46,14 @@ var waitForInit = function waitForInit()
         // in the user interface window (iframe or popup)
         if (FBL.isApplicationContext)
         {
-            window.FirebugApplicationInstanceLoaded = true;
+            window.onFirebugApplicationLoad = function(data)
+            {
+            	FBL.browser = data.browser;
+            	FBL.Firebug.chrome = data.chrome;
+            	FBL.Firebug.initialize();
+            	
+            	delete window.onFirebugApplicationLoad;
+            }
         }
         else
         {
@@ -102,9 +109,10 @@ var findLocation =  function findLocation()
         if ( ci.nodeName.toLowerCase() == "script" && 
              (file = reFirebugFile.exec(ci.src)) )
         {
-          
+        	
             var fileName = file[1];
             var fileOptions = file[2];
+            
             
             if (reProtocol.test(ci.src)) {
                 // absolute path
@@ -142,10 +150,11 @@ var findLocation =  function findLocation()
         FBL.location.source = path;
         FBL.location.base = path.substr(0, path.length - m[1].length - 1);
         FBL.location.skin = FBL.baseURL + "skin/classic/";
-        FBL.location.file = fileName;
+        FBL.location.app = path + fileName + "#app";
         
         if (fileOptions == "#app")
             FBL.isApplicationContext = true;
+        
     }
     else
     {
@@ -232,14 +241,6 @@ this.$ = function(id, doc)
         return doc.getElementById(id);
     else
         return document.getElementById(id);
-};
-
-this.$U = function(id)
-{
-    if (FBL.Firebug.chrome.document)
-        return FBL.Firebug.chrome.document.getElementById(id);
-    else
-        return undefined
 };
 
 // ************************************************************************************************
