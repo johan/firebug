@@ -6,9 +6,67 @@ FBL.ns(function() { with (FBL) {
 // Chrome API
   
 Firebug.Chrome = {
+
+
+    /**
+     * options.type
+     * options.injectedMode
+     */
+    create: function(context, options)
+    {
+        context = context || new Context(window);
+        
+        var waitForWindowLoad = function()
+        {
+            if (win.document && win.document.body)
+            {
+                var script = win.document.createElement("script");
+                script.src = location.source + "devmode.js#app";
+                win.document.documentElement.firstChild.appendChild(script);
+                waitForWindowApplicationLoad();
+            } 
+            else
+                setTimeout(waitForWindowLoad, 50);
+        }
+        
+        var waitForWindowApplicationLoad = function()
+        {
+            if (win.window && win.window.FirebugApplicationInstanceLoaded)
+            {
+                delete win.window.FirebugApplicationInstanceLoaded;
+                
+                win.window.FBL.browser = FBL.browser;
+                win.window.FBL.Firebug.chrome = FBL.Firebug.chrome;
+                win.window.FBL.Firebug.initialize();
+            } 
+            else
+                setTimeout(waitForWindowApplicationLoad, 50);
+        }
+        
+        options = options || {};
+        options = extend(WindowDefaultOptions, options);
+        
+        var Win = null;
+        if (options.type == "frame")
+            Win = WindowFrame;
+        else if (options.type == "popup")
+            Win = WindowPopup;
+        
+        var win = new Win(context, options);
+        FBL.Firebug.chrome = win;
+        
+        waitForWindowLoad();      
+    },
+    
+    
+    destroy: function()
+    {
+    },
+    
     
     initialize: function()
     {
+        //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
         // create the interface elements cache
         fbTop = $("fbTop");
         fbContent = $("fbContent");
@@ -36,13 +94,18 @@ Firebug.Chrome = {
         fbHTML = $("fbHTML");
       
         fbCommandLine = $("fbCommandLine");
+        //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
         
+        // create a new instance of the CommandLine class
+        commandLine = new Firebug.CommandLine(fbCommandLine);
+        
+        // ...
         Firebug.chrome.element.style.visibility = "visible";
-  
     },
     
     shutdown: function()
     {
+        //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
         // Remove the interface elements cache
         fbTop = null;
         fbContent = null;
@@ -70,23 +133,158 @@ Firebug.Chrome = {
         fbHTML = null;
   
         fbCommandLine = null;
-      
-      
+        //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+        // destroy the instance of the CommandLine class
+        commandLine.destroy();    
     }
 };
 
 
+
 //************************************************************************************************
-//Chrome API
+// Application
+
+
+//************************************************************************************************
+// Base Window Class
+
+var WindowBase = extend(Context.prototype, {
+
+});
+
+var WindowFrame = function(context, options)
+{
+    options = options || {};
+    options = FBL.extend(FrameDefaultOptions, options);
+    
+    var element = this.element = context.document.createElement("iframe");
+    
+    element.setAttribute("id", options.id);
+    element.setAttribute("frameBorder", "0");
+    element.style.visibility = "hidden";
+    element.style.zIndex = "2147483647"; // MAX z-index = 2147483647
+    element.style.position = FBL.isIE6 ? "absolute" : "fixed";
+    element.style.width = "100%"; // "102%"; IE auto margin bug
+    element.style.left = "0";
+    element.style.bottom = "-1px";
+    element.style.height = options.height + "px";
+    
+    var injectedMode = options.injectedMode;
+    if (!injectedMode)
+        element.setAttribute("src", skinURL+"firebug.html");
+    
+    context.document.body.appendChild(element);
+    
+    var doc = element.contentWindow.document;
+    var win = element.contentWindow.window;
+      
+    if (injectedMode)
+    {
+        doc.write('<style>'+ FBL.Application.Injected.CSS + '</style>');
+        doc.write(FBL.Application.Injected.HTML);
+        doc.close();
+    }
+    
+    this.window = win;
+    this.document = doc;
+};
+
+WindowFrame.prototype = extend(WindowBase, {
+
+});
+
+
+var WindowPopup = function(context, options)
+{
+
+    var injectedMode = options.injectedMode;
+    var url = injectedMode ? "" : (skinURL + options.interfaceFile);
+    
+    var height = options.chromeHeight;
+    var options = [
+        "true,top=",
+        Math.max(screen.height - height, 0),
+        ",left=0,height=",
+        height,
+        ",width=",
+        screen.width-10, // Opera opens popup in a new tab if it's too big
+        ",resizable"          
+      ].join("");
+    
+    var element = this.element = window.open(
+        url, 
+        "popup", 
+        options
+      );
+    
+    var doc = element.document;
+    var win = element.window;
+    
+    if (injectedMode)
+    {
+        doc.write("<style>"+ FBL.Application.Injected.CSS + "</style>");
+        doc.write(FBL.Application.Injected.HTML);
+        doc.close();
+    }
+    
+    if (element)
+    {
+        element.focus();
+    }
+    else
+    {
+        Chrome.Popup.element = null;
+        alert("Disable the popup blocker to open the console in another window!")
+    }
+
+
+    this.window = win;
+    this.document = doc;
+};
+
+WindowPopup.prototype = extend(WindowBase, {
+
+});
 
 
 
 
 
+//************************************************************************************************
+// 
 
 
+//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+//
 
+var WindowDefaultOptions = 
+{
+    injectedMode: true,
+    type: "frame"
+};
+
+var FrameDefaultOptions = 
+{
+    id: "FirebugChrome",
+    height: 250
+};
+
+var PopupDefaultOptions = 
+{
+    id: "FirebugChromePopup",
+    height: 250
+};
+
+
+//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+//
+var commandLine = null;
+
+
+//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 // Interface Elements Cache
+
 var fbTop = null;
 var fbContent = null;
 var fbContentStyle = null;

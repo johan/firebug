@@ -46,7 +46,7 @@ var ConsoleAPI =
             throw message ? message : "Assertion Failure";
         }
         
-        return Console.logCommand;        
+        return Console.LOG_COMMAND;        
     },
     
     dir: function(object)
@@ -108,7 +108,7 @@ var ConsoleAPI =
     time: function(name)
     {
         timeMap[name] = (new Date()).getTime();
-        return Console.logCommand;
+        return Console.LOG_COMMAND;
     },
     
     timeEnd: function(name)
@@ -119,7 +119,7 @@ var ConsoleAPI =
             logFormatted([name+ ":", delta+"ms"]);
             delete timeMap[name];
         }
-        return Console.logCommand;
+        return Console.LOG_COMMAND;
     },
     
     count: function()
@@ -139,37 +139,37 @@ var ConsoleAPI =
     
     profileEnd: function()
     {
-        return Console.logCommand;
+        return Console.LOG_COMMAND;
     },
     
     clear: function()
     {
         fbConsole.innerHTML = "";
-        return Console.logCommand;
+        return Console.LOG_COMMAND;
     },
 
     open: function()
     {
         toggleConsole(true);
-        return Console.logCommand;
+        return Console.LOG_COMMAND;
     },
     
     close: function()
     {
         if (frameVisible)
             toggleConsole();
-        return Console.logCommand;
+        return Console.LOG_COMMAND;
     }
 };
 
 
 // ********************************************************************************************
 
-var consoleFrame = null;
 var fbConsole = null;
-var commandLine = null;
+var fbPanel1 = null;
 
-var frameVisible = false;
+//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
 var messageQueue = [];
 var groupStack = [];
 var timeMap = {};
@@ -184,8 +184,18 @@ var timeMap = {};
 var Console = Firebug.Console = extend(ConsoleAPI,
 {
 
-    logCommand: {},
+    LOG_COMMAND: {},
 
+    initialize: function(){
+        fbConsole = $("fbConsole");
+        fbPanel1 =  $("fbPanel1");       
+    },
+    
+    shutdown: function()
+    {
+        fbConsole = null;
+        fbPanel1 =  null;     
+    },
     
     returnDir: function(object)
     {
@@ -238,7 +248,7 @@ FBL.logRow = function(message, className, handler)
         //waitForDocument();
     }
     
-    return Console.logCommand;
+    return Console.LOG_COMMAND;
 };
 
 FBL.flush = function()
@@ -252,10 +262,8 @@ FBL.flush = function()
 
 FBL.writeMessage = function(message, className, handler)
 {
-    //var consoleFrame = fbPanel1.offsetParent; 
-    var consoleFrame = fbPanel1; 
     var isScrolledToBottom =
-        consoleFrame.scrollTop + consoleFrame.offsetHeight >= consoleFrame.scrollHeight;
+        fbPanel1.scrollTop + fbPanel1.offsetHeight >= fbPanel1.scrollHeight;
 
     if (!handler)
         handler = writeRow;
@@ -263,7 +271,7 @@ FBL.writeMessage = function(message, className, handler)
     handler(message, className);
     
     if (isScrolledToBottom)
-        consoleFrame.scrollTop = consoleFrame.scrollHeight - consoleFrame.offsetHeight;
+        fbPanel1.scrollTop = fbPanel1.scrollHeight - fbPanel1.offsetHeight;
 };
 
 FBL.appendRow = function(row)

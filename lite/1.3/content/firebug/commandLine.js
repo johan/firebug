@@ -78,7 +78,7 @@ Firebug.CommandLine.prototype =
             var result = this.evaluate(command);
             // evita que seja repetido o log, caso o comando executado
             // j� seja um log via linha de comando
-            if (result != Console.logCommand)
+            if (result != Console.LOG_COMMAND)
             {
                 var html = [];
                 appendObject(result, html)

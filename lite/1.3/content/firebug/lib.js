@@ -47,23 +47,41 @@ var waitForInit = function waitForInit()
         if (FBL.isApplicationContext)
         {
             window.FirebugApplicationInstanceLoaded = true;
-            //FBL.Firebug.initialize();
         }
         else
         {
-            FBL.Window.initialize();
+            FBL.Application.create();
         }
     }
     else
         setTimeout(waitForInit, 50);
 };
 
+
+//************************************************************************************************
+// Application
+
+this.Application = 
+{
+    Injected: null,
+  
+    create: function()
+    {
+        FBL.browser = new FBL.Context(window);
+        FBL.Firebug.Chrome.create(FBL.browser);
+    }
+};
+
+
 //************************************************************************************************
 // Library location
 
-this.sourceURL = null;
-this.baseURL = null;
-this.skinURL = null;
+this.location = {
+    source: null,
+    base: null,
+    skin: null,
+    file: null
+};
 
 this.isApplicationContext = false;
 
@@ -121,9 +139,10 @@ var findLocation =  function findLocation()
     
     if (path && m)
     {
-        FBL.sourceURL = path;
-        FBL.baseURL = path.substr(0, path.length - m[1].length - 1);
-        FBL.skinURL = FBL.baseURL + "skin/classic/";
+        FBL.location.source = path;
+        FBL.location.base = path.substr(0, path.length - m[1].length - 1);
+        FBL.location.skin = FBL.baseURL + "skin/classic/";
+        FBL.location.file = fileName;
         
         if (fileOptions == "#app")
             FBL.isApplicationContext = true;
@@ -879,223 +898,6 @@ var calculatePixelsPerInch = function calculatePixelsPerInch()
     
     this.document.body.removeChild(inch);
 };
-
-
-
-//************************************************************************************************
-//Window
-
-var WindowDefaultOptions = 
-{
-    injectedMode: true,
-    type: "frame"
-};
-
-var FrameDefaultOptions = 
-{
-    id: "FirebugChrome",
-    height: 250
-};
-
-var PopupDefaultOptions = 
-{
-    id: "FirebugChromePopup",
-    height: 250
-};
-
-this.Window = 
-{
-    
-    initialize: function()
-    {
-        FBL.browser = new FBL.Context(window);
-        FBL.Window.create(FBL.browser);
-    },
-    
-    /**
-     * options.type
-     * options.injectedMode
-     */
-    create: function(context, options)
-    {
-        context = context || new FBL.Context(window);
-        
-        var waitForWindowLoad = function()
-        {
-            if (win.document && win.document.body)
-            {
-                
-                var script = win.document.createElement("script");
-                script.src = FBL.sourceURL + "devmode.js#app";
-                win.document.documentElement.firstChild.appendChild(script);
-                waitForWindowApplicationLoad();
-                /**/
-                
-              
-                /*
-                win.window.FBL = FBL;
-                win.window.FBL.isApplicationContext = true;
-                win.window.FBL.initialize();
-                /**/
-                
-              
-              
-                /*
-                var source = "(function(win,FBL){" +
-                                  "win.FBL=FBL;" +
-                                  "win.FBL.isApplicationContext=true;" +
-                                  "win.FBL.initialize();" +
-                              "}).call(this,win.window,FBL)"
-                win.window.eval(source);
-                /**/   
-                                  
-                /*
-                var source = "(function(FBL){" +
-                                  "var FBL=FBL;" +
-                                  "FBL.isApplicationContext=true;" +
-                                  "FBL.initialize();" +
-                              "}).call(this,FBL);"
-                win.window.eval(source);
-                /**/
-            } 
-            else
-                setTimeout(waitForWindowLoad, 50);
-        }
-        
-        var waitForWindowApplicationLoad = function()
-        {
-            if (win.window && win.window.FirebugApplicationInstanceLoaded)
-            {
-                delete win.window.FirebugApplicationInstanceLoaded;
-                
-                //console.timeEnd("fb");
-                win.window.FBL.browser = FBL.browser;
-                win.window.FBL.Firebug.chrome = FBL.Firebug.chrome;
-                win.window.FBL.Firebug.initialize();
-                //alert("hahahaha")
-                /**/
-            } 
-            else
-                setTimeout(waitForWindowApplicationLoad, 50);
-        }
-        
-        options = options || {};
-        options = FBL.extend(WindowDefaultOptions, options);
-        
-        var Win = null;
-        if (options.type == "frame")
-            Win = WindowFrame;
-        else if (options.type == "popup")
-            Win = WindowPopup;
-        
-        var win = new Win(context, options);
-        FBL.Firebug.chrome = win;
-        
-        waitForWindowLoad();      
-    }
-};
-
-
-//************************************************************************************************
-//Base Window Class
-
-var WindowBase = this.extend(this.Context.prototype, {
-
-});
-
-var WindowFrame = function(context, options)
-{
-    options = options || {};
-    options = FBL.extend(FrameDefaultOptions, options);
-    
-    var element = this.element = context.document.createElement("iframe");
-    
-    element.setAttribute("id", options.id);
-    element.setAttribute("frameBorder", "0");
-    element.style.visibility = "hidden";
-    element.style.zIndex = "2147483647"; // MAX z-index = 2147483647
-    element.style.position = FBL.isIE6 ? "absolute" : "fixed";
-    element.style.width = "100%"; // "102%"; IE auto margin bug
-    element.style.left = "0";
-    element.style.bottom = "-1px";
-    element.style.height = options.height + "px";
-    
-    var injectedMode = options.injectedMode;
-    if (!injectedMode)
-        element.setAttribute("src", skinURL+"firebug.html");
-    
-    context.document.body.appendChild(element);
-    
-    var doc = element.contentWindow.document;
-    var win = element.contentWindow.window;
-      
-    if (injectedMode)
-    {
-        doc.write('<style>'+ FBL.Window.Injected.CSS + '</style>');
-        doc.write(FBL.Window.Injected.HTML);
-        doc.close();
-    }
-    
-    this.window = win;
-    this.document = doc;
-};
-
-WindowFrame.prototype = this.extend(WindowBase, {
-
-});
-
-
-var WindowPopup = function(context, options)
-{
-
-    var injectedMode = options.injectedMode;
-    var url = injectedMode ? "" : (skinURL + options.interfaceFile);
-    
-    var height = options.chromeHeight;
-    var options = [
-        "true,top=",
-        Math.max(screen.height - height, 0),
-        ",left=0,height=",
-        height,
-        ",width=",
-        screen.width-10, // Opera opens popup in a new tab if it's too big
-        ",resizable"          
-      ].join("");
-    
-    var element = this.element = window.open(
-        url, 
-        "popup", 
-        options
-      );
-    
-    var doc = element.document;
-    var win = element.window;
-    
-    if (injectedMode)
-    {
-        doc.write("<style>"+ FBL.Window.Injected.CSS + "</style>");
-        doc.write(FBL.Window.Injected.HTML);
-        doc.close();
-    }
-    
-    if (element)
-    {
-        element.focus();
-    }
-    else
-    {
-        Chrome.Popup.element = null;
-        alert("Disable the popup blocker to open the console in another window!")
-    }
-
-
-    this.window = win;
-    this.document = doc;
-};
-
-WindowPopup.prototype = this.extend(WindowBase, {
-
-});
 
 
 
