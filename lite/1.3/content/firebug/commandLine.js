@@ -78,7 +78,7 @@ Firebug.CommandLine.prototype =
             var result = this.evaluate(command);
             // evita que seja repetido o log, caso o comando executado
             // j� seja um log via linha de comando
-            if (result != Console.logID)
+            if (result != Console.logCommand)
             {
                 var html = [];
                 appendObject(result, html)
@@ -309,9 +309,9 @@ Firebug.CommandLine.API =
 
     $$: Firebug.Selector,
     
-    dir: ConsoleAPI.dir,
+    dir: Firebug.Console.dir,
 
-    dirxml: ConsoleAPI.dirxml
+    dirxml: Firebug.Console.dirxml
 }
 
 FBL.CommandLineAPI = {};

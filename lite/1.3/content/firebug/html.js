@@ -211,7 +211,7 @@ Firebug.HTML =
         
         selectElement(node);
         
-        consoleBodyFrame.scrollTop = Math.round(node.offsetTop - consoleBodyFrame.clientHeight/2);
+        fbPanel1.scrollTop = Math.round(node.offsetTop - fbPanel1.clientHeight/2);
     }
     
 }

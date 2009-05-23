@@ -20,6 +20,10 @@ this.ns = function(fn)
 this.initialize = function()
 {
     //if (FBTrace.DBG_INITIALIZE) FBTrace.sysout("FBL.initialize BEGIN "+namespaces.length+" namespaces\n");
+  
+    if (FBL.isIE6)
+      fixIE6BackgroundImageCache();
+    
     findLocation();
 
     for (var i = 0; i < namespaces.length; i += 2)
@@ -34,32 +38,50 @@ this.initialize = function()
     //if (FBTrace.DBG_INITIALIZE) FBTrace.sysout("FBL.initialize END "+namespaces.length+" namespaces\n");
 };
 
-var isApplicationContext = false;
-
 var waitForInit = function waitForInit()
 {
     if (document.body)
     {
-        if (!isApplicationContext)
+        // If the library is being loaded in the application context, that is
+        // in the user interface window (iframe or popup)
+        if (FBL.isApplicationContext)
+        {
+            window.FirebugApplicationInstanceLoaded = true;
+            //FBL.Firebug.initialize();
+        }
+        else
+        {
             FBL.Window.initialize();
+        }
     }
     else
-        setTimeout(waitForInit, 200);
+        setTimeout(waitForInit, 50);
 };
+
+//************************************************************************************************
+// Library location
+
+this.sourceURL = null;
+this.baseURL = null;
+this.skinURL = null;
+
+this.isApplicationContext = false;
+
+//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 var findLocation =  function findLocation() 
 {
     var reFirebugFile = /(firebug(?:\.\w+)?\.js|devmode\.js)(#.+)?$/;
     var rePath = /^(.*\/)/;
     var reProtocol = /^\w+:\/\//;
-    var head = document.documentElement.firstChild;
+    var head = document.getElementsByTagName("head")[0];
     var path = null;
     
     for(var i=0, c=head.childNodes, ci; ci=c[i]; i++)
     {
         var file = null;
         
-        if ( ci.nodeName == "SCRIPT" && 
+        if ( ci.nodeName.toLowerCase() == "script" && 
              (file = reFirebugFile.exec(ci.src)) )
         {
           
@@ -104,7 +126,7 @@ var findLocation =  function findLocation()
         FBL.skinURL = FBL.baseURL + "skin/classic/";
         
         if (fileOptions == "#app")
-            isApplicationContext = true;
+            FBL.isApplicationContext = true;
     }
     else
     {
@@ -142,17 +164,14 @@ this.append = function(l, r)
 // Browser detection
 
 var userAgent = navigator.userAgent;
+
 this.isFirefox = userAgent.indexOf("Firefox") != -1;
 this.isIE      = userAgent.indexOf("MSIE") != -1;
-this.isIE6     = /msie 6/i.test(navigator.appVersion);
 this.isOpera   = userAgent.indexOf("Opera") != -1;
 this.isSafari  = userAgent.indexOf("AppleWebKit") != -1;
-this.isIEStantandMode = document.all ? document.compatMode == "CSS1Compat" : false;
+this.isIE6     = /msie 6/i.test(navigator.appVersion);
 this.isIEQuiksMode = document.all ? document.compatMode == "BackCompat" : false;
-
-this.sourceURL = null;
-this.baseURL = null;
-this.skinURL = null;
+this.isIEStantandMode = document.all ? document.compatMode == "CSS1Compat" : false;
 
 // ************************************************************************************************
 // Util
@@ -198,8 +217,8 @@ this.$ = function(id, doc)
 
 this.$U = function(id)
 {
-    if (FBL.Firebug.Chrome.document)
-        return FBL.Firebug.Chrome.document.getElementById(id);
+    if (FBL.Firebug.chrome.document)
+        return FBL.Firebug.chrome.document.getElementById(id);
     else
         return undefined
 };
@@ -528,7 +547,7 @@ this.eraseCookie = function(name)
 
 // ************************************************************************************************
 // http://www.mister-pixel.com/#Content__state=is_that_simple
-this.fixIE6BackgroundImageCache = function(doc)
+var fixIE6BackgroundImageCache = function(doc)
 {
     doc = doc || document;
     try {
@@ -889,8 +908,8 @@ this.Window =
     
     initialize: function()
     {
-        FBL.context = new FBL.Context(window);
-        FBL.Window.create(FBL.context);
+        FBL.browser = new FBL.Context(window);
+        FBL.Window.create(FBL.browser);
     },
     
     /**
@@ -899,17 +918,65 @@ this.Window =
      */
     create: function(context, options)
     {
+        context = context || new FBL.Context(window);
+        
         var waitForWindowLoad = function()
         {
             if (win.document && win.document.body)
             {
+                
                 var script = win.document.createElement("script");
                 script.src = FBL.sourceURL + "devmode.js#app";
                 win.document.documentElement.firstChild.appendChild(script);
+                waitForWindowApplicationLoad();
+                /**/
+                
+              
+                /*
+                win.window.FBL = FBL;
+                win.window.FBL.isApplicationContext = true;
+                win.window.FBL.initialize();
+                /**/
+                
+              
+              
+                /*
+                var source = "(function(win,FBL){" +
+                                  "win.FBL=FBL;" +
+                                  "win.FBL.isApplicationContext=true;" +
+                                  "win.FBL.initialize();" +
+                              "}).call(this,win.window,FBL)"
+                win.window.eval(source);
+                /**/   
+                                  
+                /*
+                var source = "(function(FBL){" +
+                                  "var FBL=FBL;" +
+                                  "FBL.isApplicationContext=true;" +
+                                  "FBL.initialize();" +
+                              "}).call(this,FBL);"
+                win.window.eval(source);
                 /**/
             } 
             else
-                setTimeout(waitForWindowLoad, 100);
+                setTimeout(waitForWindowLoad, 50);
+        }
+        
+        var waitForWindowApplicationLoad = function()
+        {
+            if (win.window && win.window.FirebugApplicationInstanceLoaded)
+            {
+                delete win.window.FirebugApplicationInstanceLoaded;
+                
+                //console.timeEnd("fb");
+                win.window.FBL.browser = FBL.browser;
+                win.window.FBL.Firebug.chrome = FBL.Firebug.chrome;
+                win.window.FBL.Firebug.initialize();
+                //alert("hahahaha")
+                /**/
+            } 
+            else
+                setTimeout(waitForWindowApplicationLoad, 50);
         }
         
         options = options || {};
@@ -922,6 +989,7 @@ this.Window =
             Win = WindowPopup;
         
         var win = new Win(context, options);
+        FBL.Firebug.chrome = win;
         
         waitForWindowLoad();      
     }

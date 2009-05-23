@@ -5,7 +5,7 @@ TODO
 
 use of dispatch
 
-frame, frameStyle, consoleFrame, consoleBody
+frame, frameStyle, consoleFrame, fbPanel1
 
 create/destroy, initialize/shutdown. rename functions to this pattern.
 
@@ -381,7 +381,8 @@ function getXPath(node, path) {
 
 // Getting result
 document.evaluate("/html/body/div/ul/li[2]", document, null, XPathResult.ANY_TYPE, null ).iterateNext()
-
+
+
 
 
 
@@ -491,31 +492,24 @@ var skinURL = "";
 var fullURL = "";
 var isApplicationContext = false;
 
-var loaderModules = 
+var modules = 
 [
-    "firebug/lib.js",
-    "firebug/lib.injected.js",
-    "firebug/boot.js"
-];
-
-var applicationModules = 
-[
+     
     "firebug/lib.js",
     "firebug/lib.injected.js",
     "firebug/firebug.js",
-
     //"firebug/domplate.js",
     "firebug/reps.js",
-    "firebug/selector.js",
+    "firebug/console.js",
     
+    "firebug/selector.js",
+    "firebug/inspector.js",
     "firebug/chrome.js",
     //"firebug/panel.js",
     
-    "firebug/console.js",
     "firebug/commandLine.js",
-    
-    "firebug/inspector.js",
     "firebug/html.js",
+    /**/
     
     "firebug/boot.js"
     /**/
@@ -555,6 +549,7 @@ var API =
                         out.appendChild(document.createTextNode(result.join("")));
                         document.body.appendChild(out);
                     }
+                    /**/
                 }
             });
         
@@ -643,9 +638,7 @@ function loadModules() {
     
     publishedURL = bookmarletMode ? bookmarletSkinURL : skinURL;
     
-    var m = isApplicationContext ? applicationModules : loaderModules;
-    
-    for (var i=0, module; module=m[i]; i++)
+    for (var i=0, module; module=modules[i]; i++)
         loadScript(sourceURL + module);
         
     waitForFBL();
@@ -656,14 +649,14 @@ function findLocation()
     var reFirebugFile = /(firebug(?:\.\w+)?\.js|devmode\.js)(#.+)?$/;
     var rePath = /^(.*\/)/;
     var reProtocol = /^\w+:\/\//;
-    var head = document.documentElement.firstChild;
+    var head = document.getElementsByTagName("head")[0];
     var path = null;
     
     for(var i=0, c=head.childNodes, ci; ci=c[i]; i++)
     {
         var file = null;
         
-        if ( ci.nodeName == "SCRIPT" && 
+        if ( ci.nodeName.toLowerCase() == "script" && 
              (file = reFirebugFile.exec(ci.src)) )
         {
           
@@ -731,7 +724,7 @@ function loadScript(url)
     {
         var script = document.createElement("script");
         script.src = url;
-        document.documentElement.firstChild.appendChild(script);
+        document.getElementsByTagName("head")[0].appendChild(script);
     }
 };
 
