@@ -18,6 +18,8 @@ Firebug.CommandLine = function(element)
     this.onKeyDown = bind(this, this.onKeyDown);
     addEvent(this.element, "keydown", this.onKeyDown);
     window.onerror = this.onError;
+    
+    initializeCommandLineAPI();
 };
 
 Firebug.CommandLine.prototype = 
@@ -96,23 +98,23 @@ Firebug.CommandLine.prototype =
     
     evaluate: function(expr)
     {
-      var cmd = "(function() { with(FBL.CommandLineAPI){ return " + expr + " } }).apply(window)";
-      var r;
-      
-      // Try executing the command, expecting that it returns a value
-      try
-      {
-          r = this.eval(cmd);
-      }
-      // If syntax error happens, it may be a command (if, for, while) that
-      // can't be returned by a function, so try it again without the return
-      catch(E)
-      {
-          cmd = "(function() { with(FBL.CommandLineAPI){ " + expr + " } }).apply(window)";
-          r = this.eval(cmd);
-      }
-      
-      return r;
+        var cmd = "(function() { with(FBL.Firebug.CommandLine.API){ return " + expr + " } }).apply(FBL.browser.window)";
+        var r;
+        
+        // Try executing the command, expecting that it returns a value
+        try
+        {
+            r = this.eval(cmd);
+        }
+        // If syntax error happens, it may be a command (if, for, while) that
+        // can't be returned by a function, so try it again without the return
+        catch(E)
+        {
+            cmd = "(function() { with(FBL.Firebug.CommandLine.API){ " + expr + " } }).apply(FBL.browser.window)";
+            r = this.eval(cmd);
+        }
+          
+        return r;
     },
     
     eval: new Function("return window.eval.apply(window, arguments)"),
@@ -300,29 +302,9 @@ Firebug.CommandLine.prototype =
     }
 };
 
-Firebug.CommandLine.API =
-{
-    $: function(id)
-    {
-        return document.getElementById(id)
-    },
 
-    $$: Firebug.Selector,
-    
-    dir: Firebug.Console.dir,
-
-    dirxml: Firebug.Console.dirxml
-}
-
-FBL.CommandLineAPI = {};
-function initializeCommandLineAPI()
-{
-    var api = FBL.Firebug.CommandLine.API;
-    for (var m in api)
-        if (!window[m])
-            FBL.CommandLineAPI[m] = api[m];
-}
-
+//************************************************************************************************
+// 
 
 var reOpenBracket = /[\[\(\{]/;
 var reCloseBracket = /[\]\)\}]/;
@@ -354,6 +336,35 @@ function getExpressionOffset(command)
 
     return start + 1;
 }
+
+//************************************************************************************************
+// CommandLine API
+
+var CommandLineAPI =
+{
+    $: function(id)
+    {
+        return browser.document.getElementById(id)
+    },
+
+    $$: function(selector)
+    {
+        return Firebug.Selector(selector, browser.document)
+    },    
+    dir: Firebug.Console.dir,
+
+    dirxml: Firebug.Console.dirxml
+}
+
+Firebug.CommandLine.API = {};
+var initializeCommandLineAPI = function initializeCommandLineAPI()
+{
+    for (var m in CommandLineAPI)
+        if (!browser.window[m])
+            Firebug.CommandLine.API[m] = CommandLineAPI[m];
+}
+
+
 
 
 // ************************************************************************************************

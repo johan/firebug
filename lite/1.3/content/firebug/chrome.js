@@ -1,34 +1,22 @@
 FBL.ns(function() { with (FBL) {
 // ************************************************************************************************
+    
+/*
 
+
+Problems
+    - when NOT in injected mode, the new application load system doesn't work.
+
+    - when in injected DEVELOPMENT mode, in XHTML documents, Google Chrome
+      is having problems with the loading order of the multiple scripts.
+
+
+
+*/
   
 // ************************************************************************************************
 // Chrome API
-	
-var loadScript = function loadScript(doc, url)
-	{
-	    var agent = navigator.userAgent;
-
-	    if (isIE || isSafari)
-	    {
-	    		/*
-	    	  var fileref=doc.createElement('script')
-	    	  fileref.setAttribute("type","text/javascript")
-	    	  fileref.setAttribute("src", url)
-	    	  doc.getElementsByTagName("head")[0].appendChild(fileref);
-	    	  /**/
-	    	  
-  	    	doc.write('<scr'+'ipt src="' + url + '"><\/scr'+'ipt>');
-  	    	doc.close();
-	    }	       
-	    else
-	    {
-	        var script = doc.createElement("script");
-	        script.src = url;
-	        doc.getElementsByTagName("head")[0].appendChild(script);
-	    }
-	};
-  
+    
 Firebug.Chrome = {
 
 
@@ -43,15 +31,8 @@ Firebug.Chrome = {
         // wait loading the new window, then install the application on it
         var waitForWindowLoad = function()
         {
-            if (win.document && win.document.body)
+            if (_doc && _doc.body)
             {
-            	//loadScript(win.document, location.source + location.file + "#app");
-            	/*
-                var script = win.document.createElement("script");
-                script.src = location.source + location.file + "#app";
-            	win.document.getElementsByTagName("head")[0].appendChild(script);
-            	/**/
-                
                 waitForWindowApplicationLoad();
             } 
             else
@@ -63,10 +44,10 @@ Firebug.Chrome = {
         {
             if (_win && typeof _win.onFirebugApplicationLoad != "undefined")
             {
-            	_win.onFirebugApplicationLoad({
-            		browser: FBL.browser,
-            		chrome: FBL.Firebug.chrome
-            	});
+                _win.onFirebugApplicationLoad({
+                    browser: FBL.browser,
+                    chrome: FBL.Firebug.chrome
+                });
             } 
             else
                 setTimeout(waitForWindowApplicationLoad, 50);
@@ -75,13 +56,13 @@ Firebug.Chrome = {
         options = options || {};
         options = extend(WindowDefaultOptions, options);
         
-        var Win = (options.type == "popup") ? WindowPopup : WindowFrame;
+        var Win = (options.type == "popup") ? ChromePopup : ChromeFrame;
         var win = new Win(context, options);
         var _win = win.window;
         var _doc = win.document;
         FBL.Firebug.chrome = win;
         
-        waitForWindowLoad();
+        setTimeout(waitForWindowLoad, 0);
     },
     
     
@@ -127,6 +108,7 @@ Firebug.Chrome = {
         
         // ...
         Firebug.chrome.element.style.visibility = "visible";
+        this.draw();
     },
     
     shutdown: function()
@@ -163,22 +145,73 @@ Firebug.Chrome = {
 
         // destroy the instance of the CommandLine class
         commandLine.destroy();    
+    },
+    
+    
+    draw: function()
+    {
+        // !!!!
+        var commandLineVisible = true;
+        var rightPanelVisible = false;
+        var topHeight = 0;
+        var frame = Firebug.chrome.element;
+        /**/
+        
+        var height = Firebug.chrome.element.clientHeight;
+        var cmdHeight = commandLineVisible ? fbCommandLine.offsetHeight : 0;
+        var fixedHeight = topHeight + cmdHeight;
+        var y = Math.max(height, topHeight);
+        
+        fbVSplitterStyle.height = y - 27 - cmdHeight + "px"; 
+        frame.style.height = y + "px";
+        fbContentStyle.height = Math.max(y - fixedHeight, 0)+ "px";
+
+        // Fix Firefox problem with table rows with 100% height (fit height)
+        if (isFirefox)
+        {
+            fbContentStyle.maxHeight = Math.max(y - fixedHeight, 0)+ "px";
+        }
+  
+        var width = frame.offsetLeft + frame.clientWidth;
+        var x = rightPanelVisible ? sidePanelWidth : 0;
+        
+        fbPanelBox1Style.width = Math.max(width - x, 0) + "px";
+        fbPanel1Style.width = Math.max(width - x, 0) + "px";                
+        
+        if (rightPanelVisible)
+        {
+            fbPanelBox2Style.width = x + "px";
+            fbPanelBar2BoxStyle.width = Math.max(x -1, 0) + "px";
+            fbVSplitterStyle.right = Math.max(x - 6, 0) + "px";
+        }
+        
+        // Avoid horizontal scrollbar problem in IE
+        if (isIE)
+        {
+            var isScrolled = tabL.offsetHeight > fbPanel1.offsetHeight;
+            var scrollFix = isScrolled ? 18 : 0;
+            tabLStyle.width = Math.max(width -2 - scrollFix - x, 0) + "px";
+        }
     }
+    
 };
 
 
 
 //************************************************************************************************
-// Base Window Class
+// Chrome Base
 
-var WindowBase = extend(Context.prototype, {
+var ChromeBase = extend(Context.prototype, {
 
 });
 
-var WindowFrame = function(context, options)
+//************************************************************************************************
+// Chrome Frame Class
+
+var ChromeFrame = function(context, options)
 {
     options = options || {};
-    options = FBL.extend(FrameDefaultOptions, options);
+    options = extend(FrameDefaultOptions, options);
     
     var element = this.element = context.document.createElement("iframe");
     
@@ -187,7 +220,7 @@ var WindowFrame = function(context, options)
     element.style.border = "0";
     element.style.visibility = "hidden";
     element.style.zIndex = "2147483647"; // MAX z-index = 2147483647
-    element.style.position = FBL.isIE6 ? "absolute" : "fixed";
+    element.style.position = isIE6 ? "absolute" : "fixed";
     element.style.width = "100%"; // "102%"; IE auto margin bug
     element.style.left = "0";
     element.style.bottom = "-1px";
@@ -195,18 +228,18 @@ var WindowFrame = function(context, options)
     
     var injectedMode = options.injectedMode;
     if (!injectedMode)
-        element.setAttribute("src", skinURL+"firebug.html");
+        element.setAttribute("src", location.skin+"firebug.html");
     
     context.document.body.appendChild(element);
     
     var doc = element.contentWindow.document;
     var win = element.contentWindow.window;
-      
+    
     if (injectedMode)
     {
-        doc.write("<scr"+"ipt src='" + FBL.location.app + "'><\/scr"+"ipt>");
-        doc.write('<style>'+ FBL.Application.Injected.CSS + '</style>');
-        doc.write(FBL.Application.Injected.HTML);
+        doc.write('<style>'+ Application.Injected.CSS + '</style>');
+        doc.write("<scr"+"ipt src='" + location.app + "'><\/scr"+"ipt>");
+        doc.write(Application.Injected.HTML);
         doc.close();
     }
     
@@ -214,16 +247,21 @@ var WindowFrame = function(context, options)
     this.document = doc;
 };
 
-WindowFrame.prototype = extend(WindowBase, {
+//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+ChromeFrame.prototype = extend(ChromeBase, {
 
 });
 
 
-var WindowPopup = function(context, options)
+//************************************************************************************************
+// Chrome Popup Class
+
+var ChromePopup = function(context, options)
 {
 
     var injectedMode = options.injectedMode;
-    var url = injectedMode ? "" : (skinURL + options.interfaceFile);
+    var url = injectedMode ? "" : (location.skin + options.interfaceFile);
     
     var height = options.chromeHeight;
     var options = [
@@ -248,6 +286,7 @@ var WindowPopup = function(context, options)
     if (injectedMode)
     {
         doc.write("<style>"+ FBL.Application.Injected.CSS + "</style>");
+        doc.write("<scr"+"ipt src='" + location.app + "'><\/scr"+"ipt>");
         doc.write(FBL.Application.Injected.HTML);
         doc.close();
     }
@@ -267,11 +306,11 @@ var WindowPopup = function(context, options)
     this.document = doc;
 };
 
-WindowPopup.prototype = extend(WindowBase, {
+//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+ChromePopup.prototype = extend(ChromeBase, {
 
 });
-
-
 
 
 

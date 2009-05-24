@@ -3,19 +3,16 @@
 
 TODO
 
-use of dispatch
-
-frame, frameStyle, consoleFrame, fbPanel1
-
-create/destroy, initialize/shutdown. rename functions to this pattern.
+- use of dispatch
+ OK - frame, frameStyle, consoleFrame, consoleBody
+- create/destroy, initialize/shutdown. rename functions to this pattern.
 
 
 
 
-context
-
-persitent popups
-library loading in different windows
+- context
+- persitent popups
+- library loading in different windows
 
 
 
@@ -303,13 +300,13 @@ getBoundingClientRect OK!!!!
 QUESTIONS:
   - Document Caching
   - The "build" folder doesn't exists in Firebug. 
-  - Files organized in folders.
+ok- Files organized in folders.
   - How to proceed when the console global variable is already defined?
   
   - Loading process
     full:
-		- js with embedded HTML and CSS codes
-		- sprite image
+        - js with embedded HTML and CSS codes
+        - sprite image
 
 TO THINK:
   - how to auto-load FirebugLite + Extension in a single bookmarlet?
@@ -502,14 +499,14 @@ var modules =
     "firebug/reps.js",
     "firebug/console.js",
     
+    "firebug/chrome.js",
+    
     "firebug/selector.js",
     "firebug/inspector.js",
-    "firebug/chrome.js",
     //"firebug/panel.js",
     
     "firebug/commandLine.js",
     "firebug/html.js",
-    /**/
     
     "firebug/boot.js"
     /**/
@@ -542,8 +539,10 @@ var API =
                     if(o.i == (l-2))
                     {
                         //result.push(["\n})();"]);
+                        /*
                         if (bookmarletMode)
                             result.push(["FBL.Firebug.Chrome.toggle(true);"]);
+                            /**/
                         
                         out.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%;";
                         out.appendChild(document.createTextNode(result.join("")));
@@ -638,8 +637,10 @@ function loadModules() {
     
     publishedURL = bookmarletMode ? bookmarletSkinURL : skinURL;
     
+    var sufix = isApplicationContext ? "#app" : "";
+    
     for (var i=0, module; module=modules[i]; i++)
-        loadScript(sourceURL + module);
+        loadScript(sourceURL + module + sufix);
         
     waitForFBL();
 };
@@ -649,6 +650,7 @@ function findLocation()
     var reFirebugFile = /(firebug(?:\.\w+)?\.js|devmode\.js)(#.+)?$/;
     var rePath = /^(.*\/)/;
     var reProtocol = /^\w+:\/\//;
+    
     var head = document.getElementsByTagName("head")[0];
     var path = null;
     
@@ -659,7 +661,7 @@ function findLocation()
         if ( ci.nodeName.toLowerCase() == "script" && 
              (file = reFirebugFile.exec(ci.src)) )
         {
-                
+            
             var fileName = file[1];
             var fileOptions = file[2];
             
@@ -717,7 +719,7 @@ function loadScript(url)
 {
     var agent = navigator.userAgent;
 
-    if (isIE || isSafari)
+    if (isIE)
         document.write('<scr'+'ipt src="' + url + '"><\/scr'+'ipt>');
        
     else
@@ -731,7 +733,9 @@ function loadScript(url)
 function waitForFBL()
 {
     if(document.body && window.FBL)
+    {
         initialize();
+    }
     else
         setTimeout(waitForFBL, 200);
 }

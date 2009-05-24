@@ -48,11 +48,11 @@ var waitForInit = function waitForInit()
         {
             window.onFirebugApplicationLoad = function(data)
             {
-            	FBL.browser = data.browser;
-            	FBL.Firebug.chrome = data.chrome;
-            	FBL.Firebug.initialize();
-            	
-            	delete window.onFirebugApplicationLoad;
+                FBL.browser = data.browser;
+                FBL.Firebug.chrome = data.chrome;
+                FBL.Firebug.initialize();
+                
+                delete window.onFirebugApplicationLoad;
             }
         }
         else
@@ -87,7 +87,7 @@ this.location = {
     source: null,
     base: null,
     skin: null,
-    file: null
+    app: null
 };
 
 this.isApplicationContext = false;
@@ -109,7 +109,7 @@ var findLocation =  function findLocation()
         if ( ci.nodeName.toLowerCase() == "script" && 
              (file = reFirebugFile.exec(ci.src)) )
         {
-        	
+            
             var fileName = file[1];
             var fileOptions = file[2];
             
@@ -143,15 +143,15 @@ var findLocation =  function findLocation()
         }
     }
     
-    var m = path.match(/([^\/]+)\/$/);
+    var m = path && path.match(/([^\/]+)\/$/) || null;
     
     if (path && m)
     {
         FBL.location.source = path;
         FBL.location.base = path.substr(0, path.length - m[1].length - 1);
-        FBL.location.skin = FBL.baseURL + "skin/classic/";
+        FBL.location.skin = FBL.location.base + "skin/classic/";
         FBL.location.app = path + fileName + "#app";
-        
+
         if (fileOptions == "#app")
             FBL.isApplicationContext = true;
         
@@ -168,7 +168,7 @@ var findLocation =  function findLocation()
 
 this.extend = function(l, r)
 {
-	r = r || {};
+    r = r || {};
     var newOb = {};
     for (var n in l)
         newOb[n] = l[n];
@@ -273,10 +273,10 @@ this.cancelEvent = function(e, preventDefault)
     
     if (preventDefault)
     {
-				if (e.preventDefault)
-    				e.preventDefault();
-				else
-		    		e.returnValue = false;
+                if (e.preventDefault)
+                    e.preventDefault();
+                else
+                    e.returnValue = false;
     }
     
     if (document.all)
