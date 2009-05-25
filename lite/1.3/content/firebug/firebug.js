@@ -42,7 +42,7 @@ FBL.Firebug =
     
     cacheDocument: function()
     {
-        var els = browser.document.getElementsByTagName("*");
+        var els = Firebug.browser.document.getElementsByTagName("*");
         for (var i=0, l=els.length, el; i<l; i++)
         {
             el = els[i];

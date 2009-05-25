@@ -493,13 +493,13 @@ var modules =
 [
      
     "firebug/lib.js",
-    "firebug/lib.injected.js",
     "firebug/firebug.js",
     //"firebug/domplate.js",
     "firebug/reps.js",
     "firebug/console.js",
     
     "firebug/chrome.js",
+    "firebug/lib.injected.js",
     
     "firebug/selector.js",
     "firebug/inspector.js",
@@ -521,38 +521,50 @@ var isSafari = navigator.userAgent.indexOf("AppleWebKit") != -1;
 
 var API =
 {
+    loadChromeApplication: function(chrome)
+    {
+        API.buildSource(function(source){
+            //console.log(source)
+            //console.log(chrome.window.eval)
+            //chrome.window.eval(source);
+            
+            var doc = chrome.document;
+            var script = doc.createElement("script");
+            doc.getElementsByTagName("head")[0].appendChild(script);
+            script.text = source;
+        });
+    },
 
     build: function() {
-        var s = document.getElementsByTagName("script"); 
-        var result = [];
-        
         var out = document.createElement("textarea");
         
-        //result.push(["(function(){"]);
-        
-        for(var i=1, l=s.length; i<l-1; i++)
+        API.buildSource(function(source){
+            out.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%;";
+            out.appendChild(document.createTextNode(source));
+            document.body.appendChild(out);
+        });
+    },
+    
+    buildSource: function(callback)
+    {
+        var source = [];
+        var last = modules.length-1;
+    
+        for (var i=0, module; module=modules[i]; i++)
         {
-            FBL.Ajax.request({url: s[i].src, i: i, onComplete:function(r,o)
+            moduleURL = sourceURL + module;
+            
+            FBL.Ajax.request({url: moduleURL, i: i, onComplete: function(r,o)
                 {
-                    result.push(r, o.i < (l-2) ? "\n\n" : "");
+                    source.push(r);
                     
-                    if(o.i == (l-2))
-                    {
-                        //result.push(["\n})();"]);
-                        /*
-                        if (bookmarletMode)
-                            result.push(["FBL.Firebug.Chrome.toggle(true);"]);
-                            /**/
-                        
-                        out.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%;";
-                        out.appendChild(document.createTextNode(result.join("")));
-                        document.body.appendChild(out);
-                    }
-                    /**/
+                    if (o.i == last)
+                        callback(source.join(""));
+                    else
+                        source.push("\n\n");
                 }
             });
-        
-        }
+        }        
     },
     
     compressInterace: function()
@@ -578,7 +590,6 @@ var API =
         });
         
     },
-    
     
     compressSkinCSS: function()
     {
@@ -631,19 +642,6 @@ var API =
     }
 
 }
-
-function loadModules() {
-    findLocation();
-    
-    publishedURL = bookmarletMode ? bookmarletSkinURL : skinURL;
-    
-    var sufix = isApplicationContext ? "#app" : "";
-    
-    for (var i=0, module; module=modules[i]; i++)
-        loadScript(sourceURL + module + sufix);
-        
-    waitForFBL();
-};
 
 function findLocation() 
 {
@@ -712,37 +710,50 @@ function findLocation()
     }
 };
 
-/*
- * Carrega o script dinamicamente.
- */
-function loadScript(url)
-{
-    var agent = navigator.userAgent;
-
-    if (isIE)
-        document.write('<scr'+'ipt src="' + url + '"><\/scr'+'ipt>');
-       
-    else
+function loadModules() {
+    
+    findLocation();
+    
+    publishedURL = bookmarletMode ? bookmarletSkinURL : skinURL;
+    
+    var sufix = isApplicationContext ? "#app" : "";
+    
+    var useDocWrite = isIE || isSafari;
+    var moduleURL, script;
+    var scriptTags = [];
+    
+    for (var i=0, module; module=modules[i]; i++)
     {
-        var script = document.createElement("script");
-        script.src = url;
-        document.getElementsByTagName("head")[0].appendChild(script);
+        moduleURL = sourceURL + module + sufix;
+        
+        if(useDocWrite)
+        {
+            scriptTags.push("<script src='", moduleURL, "'><\/script>");
+        }
+        else
+        {
+            script = document.createElement("script");
+            script.src = moduleURL;
+            document.getElementsByTagName("head")[0].appendChild(script);
+        }
     }
+    
+    if(useDocWrite)
+    {
+        document.write(scriptTags.join(""));
+    }
+        
+    waitForFBL();
 };
 
 function waitForFBL()
 {
-    if(document.body && window.FBL)
+    if(document.body && typeof window.FBL != "undefined")
     {
-        initialize();
+        FBL.Dev = API;
     }
     else
-        setTimeout(waitForFBL, 200);
-}
-
-function initialize()
-{
-    FBL.Dev = API;
+        setTimeout(waitForFBL, 0);
 }
 
 loadModules();

@@ -3,21 +3,19 @@ FBL.ns(function() { with (FBL) {
     
 /*
 
-
 Problems
-    - when NOT in injected mode, the new application load system doesn't work.
+    - Chrome options inheritance (extend) is not working as expected
 
-    - when in injected DEVELOPMENT mode, in XHTML documents, Google Chrome
+OK  - when NOT in injected mode, the new application load system doesn't work.
+OK  - when in injected DEVELOPMENT mode, in XHTML documents, Google Chrome
       is having problems with the loading order of the multiple scripts.
-
-
 
 */
   
 // ************************************************************************************************
 // Chrome API
     
-Firebug.Chrome = {
+var Chrome = Firebug.Chrome = {
 
 
     /**
@@ -28,41 +26,11 @@ Firebug.Chrome = {
     {
         context = context || new Context(window);
         
-        // wait loading the new window, then install the application on it
-        var waitForWindowLoad = function()
-        {
-            if (_doc && _doc.body)
-            {
-                waitForWindowApplicationLoad();
-            } 
-            else
-                setTimeout(waitForWindowLoad, 50);
-        }
-        
-        // wait loading the application, then initialize the application itself
-        var waitForWindowApplicationLoad = function()
-        {
-            if (_win && typeof _win.onFirebugApplicationLoad != "undefined")
-            {
-                _win.onFirebugApplicationLoad({
-                    browser: FBL.browser,
-                    chrome: FBL.Firebug.chrome
-                });
-            } 
-            else
-                setTimeout(waitForWindowApplicationLoad, 50);
-        }
-        
         options = options || {};
         options = extend(WindowDefaultOptions, options);
         
         var Win = (options.type == "popup") ? ChromePopup : ChromeFrame;
-        var win = new Win(context, options);
-        var _win = win.window;
-        var _doc = win.document;
-        FBL.Firebug.chrome = win;
-        
-        setTimeout(waitForWindowLoad, 0);
+        new Win(context, options);
     },
     
     
@@ -107,7 +75,7 @@ Firebug.Chrome = {
         commandLine = new Firebug.CommandLine(fbCommandLine);
         
         // ...
-        Firebug.chrome.element.style.visibility = "visible";
+        //Firebug.chrome.element.style.visibility = "visible";
         this.draw();
     },
     
@@ -163,7 +131,7 @@ Firebug.Chrome = {
         var y = Math.max(height, topHeight);
         
         fbVSplitterStyle.height = y - 27 - cmdHeight + "px"; 
-        frame.style.height = y + "px";
+        //frame.style.height = y + "px";
         fbContentStyle.height = Math.max(y - fixedHeight, 0)+ "px";
 
         // Fix Firefox problem with table rows with 100% height (fit height)
@@ -213,6 +181,7 @@ var ChromeFrame = function(context, options)
     options = options || {};
     options = extend(FrameDefaultOptions, options);
     
+    this.type = "frame";
     var element = this.element = context.document.createElement("iframe");
     
     element.setAttribute("id", options.id);
@@ -228,24 +197,38 @@ var ChromeFrame = function(context, options)
     
     var injectedMode = options.injectedMode;
     if (!injectedMode)
-        element.setAttribute("src", location.skin+"firebug.html");
+        element.setAttribute("src", location.skin);
     
     context.document.body.appendChild(element);
     
     var doc = element.contentWindow.document;
-    var win = element.contentWindow.window;
-    
     if (injectedMode)
     {
-        doc.write('<style>'+ Application.Injected.CSS + '</style>');
-        doc.write("<scr"+"ipt src='" + location.app + "'><\/scr"+"ipt>");
-        doc.write(Application.Injected.HTML);
+        doc.write('<style>'+ Chrome.Injected.CSS + '</style>');
+        doc.write(Chrome.Injected.HTML);
         doc.close();
     }
     
-    this.window = win;
-    this.document = doc;
+    var self = this;
+    var waitForFrame = function waitForFrame()
+    {
+        if (element.contentWindow && 
+            element.contentWindow.document.getElementById("fbCommandLine"))        
+        {
+            self.document = element.contentWindow.document;
+            self.window = element.contentWindow.window;
+            self.window.FirebugApplication = FBL;
+            
+            FBL.Firebug.chrome = self;
+            loadChromeApplication(self);
+        }
+        else
+            setTimeout(waitForFrame, 100);
+    }
+    
+    waitForFrame();
 };
+
 
 //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
@@ -259,20 +242,22 @@ ChromeFrame.prototype = extend(ChromeBase, {
 
 var ChromePopup = function(context, options)
 {
-
-    var injectedMode = options.injectedMode;
-    var url = injectedMode ? "" : (location.skin + options.interfaceFile);
+    options = options || {};
+    options = extend(PopupDefaultOptions, options);
     
-    var height = options.chromeHeight;
+    var injectedMode = options.injectedMode;
+    var url = injectedMode ? "" : location.skin;
+    
+    var height = options.height;
     var options = [
-        "true,top=",
-        Math.max(screen.height - height, 0),
-        ",left=0,height=",
-        height,
-        ",width=",
-        screen.width-10, // Opera opens popup in a new tab if it's too big!
-        ",resizable"          
-      ].join("");
+            "true,top=",
+            Math.max(screen.height - height, 0),
+            ",left=0,height=",
+            height,
+            ",width=",
+            screen.width-10, // Opera opens popup in a new tab if it's too big!
+            ",resizable"          
+        ].join("");
     
     var element = this.element = window.open(
         url, 
@@ -281,13 +266,10 @@ var ChromePopup = function(context, options)
       );
     
     var doc = element.document;
-    var win = element.window;
-    
     if (injectedMode)
     {
-        doc.write("<style>"+ FBL.Application.Injected.CSS + "</style>");
-        doc.write("<scr"+"ipt src='" + location.app + "'><\/scr"+"ipt>");
-        doc.write(FBL.Application.Injected.HTML);
+        doc.write("<style>"+ Chrome.Injected.CSS + "</style>");
+        doc.write(Chrome.Injected.HTML);
         doc.close();
     }
     
@@ -300,10 +282,25 @@ var ChromePopup = function(context, options)
         Chrome.Popup.element = null;
         alert("Disable the popup blocker to open the console in another window!")
     }
-
-
-    this.window = win;
-    this.document = doc;
+    
+    var self = this;
+    var waitForPopup = function waitForFrame()
+    {
+        if (element.document && 
+            element.document.getElementById("fbCommandLine"))        
+        {
+            self.document = element.document;
+            self.window = element.window;
+            self.window.FirebugApplication = FBL;
+            
+            FBL.Firebug.chrome = self;
+            loadChromeApplication(self);
+        }
+        else
+            setTimeout(waitForPopup, 100);
+    }
+    
+    waitForPopup();    
 };
 
 //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -313,17 +310,85 @@ ChromePopup.prototype = extend(ChromeBase, {
 });
 
 
-
 //************************************************************************************************
 // 
 
+var modules = 
+    [
+         
+        "firebug/lib.js",
+        "firebug/firebug.js",
+        //"firebug/domplate.js",
+        "firebug/reps.js",
+        "firebug/console.js",
+        
+        "firebug/chrome.js",
+        "firebug/lib.injected.js",
+        
+        "firebug/selector.js",
+        "firebug/inspector.js",
+        //"firebug/panel.js",
+        
+        "firebug/commandLine.js",
+        "firebug/html.js",
+        
+        "firebug/boot.js"
+        /**/
+    ];
+
+
+var loadChromeApplication = function loadChromeApplication(chrome)
+{
+    var url = location.app;
+    
+    if (isDevelopmentMode)
+    {
+        var source = [];
+        var last = modules.length-1;
+    
+        for (var i=0, module; module=modules[i]; i++)
+        {
+            moduleURL = location.source + module;
+            
+            Ajax.request({url: moduleURL, i: i, onComplete: function(r,o)
+                {
+                    source.push(r);
+                    
+                    if (o.i == last)
+                    {
+                        if (chrome.window.execScript)
+                        {
+                            chrome.window.execScript("null");
+                        }
+                        
+                        chrome.window.eval(source.join(""));
+                    }
+                    else
+                        source.push("\n\n");
+                }
+            });
+        }        
+    }
+    else
+    {
+        Ajax.request({url: url, onComplete: function(r)
+            {
+                chrome.window.eval(r);
+            }
+        });
+
+    }    
+};
+
+//************************************************************************************************
+//
 
 //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 //
 
 var WindowDefaultOptions = 
 {
-    injectedMode: true,
+    injectedMode: false,
     type: "frame"
 };
 

@@ -21,11 +21,6 @@ this.initialize = function()
 {
     //if (FBTrace.DBG_INITIALIZE) FBTrace.sysout("FBL.initialize BEGIN "+namespaces.length+" namespaces\n");
   
-    if (FBL.isIE6)
-      fixIE6BackgroundImageCache();
-    
-    findLocation();
-
     for (var i = 0; i < namespaces.length; i += 2)
     {
         var fn = namespaces[i];
@@ -44,20 +39,33 @@ var waitForInit = function waitForInit()
     {
         // If the library is being loaded in the application context, that is
         // in the user interface window (iframe or popup)
-        if (FBL.isApplicationContext)
+        if (typeof window.FirebugApplication == "object")
         {
-            window.onFirebugApplicationLoad = function(data)
-            {
-                FBL.browser = data.browser;
-                FBL.Firebug.chrome = data.chrome;
-                FBL.Firebug.initialize();
-                
-                delete window.onFirebugApplicationLoad;
-            }
+            if (FBL.isIE6)
+                fixIE6BackgroundImageCache();
+
+            FBL.isApplicationContext = true;
+            
+            // Sync Application
+            var App = window.FirebugApplication;
+            FBL.isDevelopmentMode = App.isDevelopmentMode;
+            FBL.location = App.location;
+            FBL.Firebug.browser = App.Firebug.browser;
+            FBL.Firebug.chrome = App.Firebug.chrome;
+            
+            // Remove global reference to the main application
+            if (FBL.isIE)
+                window.FirebugApplication = null;
+            else
+                delete window.FirebugApplication;
+            
+            // initialize the chrome application
+            FBL.Firebug.initialize();
         }
         else
         {
-            FBL.Application.create();
+            findLocation();
+            createApplication();
         }
     }
     else
@@ -68,15 +76,10 @@ var waitForInit = function waitForInit()
 //************************************************************************************************
 // Application
 
-this.Application = 
+var createApplication = function createApplication()
 {
-    Injected: null,
-  
-    create: function()
-    {
-        FBL.browser = new FBL.Context(window);
-        FBL.Firebug.Chrome.create(FBL.browser);
-    }
+    FBL.Firebug.browser = new FBL.Context(window);
+    FBL.Firebug.Chrome.create(FBL.Firebug.browser);
 };
 
 
@@ -109,7 +112,6 @@ var findLocation =  function findLocation()
         if ( ci.nodeName.toLowerCase() == "script" && 
              (file = reFirebugFile.exec(ci.src)) )
         {
-            
             var fileName = file[1];
             var fileOptions = file[2];
             
@@ -149,12 +151,16 @@ var findLocation =  function findLocation()
     {
         FBL.location.source = path;
         FBL.location.base = path.substr(0, path.length - m[1].length - 1);
-        FBL.location.skin = FBL.location.base + "skin/classic/";
-        FBL.location.app = path + fileName + "#app";
-
-        if (fileOptions == "#app")
-            FBL.isApplicationContext = true;
+        FBL.location.skin = FBL.location.base + "skin/classic/firebug.html";
+        FBL.location.app = path + fileName;
         
+        if (fileName == "devmode.js")
+            FBL.isDevelopmentMode = true;
+
+        if (fileOptions)
+        {
+            // TODO:
+        }        
     }
     else
     {

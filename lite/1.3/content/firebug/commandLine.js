@@ -98,7 +98,7 @@ Firebug.CommandLine.prototype =
     
     evaluate: function(expr)
     {
-        var cmd = "(function() { with(FBL.Firebug.CommandLine.API){ return " + expr + " } }).apply(FBL.browser.window)";
+        var cmd = "(function() { with(FBL.Firebug.CommandLine.API){ return " + expr + " } }).apply(FBL.Firebug.browser.window)";
         var r;
         
         // Try executing the command, expecting that it returns a value
@@ -110,7 +110,7 @@ Firebug.CommandLine.prototype =
         // can't be returned by a function, so try it again without the return
         catch(E)
         {
-            cmd = "(function() { with(FBL.Firebug.CommandLine.API){ " + expr + " } }).apply(FBL.browser.window)";
+            cmd = "(function() { with(FBL.Firebug.CommandLine.API){ " + expr + " } }).apply(FBL.Firebug.browser.window)";
             r = this.eval(cmd);
         }
           
@@ -344,12 +344,12 @@ var CommandLineAPI =
 {
     $: function(id)
     {
-        return browser.document.getElementById(id)
+        return Firebug.browser.document.getElementById(id)
     },
 
     $$: function(selector)
     {
-        return Firebug.Selector(selector, browser.document)
+        return Firebug.Selector(selector, Firebug.browser.document)
     },    
     dir: Firebug.Console.dir,
 
@@ -360,7 +360,7 @@ Firebug.CommandLine.API = {};
 var initializeCommandLineAPI = function initializeCommandLineAPI()
 {
     for (var m in CommandLineAPI)
-        if (!browser.window[m])
+        if (!Firebug.browser.window[m])
             Firebug.CommandLine.API[m] = CommandLineAPI[m];
 }
 
