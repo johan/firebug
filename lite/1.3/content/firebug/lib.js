@@ -20,7 +20,9 @@ this.ns = function(fn)
 this.initialize = function()
 {
     //if (FBTrace.DBG_INITIALIZE) FBTrace.sysout("FBL.initialize BEGIN "+namespaces.length+" namespaces\n");
-  
+    
+    initializeApplication();
+    
     for (var i = 0; i < namespaces.length; i += 2)
     {
         var fn = namespaces[i];
@@ -37,34 +39,24 @@ var waitForInit = function waitForInit()
 {
     if (document.body)
     {
-        // If the library is being loaded in the application context, that is
-        // in the user interface window (iframe or popup)
-        if (typeof window.FirebugApplication == "object")
+        if (FBL.application.isPersistentMode && FBL.application.isChromeContext)
         {
             if (FBL.isIE6)
                 fixIE6BackgroundImageCache();
-
-            FBL.isApplicationContext = true;
             
-            // Sync Application
-            var App = window.FirebugApplication;
-            FBL.isDevelopmentMode = App.isDevelopmentMode;
-            FBL.location = App.location;
-            FBL.Firebug.browser = App.Firebug.browser;
-            FBL.Firebug.chrome = App.Firebug.chrome;
+            // initialize the chrome application
+            FBL.Firebug.initialize();
             
-            // Remove global reference to the main application
+            // Destroy the main application
+            //window.FirebugApplication.destroy();
+            
             if (FBL.isIE)
                 window.FirebugApplication = null;
             else
                 delete window.FirebugApplication;
-            
-            // initialize the chrome application
-            FBL.Firebug.initialize();
         }
         else
         {
-            findLocation();
             createApplication();
         }
     }
@@ -72,28 +64,101 @@ var waitForInit = function waitForInit()
         setTimeout(waitForInit, 50);
 };
 
-
 //************************************************************************************************
 // Application
 
+this.application = {
+    //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+    // Application preferences
+    isBookmarletMode: false, //TODO!!
+    isPersistentMode: false, //TODO!!
+    //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+    // Application States
+    isDevelopmentMode: false,
+    isChromeContext: false, // TODO: change to isChromeContext
+    //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+    // Application References
+    global: null,
+    chrome: null  
+};
+
+var initializeApplication = function initializeApplication()
+{
+    // isPersistentMode, isChromeContext
+    if (FBL.application.isPersistentMode && typeof window.FirebugApplication == "object")
+    {
+        FBL.application = window.FirebugApplication;
+        FBL.application.isChromeContext = true;
+    }
+    // Global application
+    else
+    {
+        // TODO: get preferences here...
+        
+        FBL.application.global = window;
+        FBL.application.destroy = destroyApplication;
+    }
+};
+
 var createApplication = function createApplication()
 {
-    FBL.Firebug.browser = new FBL.Context(window);
-    FBL.Firebug.Chrome.create(FBL.Firebug.browser);
+    findLocation();
+    
+    var options = FBL.extend({}, WindowDefaultOptions);
+    var createChrome = (options.type == "popup") ? createChromePopup : createChromeFrame;
+    
+    createChrome(FBL.application.global, options);
+};
+
+var destroyApplication = function destroyApplication()
+{
+    setTimeout(function()
+    {
+        FBL = null;
+    }, 100);
+};
+
+
+//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+// Chrome loading
+
+var onChromeLoad = function onChromeLoad(chrome)
+{
+    FBL.application.chrome = chrome;
+    
+    if (FBL.application.isPersistentMode)
+    {
+        chrome.window.FirebugApplication = FBL.application;
+    
+        if (FBL.application.isDevelopmentMode)
+        {
+            FBDev.loadChromeApplication(chrome);
+        }
+        else
+        {
+            var doc = chrome.document;
+            var script = doc.createElement("script");
+            script.src = application.location.app;
+            doc.getElementsByTagName("head")[0].appendChild(script);
+        }
+    }
+    else
+        // initialize the chrome application
+        setTimeout(function(){
+            FBL.Firebug.initialize();
+        },100);
 };
 
 
 //************************************************************************************************
 // Library location
 
-this.location = {
+this.application.location = {
     source: null,
     base: null,
     skin: null,
     app: null
 };
-
-this.isApplicationContext = false;
 
 //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
@@ -149,13 +214,14 @@ var findLocation =  function findLocation()
     
     if (path && m)
     {
-        FBL.location.source = path;
-        FBL.location.base = path.substr(0, path.length - m[1].length - 1);
-        FBL.location.skin = FBL.location.base + "skin/classic/firebug.html";
-        FBL.location.app = path + fileName;
+        var loc = FBL.application.location; 
+        loc.source = path;
+        loc.base = path.substr(0, path.length - m[1].length - 1);
+        loc.skin = loc.base + "skin/classic/firebug.html";
+        loc.app = path + fileName;
         
         if (fileName == "devmode.js")
-            FBL.isDevelopmentMode = true;
+            FBL.application.isDevelopmentMode = true;
 
         if (fileOptions)
         {
@@ -166,6 +232,151 @@ var findLocation =  function findLocation()
     {
         throw "Firebug error: Library path not found";
     }
+};
+
+
+
+//************************************************************************************************
+// Application Chromes
+
+var WindowDefaultOptions = 
+{
+    type: "frame"
+};
+
+var FrameDefaultOptions = 
+{
+    id: "FirebugChrome",
+    height: 250
+};
+
+var PopupDefaultOptions = 
+{
+    id: "FirebugChromePopup",
+    height: 250
+};
+
+    
+//************************************************************************************************
+// Chrome Frame
+
+var createChromeFrame = function(context, options)
+{
+    options = options || {};
+    options = FBL.extend(FrameDefaultOptions, options);
+    
+    var chrome = {};
+    chrome.type = "frame";
+    
+    var element = chrome.element = context.document.createElement("iframe");
+    
+    element.setAttribute("id", options.id);
+    element.setAttribute("frameBorder", "0");
+    element.style.border = "0";
+    element.style.visibility = "hidden";
+    element.style.zIndex = "2147483647"; // MAX z-index = 2147483647
+    element.style.position = FBL.isIE6 ? "absolute" : "fixed";
+    element.style.width = "100%"; // "102%"; IE auto margin bug
+    element.style.left = "0";
+    element.style.bottom = "-1px";
+    element.style.height = options.height + "px";
+    
+    var isBookmarletMode = FBL.application.isBookmarletMode;
+    if (!isBookmarletMode)
+        element.setAttribute("src", FBL.application.location.skin);
+    
+    context.document.body.appendChild(element);
+    
+    if (isBookmarletMode)
+    {
+        var doc = element.contentWindow.document;
+        doc.write('<style>'+ FBL.UI.CSS + '</style>');
+        doc.write(FBL.UI.HTML);
+        doc.close();
+    }
+    
+    var waitForFrame = function waitForFrame()
+    {
+        if (element.contentWindow && 
+            element.contentWindow.document.getElementById("fbCommandLine"))        
+        {
+            chrome.window = element.contentWindow.window;
+            chrome.document = element.contentWindow.document;
+            
+            onChromeLoad(chrome);
+        }
+        else
+            setTimeout(waitForFrame, 20);
+    }
+    
+    waitForFrame();
+};
+
+
+//************************************************************************************************
+// Chrome Popup
+
+var createChromePopup = function(context, options)
+{
+    options = options || {};
+    options = FBL.extend(PopupDefaultOptions, options);
+    
+    var chrome = {};
+    chrome.type = "popup";
+    
+    var isBookmarletMode = FBL.application.isBookmarletMode;
+    var url = isBookmarletMode ? "" : application.location.skin;
+    
+    var height = options.height;
+    var options = [
+            "true,top=",
+            Math.max(screen.height - height, 0),
+            ",left=0,height=",
+            height,
+            ",width=",
+            screen.width-10, // Opera opens popup in a new tab if it's too big!
+            ",resizable"          
+        ].join("");
+    
+    var element = chrome.element = window.open(
+        url, 
+        "popup", 
+        options
+      );
+    
+    if (isBookmarletMode)
+    {
+        var doc = element.document;
+        doc.write("<style>"+ FBL.UI.CSS + "</style>");
+        doc.write(FBL.UI.HTML);
+        doc.close();
+    }
+    
+    if (element)
+    {
+        element.focus();
+    }
+    else
+    {
+        Chrome.Popup.element = null;
+        alert("Disable the popup blocker to open the console in another window!")
+    }
+    
+    var waitForPopup = function waitForFrame()
+    {
+        if (element.document && 
+            element.document.getElementById("fbCommandLine"))        
+        {
+            chrome.document = element.document;
+            chrome.window = element.window;
+            
+            onChromeLoad(chrome);
+        }
+        else
+            setTimeout(waitForPopup, 20);
+    }
+    
+    waitForPopup();    
 };
 
 
@@ -246,7 +457,12 @@ this.$ = function(id, doc)
     if (doc)
         return doc.getElementById(id);
     else
-        return document.getElementById(id);
+    {
+        if (FBL.application.isPersistentMode)
+            return document.getElementById(id);
+        else
+            return FBL.application.chrome.document.getElementById(id);
+    }
 };
 
 // ************************************************************************************************
@@ -579,331 +795,6 @@ var fixIE6BackgroundImageCache = function(doc)
     try {
         doc.execCommand("BackgroundImageCache", false, true);
     } catch(err) {}
-};
-
-
-//************************************************************************************************
-// Context
-  
-this.Context = function(win){
-  
-    this.window = win.window;
-    this.document = win.document;
-  
-};
-
-this.Context.prototype =
-{  
-  
-    //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-    // Window Methods
-    
-    getWindowSize: function()
-    {
-        var width=0, height=0, el;
-        
-        if (typeof this.window.innerWidth == 'number')
-        {
-            width = this.window.innerWidth;
-            height = this.window.innerHeight;
-        }
-        else if ((el=this.document.documentElement) && (el.clientHeight || el.clientWidth))
-        {
-            width = el.clientWidth;
-            height = el.clientHeight;
-        }
-        else if ((el=this.document.body) && (el.clientHeight || el.clientWidth))
-        {
-            width = el.clientWidth;
-            height = el.clientHeight;
-        }
-        
-        return {width: width, height: height};
-    },
-    
-    getWindowScrollSize: function()
-    {
-        var width=0, height=0, el;
-
-        if (!isIEQuiksMode && (el=this.document.documentElement) && 
-           (el.scrollHeight || el.scrollWidth))
-        {
-            width = el.scrollWidth;
-            height = el.scrollHeight;
-        }
-        else if ((el=this.document.body) && (el.scrollHeight || el.scrollWidth))
-        {
-            width = el.scrollWidth;
-            height = el.scrollHeight;
-        }
-        
-        return {width: width, height: height};
-    },
-    
-    getWindowScrollPosition: function()
-    {
-        var top=0, left=0, el;
-        
-        if(typeof this.window.pageYOffset == 'number')
-        {
-            top = this.window.pageYOffset;
-            left = this.window.pageXOffset;
-        }
-        else if((el=this.document.body) && (el.scrollTop || el.scrollLeft))
-        {
-            top = el.scrollTop;
-            left = el.scrollLeft;
-        }
-        else if((el=this.document.documentElement) && (el.scrollTop || el.scrollLeft))
-        {
-            top = el.scrollTop;
-            left = el.scrollLeft;
-        }
-        
-        return {top:top, left:left};
-    },
-    
-
-    //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-    // Element Methods
-
-    getElementFromPoint: function(x, y)
-    {
-        if (isOpera || isSafari)
-        {
-            var scroll = this.getWindowScrollPosition();
-            return this.document.elementFromPoint(x + scroll.left, y + scroll.top);
-        }
-        else
-            return this.document.elementFromPoint(x, y);
-    },
-    
-    getElementPosition: function(el)
-    {
-        var left = 0
-        var top = 0;
-        
-        if (el.offsetParent)
-        {
-            do
-            {
-                left += el.offsetLeft;
-                top += el.offsetTop;
-            }
-            while (el = el.offsetParent);
-        }
-        return {left:left, top:top};      
-    },
-    
-    getElementBox: function(el)
-    {
-        var result = {};
-        
-        if (el.getBoundingClientRect)
-        {
-            var rect = el.getBoundingClientRect();
-            
-            // fix IE problem with offset when not in fullscreen mode
-            var offset = isIE ? this.document.body.clientTop || this.document.documentElement.clientTop: 0;
-            
-            var scroll = this.getWindowScrollPosition();
-            
-            result.top = Math.round(rect.top - offset + scroll.top);
-            result.left = Math.round(rect.left - offset + scroll.left);
-            result.height = Math.round(rect.bottom - rect.top);
-            result.width = Math.round(rect.right - rect.left);
-        }
-        else 
-        {
-            var position = this.getElementPosition(el);
-            
-            result.top = position.top;
-            result.left = position.left;
-            result.height = el.offsetHeight;
-            result.width = el.offsetWidth;
-        }
-        
-        return result;
-    },
-    
-
-    //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-    // Measurement Methods
-    
-    getMeasurement: function(el, name)
-    {
-        var result = {value: 0, unit: "px"};
-        
-        var cssValue = this.getCSS(el, name);
-        if (!cssValue) return result;
-        if (cssValue.toLowerCase() == "auto") return result;
-        
-        var reMeasure = /(\d+\.?\d*)(.*)/;
-        var m = cssValue.match(reMeasure);
-        
-        if (m)
-        {
-            result.value = m[1]-0;
-            result.unit = m[2].toLowerCase();
-        }
-        
-        return result;        
-    },
-    
-    getMeasurementInPixels: function(el, name)
-    {
-        if (!el) return null;
-        
-        var m = this.getMeasurement(el, name);
-        var value = m.value;
-        var unit = m.unit;
-        
-        if (unit == "px")
-            return value;
-          
-        else if (unit == "pt")
-            return this.pointsToPixels(name, value);
-          
-        if (unit == "em")
-            return this.emToPixels(el, value);
-          
-        else if (unit == "%")
-            return this.percentToPixels(el, value);
-    },
-
-    getMeasurementBox: function(el, name)
-    {
-        var sufixes = ["Top", "Left", "Bottom", "Right"];
-        var result = [];
-        
-        for(var i=0, sufix; sufix=sufixes[i]; i++)
-            result[i] = Math.round(this.getMeasurementInPixels(el, name + sufix));
-        
-        return {top:result[0], left:result[1], bottom:result[2], right:result[3]};
-    }, 
-    
-    getFontSizeInPixels: function(el)
-    {
-        var size = this.getMeasurement(el, "fontSize");
-        
-        if (size.unit == "px") return size.value;
-        
-        // get font size, the dirty way
-        var computeDirtyFontSize = function(el, calibration)
-        {
-            var div = this.document.createElement("div");
-            var divStyle = offscreenStyle;
-
-            if (calibration)
-                divStyle +=  " font-size:"+calibration+"px;";
-            
-            div.style.cssText = divStyle;
-            div.innerHTML = "A";
-            el.appendChild(div);
-            
-            var value = div.offsetHeight;
-            el.removeChild(div);
-            return value;
-        }
-        
-        // Calibration fails in some environments, so we're using a static value
-        // based in the test case result.
-        var rate = 200 / 225;
-        //var calibrationBase = 200;
-        //var calibrationValue = computeDirtyFontSize(el, calibrationBase);
-        //var rate = calibrationBase / calibrationValue;
-        
-        var value = computeDirtyFontSize(el);
-
-        return value * rate;
-    },
-    
-    
-    //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-    // Unit Funtions
-  
-    pointsToPixels: function(name, value)
-    {
-        var axis = /Top$|Bottom$/.test(name) ? "y" : "x";
-        
-        var result = value * pixelsPerInch[axis] / 72;
-        
-        return returnFloat ? result : Math.round(result);
-    },
-    
-    emToPixels: function(el, value)
-    {
-        if (!el) return null;
-        
-        var fontSize = this.getFontSizeInPixels(el);
-        
-        return Math.round(value * fontSize);
-    },
-    
-    exToPixels: function(el, value)
-    {
-        if (!el) return null;
-        
-        // get ex value, the dirty way
-        var div = this.document.createElement("div");
-        div.style.cssText = offscreenStyle + "width:"+value + "ex;";
-        
-        el.appendChild(div);
-        var value = div.offsetWidth;
-        el.removeChild(div);
-        
-        return value;
-    },
-      
-    percentToPixels: function(el, value)
-    {
-        if (!el) return null;
-        
-        // get % value, the dirty way
-        var div = this.document.createElement("div");
-        div.style.cssText = offscreenStyle + "width:"+value + "%;";
-        
-        el.appendChild(div);
-        var value = div.offsetWidth;
-        el.removeChild(div);
-        
-        return value;
-    },
-    
-    //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-    
-    getCSS: this.isIE ? function(el, name)
-    {
-        return el.currentStyle[name] || el.style[name] || undefined;
-    }
-    : function(el, name)
-    {
-        return this.document.defaultView.getComputedStyle(el,null)[name] 
-            || el.style[name] || undefined;
-    }
-
-};
-
-//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-// Internal variables
-
-var pixelsPerInch;
-
-//************************************************************************************************
-// Measurement Functions
-
-var calculatePixelsPerInch = function calculatePixelsPerInch()
-{
-    var inch = this.document.createElement("div");
-    inch.style.cssText = resetStyle + "width:1in; height:1in; position:absolute; top:-1234px; left:-1234px;";
-    this.document.body.appendChild(inch);
-    
-    pixelsPerInch = {
-        x: inch.offsetWidth,
-        y: inch.offsetHeight
-    };
-    
-    this.document.body.removeChild(inch);
 };
 
 

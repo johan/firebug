@@ -17,6 +17,12 @@ Firebug.CommandLine = function(element)
     
     this.onKeyDown = bind(this, this.onKeyDown);
     addEvent(this.element, "keydown", this.onKeyDown);
+    
+    //FBL.application.global.onerror = this.onError;
+    var self = this
+    application.global.onerror = function(){self.onError.apply(self, arguments)};
+
+    //application.global.onerror = this.onError;
     window.onerror = this.onError;
     
     initializeCommandLineAPI();
@@ -61,9 +67,9 @@ Firebug.CommandLine.prototype =
     
     destroy: function()
     {
-      removeEvent(this.element, "keydown", this.onKeyDown);
-      window.onerror = null;
-      this.element = null
+        removeEvent(this.element, "keydown", this.onKeyDown);
+        window.onerror = null;
+        this.element = null
     },
 
     execute: function()
@@ -98,8 +104,23 @@ Firebug.CommandLine.prototype =
     
     evaluate: function(expr)
     {
-        var cmd = "(function() { with(FBL.Firebug.CommandLine.API){ return " + expr + " } }).apply(FBL.Firebug.browser.window)";
+        var api = "FBL.Firebug.CommandLine.API"
+        
+        var cmd = "(function(){ with(" + api + "){ return " + expr + " } }).apply(window)";
         var r;
+        
+        var __win__ = FBL.application.global;
+        var Fn = __win__.Function;
+        
+        this.eval = new Fn("try{ return window.eval.apply(window, arguments) }catch(E){ E.___fberror___=true; return E }");
+        
+        r = this.eval(cmd);
+        if (r && r.___fberror___)
+        {
+            r = Console.error(r.message || r)
+        }
+            
+        /*
         
         // Try executing the command, expecting that it returns a value
         try
@@ -110,10 +131,12 @@ Firebug.CommandLine.prototype =
         // can't be returned by a function, so try it again without the return
         catch(E)
         {
-            cmd = "(function() { with(FBL.Firebug.CommandLine.API){ " + expr + " } }).apply(FBL.Firebug.browser.window)";
+            cmd = "(function() { with(__api__){ " + expr + " } }).apply(__win__)";
             r = this.eval(cmd);
         }
-          
+        
+        /**/
+
         return r;
     },
     

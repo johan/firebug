@@ -1,8 +1,7 @@
 FBL.ns(function() { with (FBL) {
 // ************************************************************************************************
 
-FBL.version = "1.3.0a";
-
+FBL.version = "FirebugLite-1.3.0a";
 
 // ************************************************************************************************
 // Firebug
@@ -14,8 +13,13 @@ FBL.documentCache = {};
 
 FBL.Firebug =  
 {
+    cache: {},
+    
     initialize: function()
     {
+        FBL.Firebug.browser = new Context(application.global);
+        FBL.Firebug.context = FBL.Firebug.browser;
+        
         this.cacheDocument();
         
         var module;
@@ -50,13 +54,70 @@ FBL.Firebug =
             documentCache[i] = el;
         }
     }
-  
 };
 
 
-FBL.Firebug.Module = {
+Firebug.Controller = {
+        
+    _controllers: null,
+        
+    initialize: function()
+    {
+        this._controllers = [];
+    },
     
-}
+    shutdown: function()
+    {
+        this.removeControllers();
+    },
+    
+    /**
+     * 
+     */
+    addController: function()
+    {
+        for (var i=0, arg; arg=arguments[i]; i++)
+        {
+            this._controllers.push(arg);
+            addEvent.apply(this, arg);
+        }
+    },
+    
+    removeController: function()
+    {
+        for (var i=0, arg; arg=arguments[i]; i++)
+        {
+            for (var j=0, c; c=this._controllers[j]; j++)
+            {
+                if (arg[0] == c[0] && arg[1] == c[1] && arg[2] == c[2])
+                    removeEvent.apply(this, c);
+            }
+        }
+    },
+    
+    removeControllers: function()
+    {
+        for (var i=0, c; c=this._controllers[i]; i++)
+        {
+            removeEvent.apply(this, c);
+        }
+    }
+};
+
+
+Firebug.Module = extend(Firebug.Controller, {
+    
+    initialize: function()
+    {
+        Firebug.Controller.initialize.apply(this);
+    },
+    
+    shutdown: function()
+    {
+        Firebug.Controller.shutdown.apply(this);
+    }
+    
+});
 
 
 // ************************************************************************************************

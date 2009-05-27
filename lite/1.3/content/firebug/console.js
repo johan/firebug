@@ -7,7 +7,7 @@ FBL.ns(function() { with (FBL) {
 
 var ConsoleAPI = 
 {
-    firebuglite: FBL.version,
+    firebug: FBL.version,
 
     log: function()
     {
@@ -163,21 +163,6 @@ var ConsoleAPI =
 };
 
 
-// ********************************************************************************************
-
-var fbConsole = null;
-var fbPanel1 = null;
-
-//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-
-var messageQueue = [];
-var groupStack = [];
-var timeMap = {};
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-
-
-
 // ************************************************************************************************
 // Console Module
 
@@ -232,7 +217,20 @@ var Console = Firebug.Console = extend(ConsoleAPI,
         return html;
     }
 });
-    
+
+
+//********************************************************************************************
+
+var fbConsole = null;
+var fbPanel1 = null;
+
+//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+Firebug.cache.messageQueue = [];
+var groupStack = [];
+var timeMap = {};
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 
 
@@ -244,8 +242,7 @@ FBL.logRow = function(message, className, handler)
         writeMessage(message, className, handler);
     else
     {
-        messageQueue.push([message, className, handler]);
-        //waitForDocument();
+        Firebug.cache.messageQueue.push([message, className, handler]);
     }
     
     return Console.LOG_COMMAND;
@@ -253,8 +250,8 @@ FBL.logRow = function(message, className, handler)
 
 FBL.flush = function()
 {
-    var queue = messageQueue;
-    messageQueue = [];
+    var queue = Firebug.cache.messageQueue;
+    Firebug.cache.messageQueue = [];
     
     for (var i = 0; i < queue.length; ++i)
         writeMessage(queue[i][0], queue[i][1], queue[i][2]);
@@ -404,10 +401,10 @@ FBL.onError = function(msg, href, lineNo)
 //********************************************************************************************
 // Register console API
 
-var alternateNS = "console2";
+var alternateNS = "FB";
 var consoleNS = "console";
 var namespace = isFirefox ? alternateNS : consoleNS;
-window[namespace] = ConsoleAPI;
+application.global[namespace] = ConsoleAPI;
 
 
 // ************************************************************************************************

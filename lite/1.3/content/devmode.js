@@ -1,5 +1,338 @@
+(function(){
+
+var bookmarletMode = true;
+var bookmarletURL = "http://fbug.googlecode.com/svn/trunk/lite/1.3/build/";
+var bookmarletSkinURL = "http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/";
+
+window.FBDev =
+{
+    modules:
+    [ 
+        //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+        // Application core
+        "firebug/lib.js",
+        "firebug/firebug.js",
+        //"firebug/domplate.js", // not used yet
+        "firebug/reps.js",
+        "firebug/console.js",
+        //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+        // User Interface core
+        "firebug/context.js",
+        "firebug/selector.js",
+        "firebug/chrome.js",
+        "firebug/lib.injected.js",
+        "firebug/inspector.js",
+        "firebug/commandLine.js",
+        //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+        // Application Panels
+        "firebug/html.js",
+        //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+        // bootstrap
+        "firebug/boot.js"
+        /**/
+    ],
+    
+    loadChromeApplication: function(chrome)
+    {
+        FBDev.buildSource(function(source){
+            var doc = chrome.document;
+            var script = doc.createElement("script");
+            doc.getElementsByTagName("head")[0].appendChild(script);
+            script.text = source;
+        });
+    },
+
+    build: function() {
+        var out = document.createElement("textarea");
+        
+        FBDev.buildSource(function(source){
+            out.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%;";
+            out.appendChild(document.createTextNode(source));
+            document.body.appendChild(out);
+        });
+    },
+    
+    buildSource: function(callback)
+    {
+        var source = [];
+        var last = FBDev.modules.length-1;
+    
+        for (var i=0, module; module=FBDev.modules[i]; i++)
+        {
+            var moduleURL = sourceURL + module;
+            
+            FBL.Ajax.request({url: moduleURL, i: i, onComplete: function(r,o)
+                {
+                    source.push(r);
+                    
+                    if (o.i == last)
+                        callback(source.join(""));
+                    else
+                        source.push("\n\n");
+                }
+            });
+        }        
+    },
+    
+    compressInterace: function()
+    {
+        var files = [
+            ];
+    },
+    
+    compressSkinHTML: function()
+    {
+        var url = skinURL + "firebug.html";
+        
+        var out = document.createElement("textarea");
+        
+        FBL.Ajax.request({url: url, onComplete:function(r)
+            {
+                var result = FBL.dev.compressHTML(r);
+                
+                out.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%;";
+                out.appendChild(document.createTextNode(result));
+                document.body.appendChild(out);
+            }
+        });
+        
+    },
+    
+    compressSkinCSS: function()
+    {
+        var url = skinURL + "firebug.css";
+        
+        var out = document.createElement("textarea");
+        
+        FBL.Ajax.request({url: url, onComplete:function(r)
+            {
+                var result = FBL.dev.compressCSS(r);
+                
+                out.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%;";
+                out.appendChild(document.createTextNode(result));
+                document.body.appendChild(out);
+            }
+        });
+        
+    },
+    
+    compressHTML: function(html)
+    {
+        var reHTMLComment = /(<!--([^-]|-(?!->))*-->)/g;
+        
+        return html.replace(/^[\s\S]*<\s*body.*>\s*|\s*<\s*\/body.*>[\s\S]*$/gm, "").
+            replace(reHTMLComment, "").
+            replace(/\s\s/gm, "").
+            replace(/\s+</gm, "<").
+            replace(/<\s+/gm, "<").
+            replace(/\s+>/gm, ">").
+            replace(/>\s+/gm, ">").
+            replace(/\s+\/>/gm, "/>");
+    },
+
+    compressCSS: function(css)
+    {
+        var reComment = /(\/\/.*)\n/g;
+        var reMultiComment = /(\/\*([^\*]|\*(?!\/))*\*\/)/g;
+
+        return css.replace(reComment, "").
+            replace(reMultiComment, "").
+            replace(/url\(/gi, "url("+publishedURL).
+            replace(/\s\s/gm, "").
+            replace(/\s+\{/gm, "{").
+            replace(/\{\s+/gm, "{").
+            replace(/\s+\}/gm, "}").
+            replace(/\}\s+/gm, "}").
+            replace(/\s+\:/gm, ":").            
+            replace(/\:\s+/gm, ":").            
+            replace(/,\s+/gm, ",");            
+    }
+
+}
+
+function findLocation() 
+{
+    var reFirebugFile = /(firebug(?:\.\w+)?\.js|devmode\.js)(#.+)?$/;
+    var rePath = /^(.*\/)/;
+    var reProtocol = /^\w+:\/\//;
+    
+    var head = document.getElementsByTagName("head")[0];
+    var path = null;
+    
+    for(var i=0, c=head.childNodes, ci; ci=c[i]; i++)
+    {
+        var file = null;
+        if ( ci.nodeName.toLowerCase() == "script" && 
+             (file = reFirebugFile.exec(ci.src)) )
+        {
+            
+            var fileName = file[1];
+            var fileOptions = file[2];
+            
+            if (reProtocol.test(ci.src)) {
+                // absolute path
+                path = rePath.exec(ci.src)[1];
+              
+            }
+            else
+            {
+                // relative path
+                var r = rePath.exec(ci.src);
+                var src = r ? r[1] : ci.src;
+                var rel = /^((?:\.\.\/)+)(.*)/.exec(src);
+                var lastFolder = /^(.*\/)[^\/]+\/$/;
+                path = rePath.exec(location.href)[1];
+                
+                if (rel)
+                {
+                    var j = rel[1].length/3;
+                    var p;
+                    while (j-- > 0)
+                        path = lastFolder.exec(path)[1];
+
+                    path += rel[2];
+                }
+            }
+            
+            break;
+        }
+    }
+    
+    var m = path.match(/([^\/]+)\/$/);
+    
+    if (path && m)
+    {
+        sourceURL = path;
+        baseURL = path.substr(0, path.length - m[1].length - 1);
+        skinURL = baseURL + "skin/classic/";
+        fullURL = path + fileName;
+        
+        if (fileOptions == "#app")
+            isApplicationContext = true;
+    }
+    else
+    {
+        throw "Firebug error: Library path not found";
+    }
+};
+
+function loadModules() {
+    
+    findLocation();
+    
+    publishedURL = bookmarletMode ? bookmarletSkinURL : skinURL;
+    
+    var sufix = isApplicationContext ? "#app" : "";
+    
+    var useDocWrite = isIE || isSafari;
+    var moduleURL, script;
+    var scriptTags = [];
+    
+    for (var i=0, module; module=FBDev.modules[i]; i++)
+    {
+        var moduleURL = sourceURL + module + sufix;
+        
+        if(useDocWrite)
+        {
+            scriptTags.push("<script src='", moduleURL, "'><\/script>");
+        }
+        else
+        {
+            script = document.createElement("script");
+            script.src = moduleURL;
+            document.getElementsByTagName("head")[0].appendChild(script);
+        }
+    }
+    
+    if(useDocWrite)
+    {
+        document.write(scriptTags.join(""));
+    }
+};
+
+var publishedURL = "";
+var baseURL = "";
+var sourceURL = "";
+var skinURL = "";
+var fullURL = "";
+var isApplicationContext = false;
+
+var isFirefox = navigator.userAgent.indexOf("Firefox") != -1;
+var isIE = navigator.userAgent.indexOf("MSIE") != -1;
+var isOpera = navigator.userAgent.indexOf("Opera") != -1;
+var isSafari = navigator.userAgent.indexOf("AppleWebKit") != -1;
+
+loadModules();
+
+})();
+        
+
 /*
 
+
+Loading Process
+
+1st Stage - Load the application in "offscreen mode", with only the console 
+            functions available.
+
+2nd Stage - Wait the page load, and then create the chrome window
+            (frame or popup, based on preferences).
+
+3rd Stage - Wait the chrome page load, and the install the application
+            in the chrome window context.
+
+4th Stage - Load the full application in chrome window, synchronizes it with
+            the first application loaded, and transfer the console
+            functions to the new "screen mode" application.
+
+
+----------------------------------
+
+Pros
+    More safe
+        - no global namespace pollution, except for the "console" variable
+        - no internal code exposure
+    
+    Allows persistent popups
+
+
+Cons
+    More complex
+    More difficult to debug low level functions
+    less stable?
+    
+
+Preferences
+    - console
+        - consoleDefaultNamespace
+        - consoleAlternateNamespace
+        - override console object (for non-FF browsers)
+
+    - application
+        - define public namespace
+    
+    
+Problems
+    - console should be installed in each Chrome window
+    - commandLine API should be place in console.firebug.commandLineAPI
+    - define FBL.console to point to the global console
+    
+    - context.evaluate
+    - console API not well defined, when in persistent mode
+
+OK  - console API. Firebug.browser isn't avaiable when the library is initialized
+    
+OK  - Chrome options inheritance (extend) is not working as expected
+OK  - Popup in IE, problem in the draw method
+
+OK  - when NOT in injected mode, the new application load system doesn't work.
+OK  - when in injected DEVELOPMENT mode, in XHTML documents, Google Chrome
+      is having problems with the loading order of the multiple scripts.
+
+*/
+                  
+        
+/*
 
 TODO
 
@@ -8,12 +341,9 @@ TODO
 - create/destroy, initialize/shutdown. rename functions to this pattern.
 
 
-
-
 - context
 - persitent popups
 - library loading in different windows
-
 
 
 
@@ -24,17 +354,6 @@ Document Cache
     - context
     - styles
     - MD5
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -471,291 +790,3 @@ function _toCamelCaseReplaceFn(m,g)
 
 
 /**/
-
-
-
-(function(){
-
-var bookmarletMode = true;
-
-var bookmarletURL = "http://fbug.googlecode.com/svn/trunk/lite/1.3/build/";
-var bookmarletSkinURL = "http://fbug.googlecode.com/svn/trunk/lite/1.3/skin/classic/";
-//var bookmarletSkinURL = "http://pedrosimonetti.googlepages.com/";
-
-var publishedURL = "";
-var baseURL = "";
-var sourceURL = "";
-var skinURL = "";
-var fullURL = "";
-var isApplicationContext = false;
-
-var modules = 
-[
-     
-    "firebug/lib.js",
-    "firebug/firebug.js",
-    //"firebug/domplate.js",
-    "firebug/reps.js",
-    "firebug/console.js",
-    
-    "firebug/chrome.js",
-    "firebug/lib.injected.js",
-    
-    "firebug/selector.js",
-    "firebug/inspector.js",
-    //"firebug/panel.js",
-    
-    "firebug/commandLine.js",
-    "firebug/html.js",
-    
-    "firebug/boot.js"
-    /**/
-];
-
-
-var isFirefox = navigator.userAgent.indexOf("Firefox") != -1;
-var isIE = navigator.userAgent.indexOf("MSIE") != -1;
-var isOpera = navigator.userAgent.indexOf("Opera") != -1;
-var isSafari = navigator.userAgent.indexOf("AppleWebKit") != -1;
-
-
-var API =
-{
-    loadChromeApplication: function(chrome)
-    {
-        API.buildSource(function(source){
-            //console.log(source)
-            //console.log(chrome.window.eval)
-            //chrome.window.eval(source);
-            
-            var doc = chrome.document;
-            var script = doc.createElement("script");
-            doc.getElementsByTagName("head")[0].appendChild(script);
-            script.text = source;
-        });
-    },
-
-    build: function() {
-        var out = document.createElement("textarea");
-        
-        API.buildSource(function(source){
-            out.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%;";
-            out.appendChild(document.createTextNode(source));
-            document.body.appendChild(out);
-        });
-    },
-    
-    buildSource: function(callback)
-    {
-        var source = [];
-        var last = modules.length-1;
-    
-        for (var i=0, module; module=modules[i]; i++)
-        {
-            moduleURL = sourceURL + module;
-            
-            FBL.Ajax.request({url: moduleURL, i: i, onComplete: function(r,o)
-                {
-                    source.push(r);
-                    
-                    if (o.i == last)
-                        callback(source.join(""));
-                    else
-                        source.push("\n\n");
-                }
-            });
-        }        
-    },
-    
-    compressInterace: function()
-    {
-        var files = [
-            ];
-    },
-    
-    compressSkinHTML: function()
-    {
-        var url = skinURL + "firebug.html";
-        
-        var out = document.createElement("textarea");
-        
-        FBL.Ajax.request({url: url, onComplete:function(r)
-            {
-                var result = FBL.dev.compressHTML(r);
-                
-                out.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%;";
-                out.appendChild(document.createTextNode(result));
-                document.body.appendChild(out);
-            }
-        });
-        
-    },
-    
-    compressSkinCSS: function()
-    {
-        var url = skinURL + "firebug.css";
-        
-        var out = document.createElement("textarea");
-        
-        FBL.Ajax.request({url: url, onComplete:function(r)
-            {
-                var result = FBL.dev.compressCSS(r);
-                
-                out.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%;";
-                out.appendChild(document.createTextNode(result));
-                document.body.appendChild(out);
-            }
-        });
-        
-    },
-    
-    compressHTML: function(html)
-    {
-        var reHTMLComment = /(<!--([^-]|-(?!->))*-->)/g;
-        
-        return html.replace(/^[\s\S]*<\s*body.*>\s*|\s*<\s*\/body.*>[\s\S]*$/gm, "").
-            replace(reHTMLComment, "").
-            replace(/\s\s/gm, "").
-            replace(/\s+</gm, "<").
-            replace(/<\s+/gm, "<").
-            replace(/\s+>/gm, ">").
-            replace(/>\s+/gm, ">").
-            replace(/\s+\/>/gm, "/>");
-    },
-
-    compressCSS: function(css)
-    {
-        var reComment = /(\/\/.*)\n/g;
-        var reMultiComment = /(\/\*([^\*]|\*(?!\/))*\*\/)/g;
-
-        return css.replace(reComment, "").
-            replace(reMultiComment, "").
-            replace(/url\(/gi, "url("+publishedURL).
-            replace(/\s\s/gm, "").
-            replace(/\s+\{/gm, "{").
-            replace(/\{\s+/gm, "{").
-            replace(/\s+\}/gm, "}").
-            replace(/\}\s+/gm, "}").
-            replace(/\s+\:/gm, ":").            
-            replace(/\:\s+/gm, ":").            
-            replace(/,\s+/gm, ",");            
-    }
-
-}
-
-function findLocation() 
-{
-    var reFirebugFile = /(firebug(?:\.\w+)?\.js|devmode\.js)(#.+)?$/;
-    var rePath = /^(.*\/)/;
-    var reProtocol = /^\w+:\/\//;
-    
-    var head = document.getElementsByTagName("head")[0];
-    var path = null;
-    
-    for(var i=0, c=head.childNodes, ci; ci=c[i]; i++)
-    {
-        var file = null;
-        
-        if ( ci.nodeName.toLowerCase() == "script" && 
-             (file = reFirebugFile.exec(ci.src)) )
-        {
-            
-            var fileName = file[1];
-            var fileOptions = file[2];
-            
-            if (reProtocol.test(ci.src)) {
-                // absolute path
-                path = rePath.exec(ci.src)[1];
-              
-            }
-            else
-            {
-                // relative path
-                var r = rePath.exec(ci.src);
-                var src = r ? r[1] : ci.src;
-                var rel = /^((?:\.\.\/)+)(.*)/.exec(src);
-                var lastFolder = /^(.*\/)[^\/]+\/$/;
-                path = rePath.exec(location.href)[1];
-                
-                if (rel)
-                {
-                    var j = rel[1].length/3;
-                    var p;
-                    while (j-- > 0)
-                        path = lastFolder.exec(path)[1];
-
-                    path += rel[2];
-                }
-            }
-            
-            break;
-        }
-    }
-    
-    var m = path.match(/([^\/]+)\/$/);
-    
-    if (path && m)
-    {
-        sourceURL = path;
-        baseURL = path.substr(0, path.length - m[1].length - 1);
-        skinURL = baseURL + "skin/classic/";
-        fullURL = path + fileName;
-        
-        if (fileOptions == "#app")
-            isApplicationContext = true;
-    }
-    else
-    {
-        throw "Firebug error: Library path not found";
-    }
-};
-
-function loadModules() {
-    
-    findLocation();
-    
-    publishedURL = bookmarletMode ? bookmarletSkinURL : skinURL;
-    
-    var sufix = isApplicationContext ? "#app" : "";
-    
-    var useDocWrite = isIE || isSafari;
-    var moduleURL, script;
-    var scriptTags = [];
-    
-    for (var i=0, module; module=modules[i]; i++)
-    {
-        moduleURL = sourceURL + module + sufix;
-        
-        if(useDocWrite)
-        {
-            scriptTags.push("<script src='", moduleURL, "'><\/script>");
-        }
-        else
-        {
-            script = document.createElement("script");
-            script.src = moduleURL;
-            document.getElementsByTagName("head")[0].appendChild(script);
-        }
-    }
-    
-    if(useDocWrite)
-    {
-        document.write(scriptTags.join(""));
-    }
-        
-    waitForFBL();
-};
-
-function waitForFBL()
-{
-    if(document.body && typeof window.FBL != "undefined")
-    {
-        FBL.Dev = API;
-    }
-    else
-        setTimeout(waitForFBL, 0);
-}
-
-loadModules();
-
-})();
