@@ -1,0 +1,447 @@
+Loading Process
+
+1st Stage - Load the application in "offscreen mode", with only the console 
+            functions available.
+
+2nd Stage - Wait the page load, and then create the chrome window
+            (frame or popup, based on preferences).
+
+3rd Stage - Wait the chrome page load, and the install the application
+            in the chrome window context.
+
+4th Stage - Load the full application in chrome window, synchronizes it with
+            the first application loaded, and transfer the console
+            functions to the new "screen mode" application.
+
+
+----------------------------------
+
+Pros
+    More safe
+        - no global namespace pollution, except for the "console" variable
+        - no internal code exposure
+    
+    Allows persistent popups
+
+
+Cons
+    More complex
+    More difficult to debug low level functions
+    less stable?
+    
+
+Preferences
+    - console
+        - consoleDefaultNamespace
+        - consoleAlternateNamespace
+        - override console object (for non-FF browsers)
+
+    - application
+        - define public namespace
+    
+TODO:
+    - custom Errors = throw new FirebugError("message")
+    - error UI indications (like FB in status bar)
+    - UI indication when chrome is hidden
+    - better location handling to allow advanced settings via URL 
+    
+Problems
+    - tabLStyle reference in Chrome
+
+    - context.evaluate
+    - context is not being properly handled in persistent mode, when using
+      the autocomplete function in commandLine. It is using the wrong "window".
+    
+    - define FBL.console to point to the global console
+    - console should be installed in each Chrome window
+    
+    - commandLine API should be place in console.firebug.commandLineAPI
+    - commandLine API not well defined, when in persistent mode
+
+OK  - commandLine API. Firebug.browser isn't avaiable when the library is initialized
+    
+OK  - Chrome options inheritance (extend) is not working as expected
+OK  - Popup in IE, problem in the draw method
+
+OK  - when NOT in injected mode, the new application load system doesn't work.
+OK  - when in injected DEVELOPMENT mode, in XHTML documents, Google Chrome
+      is having problems with the loading order of the multiple scripts.
+
+*/
+                  
+        
+/*
+
+TODO
+
+   - use of dispatch
+OK - frame, frameStyle, consoleFrame, consoleBody
+~~ - create/destroy, initialize/shutdown. rename functions to this pattern.
+
+
+OK - context
+~~ - persitent popups
+OK - library loading in different windows
+
+
+
+Document Cache
+
+[ELEMENT_ID]
+    - element
+    - context
+    - styles
+    - MD5
+
+
+
+
+
+
+
+styleCache = {};
+
+// First style to add to cache is the inline styles
+for(cid in documentCache)
+{
+    styleCache[cid] = [];
+    styleCache[cid].push();
+}
+
+// for each stylesheet 
+for(stylesheet in stylesheets)
+{
+    // look at each rule
+    for(rule in stylesheet)
+    {
+        // get the rule's selector, and find all elements in document
+        var els = Firebug.Selector(rule.selector);
+        
+        // for each element found
+        for(var i=0, el; el=els[i]; i++)
+        {
+            var cid = el[cacheID];
+            
+            // Add style info in the cache stack of styles of the element 
+            styleCache[cid].push({
+                stylesheet: stylesheet,
+                lineNumber: getLineNumber(rule, stylesheet),
+                fileName: getFileName(rule, stylesheet),
+                selector: rule.selector,
+                styles: rule.styles
+            });
+        }
+    }
+
+}
+
+
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+DOMPLATE
+
+
+IE problems with templates
+
+1 - class name attributes of objects
+
+2 - colon after the last property of a object
+
+3 - event handlers  
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+Core
+-------------------------------------------------------------------------------
+TODO: Problem with id conflits. The same attribute is being used in the document
+      elements and in the HTML Tree, in the user interface.
+
+TODO: Better handling of switching tab contexts (selectedTab, rightPanelVisible)
+TODO: Check if there's a problem using the Sizzle selector engine in the code
+
+-------------------------------------------------------------------------------
+Events
+-------------------------------------------------------------------------------
+TODO: handle disble text selection on Vertical Scrolling
+TODO: handle disble mouse wheel in Chrome, when in frame mode?
+
+-------------------------------------------------------------------------------
+ui
+-------------------------------------------------------------------------------
+TODO: Opera problem with onunload and popups (context is not being destroyed)
+
+-------------------------------------------------------------------------------
+commandLine
+-------------------------------------------------------------------------------
+TODO: refactor commandLine to hide internal methods and properties.
+
+
+*/
+
+
+/*
+ * 
+
+Geral
+  FBL.$
+  FBL.$$
+  $0
+  $1
+
+
+
+========================================================================
+===== Chrome States ====================================================
+========================================================================
+
+===== Window ===========================================================
+    - type (frame, popup)
+    - height
+    - width (popup)
+    - position (popup)
+
+===== Console ==========================================================
+    - console log history
+    - console commandLine history
+
+===== Tab ==============================================================
+  - active Panel
+
+
+
+========================================================================
+===== Panel States =====================================================
+========================================================================
+    - offset (scroll position)
+    - toolbarButtons (confirmar o que é isso)
+    - statusBar
+    
+    - isSearchable
+    - busca
+    
+    - consoleVisible
+    - sidePanelVisible
+
+===== SidePanel =======================================================
+    - offset (scroll position)
+    - sidePanelWidth
+    - activeSidePanel
+
+
+Eventos
+  - adição e remoção (controladores)
+  - painéis
+  - delegação
+    - clique
+    - inspeção
+
+  - Mover testes antigos (ferramentas de desenvolvimento: 
+    compress HTML, CSS e Build)
+
+
+
+
+
+<script language="JavaScript1.2">
+
+function disabletext(e){
+return false
+}
+
+function reEnable(){
+return true
+}
+
+//if the browser is IE4+
+document.onselectstart=new Function ("return false")
+
+//if the browser is NS6
+if (window.sidebar){
+document.onmousedown=disabletext
+document.onclick=reEnable
+}
+</script>
+
+*/
+
+  
+
+/*
+
+CHECK!!!!:
+
+IE - get element position (very fast). To use in BoxModel
+getBoundingClientRect OK!!!!
+
+QUESTIONS:
+  - Document Caching
+  - The "build" folder doesn't exists in Firebug. 
+ok- Files organized in folders.
+  - How to proceed when the console global variable is already defined?
+  
+  - Loading process
+    full:
+        - js with embedded HTML and CSS codes
+        - sprite image
+
+TO THINK:
+  - how to auto-load FirebugLite + Extension in a single bookmarlet?
+
+  
+
+
+<script language="JavaScript1.2">
+
+function disabletext(e){
+return false
+}
+
+function reEnable(){
+return true
+}
+
+//if the browser is IE4+
+document.onselectstart=new Function ("return false")
+
+//if the browser is NS6
+if (window.sidebar){
+document.onmousedown=disabletext
+document.onclick=reEnable
+}
+</script>
+
+
+
+*/
+
+/*
+
+
+
+function getXPath(node, path) {
+  path = path || [];
+  if(node.parentNode) {
+    path = getXPath(node.parentNode, path);
+  }
+
+  if(node.previousSibling) {
+    var count = 1;
+    var sibling = node.previousSibling
+    do {
+      if(sibling.nodeType == 1 && sibling.nodeName == node.nodeName) {count++;}
+      sibling = sibling.previousSibling;
+    } while(sibling);
+    if(count == 1) {count = null;}
+  } else if(node.nextSibling) {
+    var sibling = node.nextSibling;
+    do {
+      if(sibling.nodeType == 1 && sibling.nodeName == node.nodeName) {
+        var count = 1;
+        sibling = null;
+      } else {
+        var count = null;
+        sibling = sibling.previousSibling;
+      }
+    } while(sibling);
+  }
+
+  if(node.nodeType == 1) {
+    path.push(node.nodeName.toLowerCase() + (node.id ? "[@id='"+node.id+"']" : count > 0 ? "["+count+"]" : ''));
+  }
+  return path;
+};
+
+
+// Getting result
+document.evaluate("/html/body/div/ul/li[2]", document, null, XPathResult.ANY_TYPE, null ).iterateNext()
+
+
+
+
+
+---------------------------------------------------------
+
+//Returns true if it is a DOM node
+function isNode(o){
+  return (
+    typeof Node === "object" ? o instanceof Node : 
+    typeof o === "object" && typeof o.nodeType === "number" && typeof o.nodeName==="string"
+  );
+}
+
+//Returns true if it is a DOM element    
+function isElement(o){
+  return (
+    typeof HTMLElement === "object" ? o instanceof HTMLElement : //DOM2
+    typeof o === "object" && o.nodeType === 1 && typeof o.nodeName==="string"
+);
+}
+
+
+
+
+*/
+
+
+/*
+function getInlineStyles(el)
+{
+    var style = el.style;
+    var r = {}, l, prop;
+    
+    // Good browsers first
+    if (l = style.length)
+    {
+        for(var i=0; i<l; i++)
+        {
+            prop = style[i];
+            r[toCamelCase(prop)] = style.getPropertyValue(prop);
+        }
+    }
+    // Sad browsers last
+    else
+    {
+      for(var prop in style)
+        if (ignoreIEStyleProperties.indexOf(prop) == -1 && 
+            isIEInlineStyleProperty(el, prop))
+                r[prop] = style[prop];
+    }
+    
+    return r;
+}
+
+var ignoreIEStyleProperties = " cssText accelerator ";
+function isIEInlineStyleProperty(el, prop)
+{
+    var r = false;
+    
+    if (typeof el.style[prop] == "string")
+    {
+        r = !!el.style[prop];
+    }
+    
+    return r;
+}
+
+
+function toCamelCase(s)
+{
+    return s.replace(_selectorCaseMatch, _toCamelCaseReplaceFn);
+}
+
+function toSelectorCase(s)
+{
+  return s.replace(_camelCaseMatch, "-$1").toLowerCase();
+  
+}
+
+var _camelCaseMatch = /([A-Z])/g;
+var _selectorCaseMatch = /\-(.)/g; 
+function _toCamelCaseReplaceFn(m,g)
+{
+    return g.toUpperCase();
+}
