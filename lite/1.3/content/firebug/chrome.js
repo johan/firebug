@@ -170,10 +170,10 @@ var ChromeBase = extend(Context.prototype, Firebug.Controller);
 
 var ChromeFrame = function(chrome)
 {
+    Context.call(this, chrome.window);
+    
     this.type = chrome.type;
     this.element = chrome.element;
-    this.window = chrome.window;
-    this.document = chrome.document;
 };
 
 //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *

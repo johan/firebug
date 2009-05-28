@@ -48,7 +48,7 @@ var waitForInit = function waitForInit()
             FBL.Firebug.initialize();
             
             // Destroy the main application
-            //window.FirebugApplication.destroy();
+            window.FirebugApplication.destroy();
             
             if (FBL.isIE)
                 window.FirebugApplication = null;
@@ -164,7 +164,7 @@ this.application.location = {
 
 var findLocation =  function findLocation() 
 {
-    var reFirebugFile = /(firebug(?:\.\w+)?\.js|devmode\.js)(#.+)?$/;
+    var reFirebugFile = /(firebug(?:\.\w+)?\.js)(#.+)?$/;
     var rePath = /^(.*\/)/;
     var reProtocol = /^\w+:\/\//;
     var head = document.getElementsByTagName("head")[0];
@@ -220,7 +220,7 @@ var findLocation =  function findLocation()
         loc.skin = loc.base + "skin/classic/firebug.html";
         loc.app = path + fileName;
         
-        if (fileName == "devmode.js")
+        if (fileName == "firebug.dev.js")
             FBL.application.isDevelopmentMode = true;
 
         if (fileOptions)
@@ -230,7 +230,7 @@ var findLocation =  function findLocation()
     }
     else
     {
-        throw "Firebug error: Library path not found";
+        throw new Error("Firebug Error: Library path not found");
     }
 };
 

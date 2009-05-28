@@ -6,15 +6,81 @@ FBL.ns(function() { with (FBL) {
 // Context
   
 FBL.Context = function(win){
-  
     this.window = win.window;
     this.document = win.document;
-  
+    
+    // Some windows, like iframe, doesn't have a eval() method in IE
+    if (isIE && !this.window.eval)
+    {
+        // But after executing the following line the method magically appears!
+        this.window.execScript("null");
+        // Just to make sure the "magic" really happened
+        if (!this.window.eval)
+            throw new Error("Firebug Error: eval() method not found in this window");
+    }
+    
+    // Create a new "black-box" eval() method that runs in the global namespace
+    // of the context window, without exposing the local variables declared
+    // by the function that calls it
+    this.eval = new this.window.Function(
+        "try{ return window.eval.apply(window,arguments) }catch(E){ E."+evalError+"=true; return E }"
+    );
 };
 
 FBL.Context.prototype =
 {  
   
+    //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    // Evalutation Method
+    
+    /**
+     * Evaluates an expression in the current context window.
+     * 
+     * @param {String}   expr           expression to be evaluated
+     * 
+     * @param {String}   context        string indicating the global location
+     *                                  of the object that will be used as the
+     *                                  context. The context is referred in
+     *                                  the expression as the "this" keyword.
+     *                                  If no context is informed, the "window"
+     *                                  context is used.
+     *                                  
+     * @param {String}   api            string indicating the global location
+     *                                  of the object that will be used as the
+     *                                  api of the evaluation.
+     *                                  
+     * @param {Function} errorHandler(message) error handler to be called
+     *                                         if the evaluation fails.
+     */
+    evaluate: function(expr, context, api, errorHandler)
+    {
+        context = context || "window";
+
+        var cmd = api ?
+            "(function(arguments){ with("+api+"){ return "+expr+" } }).call("+context+",undefined)" :
+            "(function(arguments){ return "+expr+" }).call("+context+",undefined)" ;
+        
+        var r = this.eval(cmd);
+        if (r && r[evalError])
+        {
+            cmd = api ?
+                "(function(arguments){ with("+api+"){ "+expr+" } }).call("+context+",undefined)" :
+                "(function(arguments){ "+expr+" }).call("+context+",undefined)" ;
+                
+            r = this.eval(cmd);
+            if (r && r[evalError])
+            {
+                if (errorHandler)
+                    r = errorHandler(r.message || r)
+                else
+                    r = r.message || r;
+            }
+        }
+        
+        return r;
+    },
+    
+
     //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
     // Window Methods
     
@@ -22,7 +88,7 @@ FBL.Context.prototype =
     {
         var width=0, height=0, el;
         
-        if (typeof this.window.innerWidth == 'number')
+        if (typeof this.window.innerWidth == "number")
         {
             width = this.window.innerWidth;
             height = this.window.innerHeight;
@@ -64,7 +130,7 @@ FBL.Context.prototype =
     {
         var top=0, left=0, el;
         
-        if(typeof this.window.pageYOffset == 'number')
+        if(typeof this.window.pageYOffset == "number")
         {
             top = this.window.pageYOffset;
             left = this.window.pageXOffset;
@@ -307,6 +373,7 @@ FBL.Context.prototype =
 //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 // Internal variables
 
+var evalError = "___firebug_evaluation_error___";
 var pixelsPerInch;
 
 //************************************************************************************************

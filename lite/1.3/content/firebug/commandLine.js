@@ -104,40 +104,13 @@ Firebug.CommandLine.prototype =
     
     evaluate: function(expr)
     {
+        // TODO: need to register the API in console.firebug.commandLineAPI
         var api = "FBL.Firebug.CommandLine.API"
-        
-        var cmd = "(function(){ with(" + api + "){ return " + expr + " } }).apply(window)";
-        var r;
-        
-        var __win__ = FBL.application.global;
-        var Fn = __win__.Function;
-        
-        this.eval = new Fn("try{ return window.eval.apply(window, arguments) }catch(E){ E.___fberror___=true; return E }");
-        
-        r = this.eval(cmd);
-        if (r && r.___fberror___)
-        {
-            r = Console.error(r.message || r)
-        }
             
-        /*
-        
-        // Try executing the command, expecting that it returns a value
-        try
-        {
-            r = this.eval(cmd);
-        }
-        // If syntax error happens, it may be a command (if, for, while) that
-        // can't be returned by a function, so try it again without the return
-        catch(E)
-        {
-            cmd = "(function() { with(__api__){ " + expr + " } }).apply(__win__)";
-            r = this.eval(cmd);
-        }
-        
-        /**/
+        //Firebug.context = Firebug.chrome;
+        api = null;
 
-        return r;
+        return Firebug.context.evaluate(expr, "window", api, Console.error);
     },
     
     eval: new Function("return window.eval.apply(window, arguments)"),
