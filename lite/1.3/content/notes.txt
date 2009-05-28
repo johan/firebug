@@ -1,36 +1,10 @@
-Loading Process
+################################################################################
+TODO's
+################################################################################
 
-1st Stage - Load the application in "offscreen mode", with only the console 
-            functions available.
-
-2nd Stage - Wait the page load, and then create the chrome window
-            (frame or popup, based on preferences).
-
-3rd Stage - Wait the chrome page load, and the install the application
-            in the chrome window context.
-
-4th Stage - Load the full application in chrome window, synchronizes it with
-            the first application loaded, and transfer the console
-            functions to the new "screen mode" application.
-
-
-----------------------------------
-
-Pros
-    More safe
-        - no global namespace pollution, except for the "console" variable
-        - no internal code exposure
-    
-    Allows persistent popups
-
-
-Cons
-    More complex
-    More difficult to debug low level functions
-    less stable?
-    
-
+-------------------------------------------------------------------------------
 Preferences
+-------------------------------------------------------------------------------
     - console
         - consoleDefaultNamespace
         - consoleAlternateNamespace
@@ -38,14 +12,71 @@ Preferences
 
     - application
         - define public namespace
-    
-TODO:
-    - custom Errors = throw new FirebugError("message")
+
+-------------------------------------------------------------------------------
+Usability
+-------------------------------------------------------------------------------
     - error UI indications (like FB in status bar)
     - UI indication when chrome is hidden
-    - better location handling to allow advanced settings via URL 
+
+-------------------------------------------------------------------------------
+Chrome
+-------------------------------------------------------------------------------
+    - Opera problem with onunload and popups (context is not being destroyed)
+ OK - frame, frameStyle, consoleFrame, consoleBody
+ 
     
-Problems
+-------------------------------------------------------------------------------
+Core
+-------------------------------------------------------------------------------
+    - (?) How to proceed when the console global variable is already defined?
+    - (?) how to auto-load FirebugLite + Extension in a single bookmarlet?
+    
+    - custom Errors = throw new FirebugError("message")
+    - better location detection to allow advanced settings via URL 
+ ~~ - create/destroy, initialize/shutdown. rename functions to this pattern.
+ OK - context
+ OK - library loading in different windows
+ ~~ - persitent popups
+ 
+-------------------------------------------------------------------------------
+Core
+-------------------------------------------------------------------------------
+    - Problem with id conflits. The same attribute is being used in the document
+      elements and in the HTML Tree, in the user interface.
+
+    - Better handling of switching tab contexts (selectedTab, rightPanelVisible)
+    - Check if there's a problem using the Sizzle selector engine in the code
+
+-------------------------------------------------------------------------------
+Lib
+-------------------------------------------------------------------------------
+OK FBL.$
+OK FBL.$$
+-------------------------------------------------------------------------------
+Console
+-------------------------------------------------------------------------------
+  $0
+  $1
+
+-------------------------------------------------------------------------------
+Events
+-------------------------------------------------------------------------------
+    - use of dispatch
+    - handle disble text selection on Vertical Scrolling
+    - handle disble mouse wheel in Chrome, when in frame mode?
+
+
+-------------------------------------------------------------------------------
+CommandLine
+-------------------------------------------------------------------------------
+    - refactor commandLine to hide internal methods and properties.
+
+
+    
+################################################################################
+BUGS
+################################################################################
     - tabLStyle reference in Chrome
 
     - context.evaluate
@@ -67,25 +98,54 @@ OK  - when NOT in injected mode, the new application load system doesn't work.
 OK  - when in injected DEVELOPMENT mode, in XHTML documents, Google Chrome
       is having problems with the loading order of the multiple scripts.
 
-*/
-                  
-        
-/*
-
-TODO
-
-   - use of dispatch
-OK - frame, frameStyle, consoleFrame, consoleBody
-~~ - create/destroy, initialize/shutdown. rename functions to this pattern.
 
 
-OK - context
-~~ - persitent popups
-OK - library loading in different windows
+################################################################################
+Persistent Mode
+################################################################################
+
+-------------------------------------------------------------------------------
+Loading Process
+-------------------------------------------------------------------------------
+
+1st Stage - Load the application in "offscreen mode", with only the console 
+            functions available.
+
+2nd Stage - Wait the page load, and then create the chrome window
+            (frame or popup, based on preferences).
+
+3rd Stage - Wait the chrome page load, and the install the application
+            in the chrome window context.
+
+4th Stage - Load the full application in chrome window, synchronizes it with
+            the first application loaded, and transfer the console
+            functions to the new "screen mode" application.
+
+----------------------------------
+Pros
+-------------------------------------------------------------------------------
+    More safe
+        - no global namespace pollution, except for the "console" variable
+        - no internal code exposure
+    
+    Allows persistent popups
+
+-------------------------------------------------------------------------------
+Cons
+-------------------------------------------------------------------------------
+    More complex
+    More difficult to debug low level functions
+    less stable?
 
 
 
+################################################################################
+To organize
+################################################################################
+
+-------------------------------------------------------------------------------
 Document Cache
+-------------------------------------------------------------------------------
 
 [ELEMENT_ID]
     - element
@@ -93,56 +153,9 @@ Document Cache
     - styles
     - MD5
 
-
-
-
-
-
-
-styleCache = {};
-
-// First style to add to cache is the inline styles
-for(cid in documentCache)
-{
-    styleCache[cid] = [];
-    styleCache[cid].push();
-}
-
-// for each stylesheet 
-for(stylesheet in stylesheets)
-{
-    // look at each rule
-    for(rule in stylesheet)
-    {
-        // get the rule's selector, and find all elements in document
-        var els = Firebug.Selector(rule.selector);
-        
-        // for each element found
-        for(var i=0, el; el=els[i]; i++)
-        {
-            var cid = el[cacheID];
-            
-            // Add style info in the cache stack of styles of the element 
-            styleCache[cid].push({
-                stylesheet: stylesheet,
-                lineNumber: getLineNumber(rule, stylesheet),
-                fileName: getFileName(rule, stylesheet),
-                selector: rule.selector,
-                styles: rule.styles
-            });
-        }
-    }
-
-}
-
-
-
 -------------------------------------------------------------------------------
--------------------------------------------------------------------------------
-
 DOMPLATE
-
-
+-------------------------------------------------------------------------------
 IE problems with templates
 
 1 - class name attributes of objects
@@ -150,48 +163,6 @@ IE problems with templates
 2 - colon after the last property of a object
 
 3 - event handlers  
-
--------------------------------------------------------------------------------
--------------------------------------------------------------------------------
-
--------------------------------------------------------------------------------
-Core
--------------------------------------------------------------------------------
-TODO: Problem with id conflits. The same attribute is being used in the document
-      elements and in the HTML Tree, in the user interface.
-
-TODO: Better handling of switching tab contexts (selectedTab, rightPanelVisible)
-TODO: Check if there's a problem using the Sizzle selector engine in the code
-
--------------------------------------------------------------------------------
-Events
--------------------------------------------------------------------------------
-TODO: handle disble text selection on Vertical Scrolling
-TODO: handle disble mouse wheel in Chrome, when in frame mode?
-
--------------------------------------------------------------------------------
-ui
--------------------------------------------------------------------------------
-TODO: Opera problem with onunload and popups (context is not being destroyed)
-
--------------------------------------------------------------------------------
-commandLine
--------------------------------------------------------------------------------
-TODO: refactor commandLine to hide internal methods and properties.
-
-
-*/
-
-
-/*
- * 
-
-Geral
-  FBL.$
-  FBL.$$
-  $0
-  $1
-
 
 
 ========================================================================
@@ -232,67 +203,10 @@ Geral
     - activeSidePanel
 
 
-Eventos
-  - adição e remoção (controladores)
-  - painéis
-  - delegação
-    - clique
-    - inspeção
 
-  - Mover testes antigos (ferramentas de desenvolvimento: 
-    compress HTML, CSS e Build)
-
-
-
-
-
-<script language="JavaScript1.2">
-
-function disabletext(e){
-return false
-}
-
-function reEnable(){
-return true
-}
-
-//if the browser is IE4+
-document.onselectstart=new Function ("return false")
-
-//if the browser is NS6
-if (window.sidebar){
-document.onmousedown=disabletext
-document.onclick=reEnable
-}
-</script>
-
-*/
-
-  
-
-/*
-
-CHECK!!!!:
-
-IE - get element position (very fast). To use in BoxModel
-getBoundingClientRect OK!!!!
-
-QUESTIONS:
-  - Document Caching
-  - The "build" folder doesn't exists in Firebug. 
-ok- Files organized in folders.
-  - How to proceed when the console global variable is already defined?
-  
-  - Loading process
-    full:
-        - js with embedded HTML and CSS codes
-        - sprite image
-
-TO THINK:
-  - how to auto-load FirebugLite + Extension in a single bookmarlet?
-
-  
-
+################################################################################
+Disable Text Selection
+################################################################################
 
 <script language="JavaScript1.2">
 
@@ -316,11 +230,9 @@ document.onclick=reEnable
 
 
 
-*/
-
-/*
-
-
+################################################################################
+XPATH
+################################################################################
 
 function getXPath(node, path) {
   path = path || [];
@@ -361,9 +273,9 @@ document.evaluate("/html/body/div/ul/li[2]", document, null, XPathResult.ANY_TYP
 
 
 
-
-
----------------------------------------------------------
+################################################################################
+DomPlate changes pieces
+################################################################################
 
 //Returns true if it is a DOM node
 function isNode(o){
@@ -383,11 +295,52 @@ function isElement(o){
 
 
 
+################################################################################
+Advanced CSS Features brainstorm
+################################################################################
 
-*/
+
+styleCache = {};
+
+// First style to add to cache is the inline styles
+for(cid in documentCache)
+{
+    styleCache[cid] = [];
+    styleCache[cid].push();
+}
+
+// for each stylesheet 
+for(stylesheet in stylesheets)
+{
+    // look at each rule
+    for(rule in stylesheet)
+    {
+        // get the rule's selector, and find all elements in document
+        var els = Firebug.Selector(rule.selector);
+        
+        // for each element found
+        for(var i=0, el; el=els[i]; i++)
+        {
+            var cid = el[cacheID];
+            
+            // Add style info in the cache stack of styles of the element 
+            styleCache[cid].push({
+                stylesheet: stylesheet,
+                lineNumber: getLineNumber(rule, stylesheet),
+                fileName: getFileName(rule, stylesheet),
+                selector: rule.selector,
+                styles: rule.styles
+            });
+        }
+    }
+
+}
 
 
-/*
+################################################################################
+Advanced CSS Features Implementation
+################################################################################
+
 function getInlineStyles(el)
 {
     var style = el.style;
