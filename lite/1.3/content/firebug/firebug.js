@@ -78,6 +78,10 @@ Firebug.Controller = {
     {
         for (var i=0, arg; arg=arguments[i]; i++)
         {
+            var handler = arg[2];
+            arg[2] = bind(this, handler);
+            arg[3] = handler;
+            
             this._controllers.push(arg);
             addEvent.apply(this, arg);
         }
@@ -89,7 +93,7 @@ Firebug.Controller = {
         {
             for (var j=0, c; c=this._controllers[j]; j++)
             {
-                if (arg[0] == c[0] && arg[1] == c[1] && arg[2] == c[2])
+                if (arg[0] == c[0] && arg[1] == c[1] && arg[2] == c[3])
                     removeEvent.apply(this, c);
             }
         }

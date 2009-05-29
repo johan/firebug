@@ -4,7 +4,12 @@ FBL.ns(function() { with (FBL) {
 // ************************************************************************************************
 // Chrome API
     
-var Chrome = Firebug.Chrome = {
+var Chrome = Firebug.Chrome = extend(Firebug.Controller, {
+    
+    destroy: function()
+    {
+        this.shutdown();
+    },
     
     initialize: function()
     {
@@ -103,6 +108,7 @@ var Chrome = Firebug.Chrome = {
     
     draw: function()
     {
+        alert(typeof this.draw)
         //try{
         
         // !!!!
@@ -156,14 +162,14 @@ var Chrome = Firebug.Chrome = {
         //}catch(E){}
     }
     
-};
+});
 
 
 
 //************************************************************************************************
 // Chrome Base
 
-var ChromeBase = extend(Context.prototype, Firebug.Controller);
+var ChromeBase = extend(Context.prototype, Chrome);
 
 //************************************************************************************************
 // Chrome Frame Class
@@ -184,15 +190,13 @@ ChromeFrame.prototype = extend(ChromeBase, {
     {
         Firebug.Controller.initialize.apply(this);
         
-        this.element.style.visibility = "visible";
-        
-        addEvent(Firebug.browser.window, "resize", Chrome.draw)
-        /*
         this.addController(
-                [Firebug.browser.window, "resize", Chrome.draw],
-                [Firebug.browser.window, "unload", Chrome.destroy]
+                [Firebug.browser.window, "resize", this.draw],
+                [Firebug.browser.window, "unload", this.destroy]
             );
-            /**/
+        
+        // TODO: Check visibility preferences here
+        this.element.style.visibility = "visible";
     },
     
     shutdown: function()
