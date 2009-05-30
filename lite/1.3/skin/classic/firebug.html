@@ -8,26 +8,46 @@
 <body>
 <table id="fbChrome" cellpadding="0" cellspacing="0" border="0">
   <tbody>
-  
     <tr>
+      <!-- Interface - Top Area -->
       <td id="fbTop" colspan="2">
       
+        <!-- Main Buttons -->
         <div id="mainButtons">
           <a id="detach" href="javascript:FB.detach()">&nbsp;</a>
           <a id="close" href="javascript:FB.close()">&nbsp;</a>
         </div>
         
+        <!-- Horizontal Splitter -->
         <div id="fbHSplitter">&nbsp;</div>
         
         <!-- Toolbar buttons and Status Bar -->
         <div id="fbToolbar">
-          <div id="fbToolbarIcon">
+        
+          <!-- Firebug Button -->
+          <span id="fbToolbarIcon">
             <a title="Firebug Lite Homepage" href="http://getfirebug.com/lite.html">&nbsp;</a>
-          </div>
-          <div id="fbToolbarButtons">
+          </span>
+          
+          <!-- Toolbar Buttons -->
+          <span id="fbToolbarButtons">
             <span><a id="fbBtnInspect" href="javascript:FB.startInspecting(this)">Inspect</a></span>
-            <span><a href="javascript:FB.clear()">Clear</a></span>
-          </div>
+            
+            <span id="fbConsole_ToolbarButtons">
+              <span><a href="javascript:FB.clear()">Clear</a></span>
+            </span>
+            
+            <span id="fbHTML_ToolbarButtons">
+              <span><a href="#">Edit</a></span>
+            </span>
+            
+          </span>
+            <!-- Status Bar -->
+            <span id="fbStatusBar">
+              <span><a href="#"><b>body</b></a></span><span>&lt;</span><span><a href="#">html</a></span>
+            </span>
+          
+          
         </div>
         
         <!-- PanelBars -->
@@ -56,10 +76,10 @@
       </td>
     </tr>
     
-    <!-- Main interface content -->
+    <!-- Interface - Main Area -->
     <tr id="fbContent">
     
-      <!-- Left Panels  -->
+      <!-- Panels  -->
       <td id="fbPanelBox1">
         <div id="fbPanel1" class="fbFitHeight">
           <div id="fbConsole">
@@ -69,22 +89,29 @@
         </div>
       </td>
       
-      <!-- Right Panels (sidePanels) -->
+      <!-- Side Panel Box -->
       <td id="fbPanelBox2" class="hide">
       
+        <!-- VerticalSplitter -->
         <div id="fbVSplitter" class="fbVSplitter">&nbsp;</div>
         
+        <!-- Side Panels -->
         <div id="fbPanel2" class="fbFitHeight">
-          <div id="fbTest">
-          </div>
+        
+          <!-- HTML Side Panels -->
+          <div id="fbHTML_Style"></div>
+          <div id="fbHTML_Layout"></div>
+          <div id="fbHTML_DOM"></div>
+          
         </div>
       </td>
       
     </tr>
     
-    <!-- Command Line -->
+    <!-- Interface - Bottom Area -->
     <tr id="fbBottom">
     
+      <!-- Command Line -->
       <td id="fbCommand" colspan="2">
         <div id="fbCommandBox">
           <div id="fbCommandIcon">&gt;&gt;&gt;</div>

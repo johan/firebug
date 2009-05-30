@@ -78,8 +78,11 @@ Firebug.Controller = {
     {
         for (var i=0, arg; arg=arguments[i]; i++)
         {
+            // bind the handler to the proper context
             var handler = arg[2];
             arg[2] = bind(this, handler);
+            // save the original handler as an extra-argument, so we can
+            // look for it later, when removing a particular controller            
             arg[3] = handler;
             
             this._controllers.push(arg);

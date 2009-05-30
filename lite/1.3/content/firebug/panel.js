@@ -1,6 +1,82 @@
 FBL.ns(function() { with (FBL) {
 // ************************************************************************************************
 
+//************************************************************************************************
+
+Firebug.Module =
+{
+    /**
+     * Called when the window is opened.
+     */
+    initialize: function()
+    {
+    },
+  
+    /**
+     * Called when the window is closed.
+     */
+    shutdown: function()
+    {
+  
+    },
+  
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+  
+    /**
+     * Called when a new context is created but before the page is loaded.
+     */
+    initContext: function(context)
+    {
+    },
+  
+    /**
+     * Called after a context is detached to a separate window;
+     */
+    reattachContext: function(browser, context)
+    {
+    },
+  
+    /**
+     * Called when a context is destroyed. Module may store info on persistedState for reloaded pages.
+     */
+    destroyContext: function(context, persistedState)
+    {
+    },
+  
+    // Called when a FF tab is create or activated (user changes FF tab)
+    // Called after context is created or with context == null (to abort?)
+    showContext: function(browser, context)
+    {
+    },
+  
+    /**
+     * Called after a context's page gets DOMContentLoaded
+     */
+    loadedContext: function(context)
+    {
+    },
+  
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+  
+    showPanel: function(browser, panel)
+    {
+    },
+  
+    showSidePanel: function(browser, panel)
+    {
+    },
+  
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+  
+    updateOption: function(name, value)
+    {
+    },
+  
+    getObjectByURL: function(context, url)
+    {
+    }
+};
+
 // ************************************************************************************************
 
 Firebug.Panel =
@@ -11,7 +87,12 @@ Firebug.Panel =
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
     
     options: {
-  
+        id: "fbName",
+        
+        hasCommandLine: false,
+        hasSidePanel: false,
+        hasStatusBar: false,
+        hasToolButtons: false
     },
     
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -179,81 +260,6 @@ Firebug.Panel =
 //************************************************************************************************
 
 
-//************************************************************************************************
-
-Firebug.Module =
-{
-  /**
-   * Called when the window is opened.
-   */
-  initialize: function()
-  {
-  },
-
-  /**
-   * Called when the window is closed.
-   */
-  shutdown: function()
-  {
-
-  },
-
-  // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-
-  /**
-   * Called when a new context is created but before the page is loaded.
-   */
-  initContext: function(context)
-  {
-  },
-
-  /**
-   * Called after a context is detached to a separate window;
-   */
-  reattachContext: function(browser, context)
-  {
-  },
-
-  /**
-   * Called when a context is destroyed. Module may store info on persistedState for reloaded pages.
-   */
-  destroyContext: function(context, persistedState)
-  {
-  },
-
-  // Called when a FF tab is create or activated (user changes FF tab)
-  // Called after context is created or with context == null (to abort?)
-  showContext: function(browser, context)
-  {
-  },
-
-  /**
-   * Called after a context's page gets DOMContentLoaded
-   */
-  loadedContext: function(context)
-  {
-  },
-
-  // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-
-  showPanel: function(browser, panel)
-  {
-  },
-
-  showSidePanel: function(browser, panel)
-  {
-  },
-
-  // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-
-  updateOption: function(name, value)
-  {
-  },
-
-  getObjectByURL: function(context, url)
-  {
-  }
-};
 
 
 

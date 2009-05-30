@@ -2,6 +2,34 @@
 TODO's
 ################################################################################
 
+ - reload problem
+
+
+Context
+Controller
+
+Chrome
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 -------------------------------------------------------------------------------
 Preferences
 -------------------------------------------------------------------------------
@@ -14,8 +42,12 @@ Preferences
         - define public namespace
 
 -------------------------------------------------------------------------------
-Usability
+User Interface
 -------------------------------------------------------------------------------
+    - UI styling
+        - (?) detect Windows theme (XP or classic?)
+        - (?) detect OS (windows or mac?)
+    
     - error UI indications (like FB in status bar)
     - UI indication when chrome is hidden
 
@@ -105,6 +137,54 @@ OK  - when in injected DEVELOPMENT mode, in XHTML documents, Google Chrome
       is having problems with the loading order of the multiple scripts.
 
 
+
+
+################################################################################
+Chrome Design
+################################################################################
+
+-------------------------------------------------------------------------------
+Chrome
+-------------------------------------------------------------------------------
+    - {?) panelControl
+    - panelBar
+    - panel // active panel
+    
+    - sidePanel // active side panel
+    - commandLine
+
+
+    - selectPanel()
+    - selectSidePanel()
+
+
+-------------------------------------------------------------------------------
+Panel
+-------------------------------------------------------------------------------
+    - {?) panelControl
+    - panelBar
+    
+    - sidePanel // active side panel
+    - commandLine
+    
+    
+    - isVisible // may be offline, in a documentFragment
+    - show
+    - hide
+
+-------------------------------------------------------------------------------
+PanelControl
+-------------------------------------------------------------------------------
+    - registerPanel
+    - removePanel
+    - removePanels
+    - selectPanel
+
+-------------------------------------------------------------------------------
+PanelBar
+-------------------------------------------------------------------------------
+    - selectPanel()
+    
 
 ################################################################################
 Persistent Mode
