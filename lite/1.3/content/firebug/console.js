@@ -166,7 +166,9 @@ var ConsoleAPI =
 // ************************************************************************************************
 // Console Module
 
-var Console = Firebug.Console = extend(ConsoleAPI,
+var ConsoleModule = extend(Firebug.Module, ConsoleAPI);
+
+var Console = Firebug.Console = extend(ConsoleModule,
 {
 
     LOG_COMMAND: {},
@@ -216,6 +218,27 @@ var Console = Firebug.Console = extend(ConsoleAPI,
         
         return html;
     }
+});
+
+
+//************************************************************************************************
+// Console Panel
+
+var ConsolePanel = function ConsolePanel(){};
+
+ConsolePanel.prototype = extend(Firebug.Panel,
+{
+    initialize: function(){
+	    fbConsole = $("fbConsole");
+	    fbPanel1 =  $("fbPanel1");       
+	},
+	
+	shutdown: function()
+	{
+	    fbConsole = null;
+	    fbPanel1 =  null;     
+	}	
+	
 });
 
 

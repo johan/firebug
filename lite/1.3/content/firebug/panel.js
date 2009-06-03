@@ -87,12 +87,20 @@ Firebug.Panel =
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
     
     options: {
-        id: "fbName",
+	    hasCommandLine: false,
+	    hasSidePanel: false,
+	    hasStatusBar: false,
+	    hasToolButtons: false,
+	    
+	    // Internal panels are those included in the skin file (firebug.html)
+	    isInternal: true,
+	    
+	    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+	    // To be used by external extensions
+        panelHTML: "",
+        panelCSS: "",
         
-        hasCommandLine: false,
-        hasSidePanel: false,
-        hasStatusBar: false,
-        hasToolButtons: false
+        toolButtonsHTML: ""
     },
     
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *

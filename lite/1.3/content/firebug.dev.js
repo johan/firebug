@@ -11,6 +11,7 @@ window.FBDev =
         //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
         // Application core
         "firebug/lib.js",
+        "firebug/lib.injected.js",
         "firebug/firebug.js",
         //"firebug/domplate.js", // not used yet
         "firebug/reps.js",
@@ -20,7 +21,7 @@ window.FBDev =
         "firebug/context.js",
         "firebug/selector.js",
         "firebug/chrome.js",
-        "firebug/lib.injected.js",
+        "firebug/panel.js", // temp
         "firebug/inspector.js",
         "firebug/commandLine.js",
         //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *

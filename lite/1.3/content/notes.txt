@@ -2,6 +2,16 @@
 TODO's
 ################################################################################
 
+ScrollArea Class
+    - isScrolled
+    - isVerticalScrolled
+    - isHorizontalScrolled
+    - isScrolledToBottom
+    - scrollToElement(el)
+    - isElementVisible(el)
+    
+
+
  - reload problem
 
 
