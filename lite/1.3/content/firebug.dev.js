@@ -89,7 +89,7 @@ window.FBDev =
         
         FBL.Ajax.request({url: url, onComplete:function(r)
             {
-                var result = FBL.dev.compressHTML(r);
+                var result = FBDev.compressHTML(r);
                 
                 out.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%;";
                 out.appendChild(document.createTextNode(result));
@@ -107,7 +107,7 @@ window.FBDev =
         
         FBL.Ajax.request({url: url, onComplete:function(r)
             {
-                var result = FBL.dev.compressCSS(r);
+                var result = FBDev.compressCSS(r);
                 
                 out.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%;";
                 out.appendChild(document.createTextNode(result));

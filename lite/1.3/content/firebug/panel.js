@@ -87,16 +87,16 @@ Firebug.Panel =
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
     
     options: {
-	    hasCommandLine: false,
-	    hasSidePanel: false,
-	    hasStatusBar: false,
-	    hasToolButtons: false,
-	    
-	    // Internal panels are those included in the skin file (firebug.html)
-	    isInternal: true,
-	    
-	    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-	    // To be used by external extensions
+        hasCommandLine: false,
+        hasSidePanel: false,
+        hasStatusBar: false,
+        hasToolButtons: false,
+        
+        // Internal panels are those included in the skin file (firebug.html)
+        isInternal: true,
+        
+        // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+        // To be used by external extensions
         panelHTML: "",
         panelCSS: "",
         

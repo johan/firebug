@@ -229,16 +229,16 @@ var ConsolePanel = function ConsolePanel(){};
 ConsolePanel.prototype = extend(Firebug.Panel,
 {
     initialize: function(){
-	    fbConsole = $("fbConsole");
-	    fbPanel1 =  $("fbPanel1");       
-	},
-	
-	shutdown: function()
-	{
-	    fbConsole = null;
-	    fbPanel1 =  null;     
-	}	
-	
+        fbConsole = $("fbConsole");
+        fbPanel1 =  $("fbPanel1");       
+    },
+    
+    shutdown: function()
+    {
+        fbConsole = null;
+        fbPanel1 =  null;     
+    }
+    
 });
 
 

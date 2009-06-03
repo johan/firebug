@@ -278,7 +278,7 @@ var createChromeFrame = function(context, options)
     element.style.position = FBL.isIE6 ? "absolute" : "fixed";
     element.style.width = "100%"; // "102%"; IE auto margin bug
     element.style.left = "0";
-    element.style.bottom = "-1px";
+    element.style.bottom = FBL.isIE6 ? "-1px" : "0";
     element.style.height = options.height + "px";
     
     var isBookmarletMode = FBL.application.isBookmarletMode;
@@ -290,9 +290,17 @@ var createChromeFrame = function(context, options)
     if (isBookmarletMode)
     {
         var doc = element.contentWindow.document;
+        
+        doc.write('<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/DTD/strict.dtd">');
+        doc.write('<head><style>'+ FBL.UI.CSS + '</style>');
+        doc.write('</head><body>'+ FBL.UI.HTML) + '</body>';
+        doc.close();
+        
+        /*
         doc.write('<style>'+ FBL.UI.CSS + '</style>');
         doc.write(FBL.UI.HTML);
         doc.close();
+        /**/
     }
     
     var waitForFrame = function waitForFrame()
