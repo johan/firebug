@@ -2,6 +2,7 @@
     overflow: hidden;
     border: 1px solid;
     border-color: transparent #fff transparent #777;
+    _border-color: #eee #fff #eee #777;
     height: 7px;
     margin-top: 11px;
     float: left;
@@ -80,11 +81,6 @@ html, body {
 /* fbToolbar 
 -----------------------------------------------------------------------------*/
 #fbToolbarIcon {
-    /*
-    zzposition: absolute;
-    zztop: 5px;
-    zzleft: 10px;
-    /**/
     float: left;
     padding: 5px 5px 0;
 }
@@ -99,11 +95,6 @@ html, body {
 }
 
 #fbToolbarButtons {
-    /*
-    zzposition: absolute;
-    zztop: 5px;
-    zzleft: 35px;
-    /**/
     float: left;
     padding: 5px 2px 0 5px;
 }
@@ -118,21 +109,16 @@ html, body {
     display: block;
     float: left;
     color: #000;
-    margin: 1px;
-    padding: 3px 7px 3px;
+    padding: 4px 8px 4px;
     cursor: default;
 }
 
 #fbToolbarButtons a:hover {
     color: #333;
-    margin: 0;
+    padding: 3px 7px 3px;
     border: 1px solid #fff;
     border-bottom: 1px solid #bbb;
     border-right: 1px solid #bbb;
-    /*
-    _margin: 0 1px 1px;
-    _padding: 3px 6px 3px 6px;
-    /**/
 }
 
 #fbStatusBar {
