@@ -126,11 +126,13 @@ html, body {
 #fbToolbarButtons a:hover {
     color: #333;
     margin: 0;
-    _margin: 0 1px 1px;
     border: 1px solid #fff;
     border-bottom: 1px solid #bbb;
     border-right: 1px solid #bbb;
+    /*
+    _margin: 0 1px 1px;
     _padding: 3px 6px 3px 6px;
+    /**/
 }
 
 #fbStatusBar {
@@ -233,16 +235,18 @@ html, body {
 }
 
 #fbCommandBox {
+    position: absolute;
     width: 100%;
-    height: 19px;
-    _height: 18px;
+    height: 18px;
     bottom: 0;
     overflow: hidden;
     z-index: 9;
-    position: absolute;
     background: #fff;
     border: 0;
     border-top: 1px solid #ccc;
+    /*
+    _height: 18px;
+    /**/
 }
 
 #fbCommandIcon {
@@ -258,7 +262,6 @@ html, body {
 #fbCommandLine {
     position: absolute;
     width: 100%;
-    height: 19px;
     top: 0;
     left: 0;
     border: 0;
@@ -395,7 +398,6 @@ div.fbFitHeight {
     border: 1px solid #777;
     border-width: 0 1px;
     width: 4px;
-    _width: 6px;
     cursor: e-resize;
     overflow: hidden;
     right: 294px;
@@ -404,6 +406,9 @@ div.fbFitHeight {
     position: absolute;
     height: 100%;
     top: 27px;
+    /*
+    _width: 6px;
+    /**/
 }
 
 /************************************************************************************************/
@@ -425,7 +430,9 @@ pre.nodeCode {
     margin: 0;
     padding-left: 10px;
     overflow: hidden;
+    /*
     _width: 100%;
+    /**/
 }
 
 /************************************************************************************************/
@@ -433,13 +440,15 @@ pre.nodeCode {
     margin-top: 3px;
     margin-left: -14px;
     float: left;
-    _position: absolute;
-    _margin-left: -11px;
     width: 9px;
     height: 9px;
     overflow: hidden;
     cursor: default;
     background: url(tree_open.gif);
+    /*
+    _position: absolute;
+    _margin-left: -11px;
+    /**/
 }
 
 div.nodeMaximized {
@@ -635,8 +644,10 @@ div.objectBox-element {
 
 /************************************************************************************************/
 .log-object {
+    /*
     _position: relative;
     _height: 100%;
+    /**/
 }
 
 .property {
@@ -659,11 +670,13 @@ div.objectBox-element {
     width: 68%;
     background: #fff;
     position: absolute;
-    _position: relative;
     padding-left: 5px;
     display: table-cell;
     right: 0;
     z-index: 1;
+    /*
+    _position: relative;
+    /**/
 }
 
 .propertyName {
@@ -688,5 +701,7 @@ div.objectBox-element {
 
 .FirebugPopup #fbCommandBox {
     height: 18px !important;
+    /*
     _height: 17px !important;
+    /**/
 }
