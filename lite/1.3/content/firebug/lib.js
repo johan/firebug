@@ -516,6 +516,29 @@ this.cancelEvent = function(e, preventDefault)
                 
 };
 
+this.dispatch = function(listeners, name, args)
+{
+    //if (FBTrace.DBG_DISPATCH) FBTrace.sysout("FBL.dispatch "+name+" to "+listeners.length+" listeners\n"); /*@explore*/
+    //                                                                                                       /*@explore*/
+    try {
+        for (var i = 0; i < listeners.length; ++i)
+        {
+            var listener = listeners[i];
+            if ( listener.hasOwnProperty(name) )
+                listener[name].apply(listener, args);
+        }
+    }
+    catch (exc)
+    {
+        /*
+        if (FBTrace.DBG_ERRORS)
+        {
+            FBTrace.dumpProperties(" Exception in lib.dispatch "+ name, exc);
+            //FBTrace.dumpProperties(" Exception in lib.dispatch listener", listener);
+        }
+        /**/
+    }
+};
 
 //************************************************************************************************
 // class Names

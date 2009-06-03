@@ -46,7 +46,7 @@ var ConsoleAPI =
             throw message ? message : "Assertion Failure";
         }
         
-        return Console.LOG_COMMAND;        
+        return Firebug.Console.LOG_COMMAND;        
     },
     
     dir: function(object)
@@ -108,7 +108,7 @@ var ConsoleAPI =
     time: function(name)
     {
         timeMap[name] = (new Date()).getTime();
-        return Console.LOG_COMMAND;
+        return Firebug.Console.LOG_COMMAND;
     },
     
     timeEnd: function(name)
@@ -119,7 +119,7 @@ var ConsoleAPI =
             logFormatted([name+ ":", delta+"ms"]);
             delete timeMap[name];
         }
-        return Console.LOG_COMMAND;
+        return Firebug.Console.LOG_COMMAND;
     },
     
     count: function()
@@ -139,26 +139,26 @@ var ConsoleAPI =
     
     profileEnd: function()
     {
-        return Console.LOG_COMMAND;
+        return Firebug.Console.LOG_COMMAND;
     },
     
     clear: function()
     {
         fbConsole.innerHTML = "";
-        return Console.LOG_COMMAND;
+        return Firebug.Console.LOG_COMMAND;
     },
 
     open: function()
     {
         toggleConsole(true);
-        return Console.LOG_COMMAND;
+        return Firebug.Console.LOG_COMMAND;
     },
     
     close: function()
     {
         if (frameVisible)
             toggleConsole();
-        return Console.LOG_COMMAND;
+        return Firebug.Console.LOG_COMMAND;
     }
 };
 
@@ -168,7 +168,7 @@ var ConsoleAPI =
 
 var ConsoleModule = extend(Firebug.Module, ConsoleAPI);
 
-var Console = Firebug.Console = extend(ConsoleModule,
+Firebug.Console = extend(ConsoleModule,
 {
 
     LOG_COMMAND: {},
@@ -220,6 +220,8 @@ var Console = Firebug.Console = extend(ConsoleModule,
     }
 });
 
+Firebug.registerModule(Firebug.Console);
+
 
 //************************************************************************************************
 // Console Panel
@@ -268,7 +270,7 @@ FBL.logRow = function(message, className, handler)
         Firebug.cache.messageQueue.push([message, className, handler]);
     }
     
-    return Console.LOG_COMMAND;
+    return Firebug.Console.LOG_COMMAND;
 };
 
 FBL.flush = function()

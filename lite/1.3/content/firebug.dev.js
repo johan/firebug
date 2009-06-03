@@ -21,7 +21,7 @@ window.FBDev =
         "firebug/context.js",
         "firebug/selector.js",
         "firebug/chrome.js",
-        "firebug/panel.js", // temp
+        //"firebug/panel.js", // temp
         "firebug/inspector.js",
         "firebug/commandLine.js",
         //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *

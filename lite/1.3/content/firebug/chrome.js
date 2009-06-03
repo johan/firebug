@@ -4,7 +4,7 @@ FBL.ns(function() { with (FBL) {
 // ************************************************************************************************
 // Chrome API
     
-var Chrome = Firebug.Chrome = extend(Firebug.Controller, {
+Firebug.Chrome = extend(Firebug.Controller, {
     
     destroy: function()
     {
@@ -163,12 +163,13 @@ var Chrome = Firebug.Chrome = extend(Firebug.Controller, {
     
 });
 
+Firebug.registerModule(Firebug.Chrome);
 
 
 //************************************************************************************************
 // Chrome Base
 
-var ChromeBase = extend(Context.prototype, Chrome);
+var ChromeBase = extend(Context.prototype, Firebug.Chrome);
 
 //************************************************************************************************
 // Chrome Frame Class
