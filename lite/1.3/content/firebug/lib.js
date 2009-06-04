@@ -105,9 +105,14 @@ var createApplication = function createApplication()
     findLocation();
     
     var options = FBL.extend({}, WindowDefaultOptions);
+    new FBL.FirebugChrome(FBL.application.global, options);
+    
+    /*
+    var options = FBL.extend({}, WindowDefaultOptions);
     var createChrome = (options.type == "popup") ? createChromePopup : createChromeFrame;
     
     createChrome(FBL.application.global, options);
+    /**/
 };
 
 var destroyApplication = function destroyApplication()
@@ -118,37 +123,25 @@ var destroyApplication = function destroyApplication()
     }, 100);
 };
 
+//************************************************************************************************
+// Application Chromes
 
-//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-// Chrome loading
-
-var onChromeLoad = function onChromeLoad(chrome)
+var WindowDefaultOptions = 
 {
-    FBL.application.chrome = chrome;
-    
-    if (FBL.application.isPersistentMode)
-    {
-        chrome.window.FirebugApplication = FBL.application;
-    
-        if (FBL.application.isDevelopmentMode)
-        {
-            FBDev.loadChromeApplication(chrome);
-        }
-        else
-        {
-            var doc = chrome.document;
-            var script = doc.createElement("script");
-            script.src = application.location.app;
-            doc.getElementsByTagName("head")[0].appendChild(script);
-        }
-    }
-    else
-        // initialize the chrome application
-        setTimeout(function(){
-            FBL.Firebug.initialize();
-        },100);
+    type: "frame"
 };
 
+var FrameDefaultOptions = 
+{
+    id: "FirebugChrome",
+    height: 250
+};
+
+var PopupDefaultOptions = 
+{
+    id: "FirebugChromePopup",
+    height: 250
+};
 
 //************************************************************************************************
 // Library location
@@ -233,160 +226,6 @@ var findLocation =  function findLocation()
         throw new Error("Firebug Error: Library path not found");
     }
 };
-
-
-
-//************************************************************************************************
-// Application Chromes
-
-var WindowDefaultOptions = 
-{
-    type: "frame"
-};
-
-var FrameDefaultOptions = 
-{
-    id: "FirebugChrome",
-    height: 250
-};
-
-var PopupDefaultOptions = 
-{
-    id: "FirebugChromePopup",
-    height: 250
-};
-
-    
-//************************************************************************************************
-// Chrome Frame
-
-var createChromeFrame = function(context, options)
-{
-    options = options || {};
-    options = FBL.extend(FrameDefaultOptions, options);
-    
-    var chrome = {};
-    chrome.type = "frame";
-    
-    var element = chrome.element = context.document.createElement("iframe");
-    
-    element.setAttribute("id", options.id);
-    element.setAttribute("frameBorder", "0");
-    element.style.border = "0";
-    element.style.visibility = "hidden";
-    element.style.zIndex = "2147483647"; // MAX z-index = 2147483647
-    element.style.position = FBL.isIE6 ? "absolute" : "fixed";
-    element.style.width = "100%"; // "102%"; IE auto margin bug
-    element.style.left = "0";
-    element.style.bottom = FBL.isIE6 ? "-1px" : "0";
-    element.style.height = options.height + "px";
-    
-    var isBookmarletMode = FBL.application.isBookmarletMode;
-    if (!isBookmarletMode)
-        element.setAttribute("src", FBL.application.location.skin);
-    
-    context.document.body.appendChild(element);
-    
-    if (isBookmarletMode)
-    {
-        var doc = element.contentWindow.document;
-        
-        doc.write('<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/DTD/strict.dtd">');
-        doc.write('<head><style>'+ FBL.UI.CSS + '</style>');
-        doc.write('</head><body>'+ FBL.UI.HTML) + '</body>';
-        doc.close();
-        
-        /*
-        doc.write('<style>'+ FBL.UI.CSS + '</style>');
-        doc.write(FBL.UI.HTML);
-        doc.close();
-        /**/
-    }
-    
-    var waitForFrame = function waitForFrame()
-    {
-        if (element.contentWindow && 
-            element.contentWindow.document.getElementById("fbCommandLine"))        
-        {
-            chrome.window = element.contentWindow.window;
-            chrome.document = element.contentWindow.document;
-            
-            onChromeLoad(chrome);
-        }
-        else
-            setTimeout(waitForFrame, 20);
-    }
-    
-    waitForFrame();
-};
-
-
-//************************************************************************************************
-// Chrome Popup
-
-var createChromePopup = function(context, options)
-{
-    options = options || {};
-    options = FBL.extend(PopupDefaultOptions, options);
-    
-    var chrome = {};
-    chrome.type = "popup";
-    
-    var isBookmarletMode = FBL.application.isBookmarletMode;
-    var url = isBookmarletMode ? "" : application.location.skin;
-    
-    var height = options.height;
-    var options = [
-            "true,top=",
-            Math.max(screen.height - height, 0),
-            ",left=0,height=",
-            height,
-            ",width=",
-            screen.width-10, // Opera opens popup in a new tab if it's too big!
-            ",resizable"          
-        ].join("");
-    
-    var element = chrome.element = window.open(
-        url, 
-        "popup", 
-        options
-      );
-    
-    if (isBookmarletMode)
-    {
-        var doc = element.document;
-        doc.write("<style>"+ FBL.UI.CSS + "</style>");
-        doc.write(FBL.UI.HTML);
-        doc.close();
-    }
-    
-    if (element)
-    {
-        element.focus();
-    }
-    else
-    {
-        Chrome.Popup.element = null;
-        alert("Disable the popup blocker to open the console in another window!")
-    }
-    
-    var waitForPopup = function waitForFrame()
-    {
-        if (element.document && 
-            element.document.getElementById("fbCommandLine"))        
-        {
-            chrome.document = element.document;
-            chrome.window = element.window;
-            
-            onChromeLoad(chrome);
-        }
-        else
-            setTimeout(waitForPopup, 20);
-    }
-    
-    waitForPopup();    
-};
-
 
 // ************************************************************************************************
 // Basics

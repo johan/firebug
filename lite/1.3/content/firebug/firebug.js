@@ -38,6 +38,8 @@ FBL.Firebug =
         
         this.cacheDocument();
         
+        this.chrome.initialize();
+        
         dispatch(modules, "initialize", []);
     },
   
@@ -461,13 +463,13 @@ Firebug.Panel =
 //************************************************************************************************
 // PanelBar
 
-Firebug.PanelBar = function(panelBarNode, context)
+Firebug.PanelBar = function(panelBarNode, chrome)
 {
     this.panelTypes = [];
     this.panelTypeMap = {};
     
     this.panelBarNode = panelBarNode;    
-    this.context = context;
+    this.chrome = chrome;
 };
 
 Firebug.PanelBar.prototype = 
@@ -480,7 +482,25 @@ Firebug.PanelBar.prototype =
     selectedPanel: null,
     
     panelBarNode: null,
-    context: null,    
+    context: null,
+    
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    destroy: function()
+    {
+    
+    },
+    
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    showTabs: function()
+    {
+        
+    },
+    
+    hideTabs: function()
+    {
+        
+    },
+    
     
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
     addTab: function(title, parentPanel)

@@ -1,10 +1,149 @@
 FBL.ns(function() { with (FBL) {
 // ************************************************************************************************
+
+//************************************************************************************************
+// 
+
+var ChromeDefaultOptions = 
+{
+    type: "frame"
+};
+
+//************************************************************************************************
+// 
     
+FBL.FirebugChrome = function(context, options)
+{
+    options = options || {};
+    options = FBL.extend(ChromeDefaultOptions, options);
+    
+    this.type = options.type;
+    
+    var isChromeFrame = this.type == "frame";
+    var isBookmarletMode = application.isBookmarletMode;
+    var url = isBookmarletMode ? "" : application.location.skin;
+    
+    var ChromeBase = isChromeFrame ? ChromeFrameBase : ChromePopupBase; 
+    append(this, ChromeBase);
+    
+    if (isChromeFrame)
+    {
+        // Create the Chrome Frame
+        var node = this.node = context.document.createElement("iframe");
+        
+        node.setAttribute("id", options.id);
+        node.setAttribute("frameBorder", "0");
+        node.style.border = "0";
+        node.style.visibility = "hidden";
+        node.style.zIndex = "2147483647"; // MAX z-index = 2147483647
+        node.style.position = FBL.isIE6 ? "absolute" : "fixed";
+        node.style.width = "100%"; // "102%"; IE auto margin bug
+        node.style.left = "0";
+        node.style.bottom = FBL.isIE6 ? "-1px" : "0";
+        node.style.height = options.height + "px";
+        
+        var isBookmarletMode = FBL.application.isBookmarletMode;
+        if (!isBookmarletMode)
+            node.setAttribute("src", FBL.application.location.skin);
+        
+        context.document.body.appendChild(node);
+    }
+    else
+    {
+        // Create the Chrome Popup
+        var height = options.height;
+        var options = [
+                "true,top=",
+                Math.max(screen.height - height, 0),
+                ",left=0,height=",
+                height,
+                ",width=",
+                screen.width-10, // Opera opens popup in a new tab if it's too big!
+                ",resizable"          
+            ].join("");
+        
+        var node = chrome.node = window.open(
+            url, 
+            "popup", 
+            options
+          );
+    
+    }
+    
+    if (isBookmarletMode)
+    {
+        var doc = isChromeFrame ? doc : doc;
+        // create getChromeTemplate Function?
+        doc.write('<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/DTD/strict.dtd">');
+        doc.write('<head><style>'+ FBL.UI.CSS + '</style>');
+        doc.write('</head><body>'+ FBL.UI.HTML) + '</body>';        
+        //doc.write( getChromeTemplate() );
+        doc.close();
+    }
+    
+    var chrome = Firebug.chrome = this;
+    var waitForChrome = function()
+    {
+        //
+        if ( isChromeFrame && node.contentWindow && 
+             node.contentWindow.document.getElementById("fbCommandLine") )        
+        {
+            chrome.window = node.contentWindow.window;
+            chrome.document = node.contentWindow.document;
+            
+            onChromeLoad(chrome);
+        }
+        else if ( !isChromeFrame && node.document && 
+                  node.document.getElementById("fbCommandLine") )        
+        {
+            chrome.document = node.document;
+            chrome.window = node.window;
+            
+            onChromeLoad(chrome);
+        }
+        else
+            setTimeout(waitForChrome, 20);            
+    }
+    
+    waitForChrome();    
+}
+
+
+//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+// Chrome loading
+
+var onChromeLoad = function onChromeLoad(chrome)
+{
+    FBL.application.chrome = chrome;
+    
+    if (FBL.application.isPersistentMode)
+    {
+        chrome.window.FirebugApplication = FBL.application;
+    
+        if (FBL.application.isDevelopmentMode)
+        {
+            FBDev.loadChromeApplication(chrome);
+        }
+        else
+        {
+            var doc = chrome.document;
+            var script = doc.createElement("script");
+            script.src = application.location.app;
+            doc.getElementsByTagName("head")[0].appendChild(script);
+        }
+    }
+    else
+        // initialize the chrome application
+        setTimeout(function(){
+            FBL.Firebug.initialize();
+        },100);
+};
+
+
 // ************************************************************************************************
 // Chrome API
     
-Firebug.Chrome = extend(Firebug.Controller, {
+var ChromeBase = extend(Firebug.Controller, {
     
     destroy: function()
     {
@@ -53,10 +192,12 @@ Firebug.Chrome = extend(Firebug.Controller, {
         
         
         // initialize the chrome instance
+        /*
         var chrome = application.chrome;
         var ChromeClass = chrome.type == "frame" ? ChromeFrame : ChromePopup;
         Firebug.chrome = new ChromeClass(chrome);
         Firebug.chrome.initialize();
+        /**/
         
         flush();
         
@@ -163,32 +304,17 @@ Firebug.Chrome = extend(Firebug.Controller, {
     
 });
 
-Firebug.registerModule(Firebug.Chrome);
-
-
 //************************************************************************************************
-// Chrome Base
+// Chrome Frame Base Class
 
-var ChromeBase = extend(Context.prototype, Firebug.Chrome);
+var ChromeContext = extend(ChromeBase, Context.prototype); 
 
-//************************************************************************************************
-// Chrome Frame Class
-
-var ChromeFrame = function(chrome)
-{
-    Context.call(this, chrome.window);
-    
-    this.type = chrome.type;
-    this.element = chrome.element;
-};
-
-//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-
-ChromeFrame.prototype = extend(ChromeBase, {
+var ChromeFrameBase = extend(ChromeContext, {
     
     initialize: function()
     {
-        Firebug.Controller.initialize.apply(this);
+        ChromeBase.initialize.call(this)
+        Firebug.Controller.initialize.call(this, this.node);
         
         this.addController(
                 [Firebug.browser.window, "resize", this.draw],
@@ -196,7 +322,7 @@ ChromeFrame.prototype = extend(ChromeBase, {
             );
         
         // TODO: Check visibility preferences here
-        this.element.style.visibility = "visible";
+        this.node.style.visibility = "visible";
     },
     
     shutdown: function()
@@ -210,17 +336,7 @@ ChromeFrame.prototype = extend(ChromeBase, {
 //************************************************************************************************
 // Chrome Popup Class
 
-var ChromePopup = function(chrome)
-{
-    this.type = chrome.type;
-    this.element = chrome.element;
-    this.window = chrome.window;
-    this.document = chrome.document;
-}
-
-//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-
-ChromePopup.prototype = extend(ChromeBase, {
+var ChromePopupBase = extend(ChromeContext, {
     
     initialize: function()
     {
