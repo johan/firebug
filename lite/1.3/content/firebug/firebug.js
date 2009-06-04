@@ -22,6 +22,10 @@ FBL.documentCache = {};
 
 FBL.Firebug =  
 {
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    modules: modules,
+    panelTypes: panelTypes,
+    
     cache: {},
     
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -93,9 +97,10 @@ Firebug.Controller = {
         
     _controllers: null,
         
-    initialize: function()
+    initialize: function(node)
     {
         this._controllers = [];
+        this.node = node;
     },
     
     shutdown: function()
@@ -110,6 +115,13 @@ Firebug.Controller = {
     {
         for (var i=0, arg; arg=arguments[i]; i++)
         {
+            // If the first argument is a string, make a selector query 
+            // within the controller node context
+            if (typeof arg[0] == "string")
+            {
+                arg[0] = $$(arg[0], this.node);
+            }
+            
             // bind the handler to the proper context
             var handler = arg[2];
             arg[2] = bind(this, handler);
@@ -145,6 +157,7 @@ Firebug.Controller = {
 
 
 //************************************************************************************************
+// Module
 
 Firebug.Module =
 {
@@ -220,6 +233,7 @@ Firebug.Module =
 };
 
 // ************************************************************************************************
+// Panel
 
 Firebug.Panel =
 {
@@ -234,8 +248,8 @@ Firebug.Panel =
         hasStatusBar: false,
         hasToolButtons: false,
         
-        // Internal panels are those included in the skin file (firebug.html)
-        isInternal: true,
+        // Pre-rendered panels are those included in the skin file (firebug.html)
+        isPreRendered: true,
         
         // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
         // To be used by external extensions
@@ -248,7 +262,16 @@ Firebug.Panel =
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
     
     panelNode: null,
+    sidePanelNode: null,
+    statusBarNode: null,
+    toolButtonsNode: null,
+
+    panelBarNode: null,
+    
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    
     panelBar: null,
+    
     commandLine: null,
     
     toolButtons: null,
@@ -263,6 +286,34 @@ Firebug.Panel =
 
     initialize: function(context, doc)
     {
+        var options = this.options;
+        var panelId = "fb" + this.name;
+        
+        if (options.isPreRendered)
+        {
+            this.panelNode = $(panelId);
+            
+            if (options.hasSidePanel)
+            {
+                //this.sidePanelNode = $(panelId + "StatusBar");
+            }
+            
+            if (options.hasStatusBar)
+            {
+                this.statusBarNode = $(panelId + "StatusBar");
+            }
+            
+            if (options.hasToolButtons)
+            {
+                this.toolButtonsNode = $(panelId + "Buttons");
+            }
+            
+        }
+        else
+        {
+            //create Panel
+        }
+        
         /*
         this.context = context;
         this.document = doc;
@@ -408,8 +459,66 @@ Firebug.Panel =
 };
 
 //************************************************************************************************
+// PanelBar
+
+Firebug.PanelBar = function(panelBarNode, context)
+{
+    this.panelTypes = [];
+    this.panelTypeMap = {};
+    
+    this.panelBarNode = panelBarNode;    
+    this.context = context;
+};
+
+Firebug.PanelBar.prototype = 
+{
+    
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    panelTypes: null,
+    panelTypeMap: null,
+    
+    selectedPanel: null,
+    
+    panelBarNode: null,
+    context: null,    
+    
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    addTab: function(title, parentPanel)
+    {
+        var panel = Firebug.panelTypeMap[title];
+        
+        
+        
+        //isInternal
+    
+        /*
+        var panelTypes = [];
+        var panelTypeMap = {};
+        /**/
+
+    },
+    
+    removeTab: function()
+    {
+        
+    },
+    
+    selectPanel: function()
+    {
+        
+    },
+    
+    getSelectedPanel: function()
+    {
+        
+    }    
+   
+};
 
 
+//************************************************************************************************
+//************************************************************************************************
+//************************************************************************************************
 
 
 /*

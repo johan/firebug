@@ -139,7 +139,7 @@ html, body {
     cursor: default;
 }
 
-#fbStatusBar span a:hover {
+.fbStatusBar span a:hover {
     color: blue;
 }
 
