@@ -72,6 +72,7 @@ this.application = {
     // Application preferences
     isBookmarletMode: false, //TODO!!
     isPersistentMode: false, //TODO!!
+    skin: "xp",
     //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
     // Application States
     isDevelopmentMode: false,
@@ -210,7 +211,7 @@ var findLocation =  function findLocation()
         var loc = FBL.application.location; 
         loc.source = path;
         loc.base = path.substr(0, path.length - m[1].length - 1);
-        loc.skin = loc.base + "skin/classic/firebug.html";
+        loc.skin = loc.base + "skin/" + FBL.application.skin + "/firebug.html";
         loc.app = path + fileName;
         
         if (fileName == "firebug.dev.js")

@@ -43,6 +43,18 @@ Chrome
 -------------------------------------------------------------------------------
 Preferences
 -------------------------------------------------------------------------------
+    - frame
+        - id
+        - height
+         
+    - popup
+        - id
+        - top
+        - left
+        - width
+        - height
+    
+
     - console
         - consoleDefaultNamespace
         - consoleAlternateNamespace

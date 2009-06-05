@@ -6,7 +6,9 @@ FBL.ns(function() { with (FBL) {
 
 var ChromeDefaultOptions = 
 {
-    type: "frame"
+    type: "frame",
+    id: "FirebugChrome",
+    height: 250
 };
 
 //************************************************************************************************
@@ -75,8 +77,8 @@ FBL.FirebugChrome = function(context, options)
         var doc = isChromeFrame ? doc : doc;
         // create getChromeTemplate Function?
         doc.write('<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/DTD/strict.dtd">');
-        doc.write('<head><style>'+ FBL.UI.CSS + '</style>');
-        doc.write('</head><body>'+ FBL.UI.HTML) + '</body>';        
+        doc.write('<head><style>'+ FirebugChrome.injected.CSS + '</style>');
+        doc.write('</head><body>'+ FirebugChrome.injected.HTML) + '</body>';        
         //doc.write( getChromeTemplate() );
         doc.close();
     }
