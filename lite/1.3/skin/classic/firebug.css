@@ -141,6 +141,7 @@ html, body {
 
 .fbStatusBar span a:hover {
     color: blue;
+    cursor: pointer;    
 }
 
 
