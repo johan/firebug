@@ -41,7 +41,7 @@ html, body {
     z-index: 5;
     width: 100%;
     top: 0;
-    background: url(sprite.png) #eee 0 0;
+    background: url(sprite.png) #f1f2ee 0 0;
     height: 27px;
     font-size: 11px;
 }
@@ -51,7 +51,7 @@ html, body {
     position: absolute;
     z-index: 8;
     width: 100%;
-    background: url(sprite.png) #d9d9d9 0 -27px;
+    background: url(sprite.png) #dbd9c9 0 -27px;
     height: 22px;
 }
 
@@ -160,13 +160,13 @@ html, body {
     z-index: 8;
     left: 0;
     white-space: nowrap;
-    background: url(sprite.png) #d9d9d9 0 -27px;
+    background: url(sprite.png) #dbd9c9 0 -27px;
     position: absolute;
     left: 4px;
 }
 
 #fbPanelBar2Box {
-    background: url(sprite.png) #d9d9d9 0 -27px;
+    background: url(sprite.png) #dbd9c9 0 -27px;
     position: absolute;
     height: 22px;
     width: 300px; /* fixed width to avoid tabs breaking line */
@@ -354,7 +354,7 @@ div.fbFitHeight {
 }
 
 .selectedTab {
-    background: url(sprite.png) #e5e5e5 0 -50px !important;
+    background: url(sprite.png) #f1f2ee 0 -50px !important;
     color: #000;
 }
 
