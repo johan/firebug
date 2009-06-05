@@ -14,7 +14,7 @@ var ChromeDefaultOptions =
 //************************************************************************************************
 // 
     
-FBL.FirebugChrome = function(context, options)
+FBL.FirebugChrome = function(context, options, onChromeLoad)
 {
     options = options || {};
     options = FBL.extend(ChromeDefaultOptions, options);
@@ -83,25 +83,24 @@ FBL.FirebugChrome = function(context, options)
         doc.close();
     }
     
+    var win;
     var chrome = Firebug.chrome = this;
     var waitForChrome = function()
     {
-        //
-        if ( isChromeFrame && node.contentWindow && 
-             node.contentWindow.document.getElementById("fbCommandLine") )        
+              
+        if ( // Frame loaded... OR
+             isChromeFrame && (win=node.contentWindow) && 
+             node.contentWindow.document.getElementById("fbCommandLine") ||
+             
+             // Popup loaded
+             !isChromeFrame && (win=node.window) && node.document && 
+             node.document.getElementById("fbCommandLine") )        
         {
-            chrome.window = node.contentWindow.window;
-            chrome.document = node.contentWindow.document;
+            chrome.window = win.window;
+            chrome.document = win.document;
             
-            onChromeLoad(chrome);
-        }
-        else if ( !isChromeFrame && node.document && 
-                  node.document.getElementById("fbCommandLine") )        
-        {
-            chrome.document = node.document;
-            chrome.window = node.window;
-            
-            onChromeLoad(chrome);
+            if (onChromeLoad)
+                onChromeLoad(chrome);
         }
         else
             setTimeout(waitForChrome, 20);            
@@ -109,37 +108,6 @@ FBL.FirebugChrome = function(context, options)
     
     waitForChrome();    
 }
-
-
-//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-// Chrome loading
-
-var onChromeLoad = function onChromeLoad(chrome)
-{
-    FBL.application.chrome = chrome;
-    
-    if (FBL.application.isPersistentMode)
-    {
-        chrome.window.FirebugApplication = FBL.application;
-    
-        if (FBL.application.isDevelopmentMode)
-        {
-            FBDev.loadChromeApplication(chrome);
-        }
-        else
-        {
-            var doc = chrome.document;
-            var script = doc.createElement("script");
-            script.src = application.location.app;
-            doc.getElementsByTagName("head")[0].appendChild(script);
-        }
-    }
-    else
-        // initialize the chrome application
-        setTimeout(function(){
-            FBL.Firebug.initialize();
-        },100);
-};
 
 
 // ************************************************************************************************
