@@ -363,6 +363,47 @@ this.removeEvent = function(object, name, handler)
         object.removeEventListener(name, handler, false);
 };
 
+this.addGlobalEvent = function(name, handler)
+{
+    var doc = FBL.Firebug.browser.document;
+    var frames = FBL.Firebug.browser.window.frames;
+    
+    FBL.addEvent(doc, name, handler);
+  
+    for (var i = 0, frame; frame = frames[i]; i++)
+    {
+        try
+        {
+            FBL.addEvent(frame.document, name, handler);
+        }
+        catch(E)
+        {
+            // Avoid acess denied
+        }
+    }
+};
+
+this.removeGlobalEvent = function(name, handler)
+{
+    var doc = FBL.Firebug.browser.document;
+    var frames = FBL.Firebug.browser.window.frames;
+    
+    FBL.removeEvent(doc, name, handler);
+  
+    for (var i = 0, frame; frame = frames[i]; i++)
+    {
+        try
+        {
+            FBL.removeEvent(frame.document, name, handler);
+        }
+        catch(E)
+        {
+            // Avoid acess denied
+        }
+    }
+};
+
+
 this.cancelEvent = function(e, preventDefault)
 {
     if (!e) return;

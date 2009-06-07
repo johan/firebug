@@ -103,7 +103,7 @@ Firebug.Controller = {
     initialize: function(node)
     {
         this._controllers = [];
-        this.node = node;
+        this.node = this.node || node;
     },
     
     shutdown: function()

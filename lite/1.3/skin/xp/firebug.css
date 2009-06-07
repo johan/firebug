@@ -11,14 +11,61 @@ html, body {
     margin: 0;
     padding: 0;
     overflow: hidden;
-    background: #fff;
-    font-family: Lucida Grande, Tahoma, sans-serif;
-    font-size: 11px;
 }
 
+body {
+    font-family: Lucida Grande, Tahoma, sans-serif;
+    font-size: 11px;
+    background: #fff;    
+}
 .clear {
     clear: both;
 }
+
+/*-----------------------------------------------------------------------------
+ Mini Chrome
+-----------------------------------------------------------------------------*/
+#fbMiniChrome {
+    display: none;
+    position: absolute;
+    right: 0;
+    height: 27px;
+    width: 99px;
+    background: url(sprite.png) #f1f2ee 0 0;
+}
+
+#fbMiniContent {
+    position: absolute;
+    right: 0;
+    top: 1px;
+    height: 25px;
+    width: 99px;
+    _width: 98px;
+    zbackground: url(sprite.png) #f1f2ee 0 -1px;
+    border-left: 1px solid #aca899;
+}
+
+#fbMiniErrors {
+    position: absolute;
+    top: 6px;
+    right: 30px;
+    padding-left: 20px;
+    height: 14px;
+    background: url(errorIcon.png) no-repeat;
+    color: #f00;
+    font-weight: bold;    
+}
+
+#fbMiniIcon {
+    position: absolute;
+    top: 4px;
+    right: 5px;
+    height: 20px;
+    width: 20px;
+    float: right;    
+    background: url(sprite.png) 0 -135px;
+}
+
 
 /*-----------------------------------------------------------------------------
  Master Layout
