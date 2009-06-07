@@ -1,7 +1,7 @@
 FBL.ns(function() { with (FBL) {
 // ************************************************************************************************
 
-//************************************************************************************************
+// ************************************************************************************************
 // 
 
 var ChromeDefaultOptions = 
@@ -11,7 +11,7 @@ var ChromeDefaultOptions =
     height: 250
 };
 
-//************************************************************************************************
+// ************************************************************************************************
 // 
 
 FBL.createChrome = function(context, options, onChromeLoad)
@@ -107,7 +107,7 @@ FBL.createChrome = function(context, options, onChromeLoad)
     waitForChrome();    
 }
 
-//************************************************************************************************
+// ************************************************************************************************
 // FirebugChrome Class
     
 FBL.FirebugChrome = function(chrome)
@@ -131,7 +131,7 @@ var ChromeBase = extend(Firebug.Controller, {
     
     initialize: function()
     {
-        //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+        // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
         // create the interface elements cache
         fbTop = $("fbTop");
         fbContent = $("fbContent");
@@ -160,8 +160,12 @@ var ChromeBase = extend(Firebug.Controller, {
       
         fbCommandLine = $("fbCommandLine");
         
-        //topHeight = fbTop.offsetHeight;
-        //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+        // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+        // static values cache
+        topHeight = fbTop.offsetHeight;
+        toolbarHeight = null;
+        
+        // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
         
         // create a new instance of the CommandLine class
         commandLine = new Firebug.CommandLine(fbCommandLine);
@@ -178,7 +182,7 @@ var ChromeBase = extend(Firebug.Controller, {
     
     shutdown: function()
     {
-        //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+        // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
         // Remove the interface elements cache
         fbTop = null;
         fbContent = null;
@@ -208,7 +212,7 @@ var ChromeBase = extend(Firebug.Controller, {
         fbCommandLine = null;
         
         //topHeight = null;
-        //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+        // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
         // destroy the instance of the CommandLine class
         commandLine.destroy();
@@ -220,26 +224,24 @@ var ChromeBase = extend(Firebug.Controller, {
     
     draw: function()
     {
-        //try{
-        
-        // !!!!
+        // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+        // TODO: Revise
         var commandLineVisible = true;
         var rightPanelVisible = false;
         var topHeight = fbTop.offsetHeight;
-        /*
-        var frame = Firebug.chrome.type == "frame" ?
-                    Firebug.chrome.element :
-                    Firebug.chrome.document.body;
-        /**/
+        // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+        
         var size = Firebug.chrome.getWindowSize();
+        
+        // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+        // Height related drawings
         var height = size.height;
         var cmdHeight = commandLineVisible ? fbCommandLine.offsetHeight : 0;
         var fixedHeight = topHeight + cmdHeight;
         var y = Math.max(height, topHeight);
         
-        fbVSplitterStyle.height = y - 27 - cmdHeight + "px";
-        //frame.style.height = y + "px";
-        fbContentStyle.height = Math.max(y - fixedHeight, 0)+ "px";
+        fbVSplitterStyle.height = y - 27 /*fbToolbar height*/ - cmdHeight + "px";
+        fbPanel1Style.height = Math.max(y - fixedHeight, 0)+ "px";
 
         // Fix Firefox problem with table rows with 100% height (fit height)
         if (isFirefox)
@@ -247,7 +249,9 @@ var ChromeBase = extend(Firebug.Controller, {
             fbContentStyle.maxHeight = Math.max(y - fixedHeight, 0)+ "px";
         }
   
-        var width = size.width;
+        // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+        // Width related drawings
+        var width = size.width - 2 /*window borders*/;
         var x = rightPanelVisible ? sidePanelWidth : 0;
         
         fbPanelBox1Style.width = Math.max(width - x, 0) + "px";
@@ -259,23 +263,11 @@ var ChromeBase = extend(Firebug.Controller, {
             fbPanelBar2BoxStyle.width = Math.max(x -1, 0) + "px";
             fbVSplitterStyle.right = Math.max(x - 6, 0) + "px";
         }
-        
-        // Avoid horizontal scrollbar problem in IE
-        if (isIE)
-        {
-            /*
-            var isScrolled = tabL.offsetHeight > fbPanel1.offsetHeight;
-            var scrollFix = isScrolled ? 18 : 0;
-            tabLStyle.width = Math.max(width -2 - scrollFix - x, 0) + "px";
-            /**/
-        }
-        
-        //}catch(E){}
     }
     
 });
 
-//************************************************************************************************
+// ************************************************************************************************
 // ChromeFrameBase
 
 var ChromeContext = extend(ChromeBase, Context.prototype); 
@@ -304,7 +296,7 @@ var ChromeFrameBase = extend(ChromeContext, {
 });
 
 
-//************************************************************************************************
+// ************************************************************************************************
 // ChromePopupBase
 
 var ChromePopupBase = extend(ChromeContext, {
@@ -313,27 +305,32 @@ var ChromePopupBase = extend(ChromeContext, {
     {
         ChromeBase.initialize.call(this)
         Firebug.Controller.initialize.call(this, this.node);
+        
+        this.addController(
+                [Firebug.browser.window, "resize", this.draw],
+                [Firebug.browser.window, "unload", this.destroy]
+            );
     },
     
     shutdown: function()
     {
-        
+        Firebug.Controller.shutdown.apply(this);
     }
 
 });
 
 
 
-//************************************************************************************************
+// ************************************************************************************************
 // Internals
 
 
-//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 //
 var commandLine = null;
 
 
-//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 // Interface Elements Cache
 
 var fbTop = null;
@@ -367,7 +364,7 @@ var fbCommandLine = null;
 
 
 
-//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 //
 
 

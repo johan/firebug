@@ -64,24 +64,26 @@ var waitForInit = function waitForInit()
         setTimeout(waitForInit, 50);
 };
 
-//************************************************************************************************
+// ************************************************************************************************
 // Application
 
 this.application = {
-    //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
     // Application preferences
     isBookmarletMode: false, //TODO!!
-    isPersistentMode: true, //TODO!!
+    isPersistentMode: false, //TODO!!
     skin: "xp",
-    //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
     // Application States
     isDevelopmentMode: false,
     isChromeContext: false, // TODO: change to isChromeContext
-    //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
     // Application References
     global: null,
     chrome: null  
 };
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 var initializeApplication = function initializeApplication()
 {
@@ -107,13 +109,6 @@ var createApplication = function createApplication()
     var options = FBL.extend({}, WindowDefaultOptions);
     
     FBL.createChrome(FBL.application.global, options, onChromeLoad);
-    
-    /*
-    var options = FBL.extend({}, WindowDefaultOptions);
-    var createChrome = (options.type == "popup") ? createChromePopup : createChromeFrame;
-    
-    createChrome(FBL.application.global, options);
-    /**/
 };
 
 var destroyApplication = function destroyApplication()
@@ -124,7 +119,7 @@ var destroyApplication = function destroyApplication()
     }, 100);
 };
 
-//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 // Chrome loading
 
 var onChromeLoad = function onChromeLoad(chrome)
@@ -155,12 +150,12 @@ var onChromeLoad = function onChromeLoad(chrome)
 };
 
 
-//************************************************************************************************
+// ************************************************************************************************
 // Application Chromes
 
 var WindowDefaultOptions = 
 {
-    type: "popup"
+    type: "frame"
 };
 
 var FrameDefaultOptions = 
@@ -175,7 +170,7 @@ var PopupDefaultOptions =
     height: 250
 };
 
-//************************************************************************************************
+// ************************************************************************************************
 // Library location
 
 this.application.location = {
@@ -185,7 +180,7 @@ this.application.location = {
     app: null
 };
 
-//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 var findLocation =  function findLocation() 
 {
@@ -328,7 +323,7 @@ this.emptyFn = function(){};
 
 
 
-//************************************************************************************************
+// ************************************************************************************************
 // DOM
 
 this.$ = function(id, doc)
@@ -411,7 +406,7 @@ this.dispatch = function(listeners, name, args)
     }
 };
 
-//************************************************************************************************
+// ************************************************************************************************
 // class Names
 
 this.hasClass = function(object, name) {
@@ -437,7 +432,7 @@ this.toggleClass = function(object, name) {
 }
 
 
-//************************************************************************************************
+// ************************************************************************************************
 // Opera Tab Fix
 
 function onOperaTabBlur(e)

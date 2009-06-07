@@ -46,7 +46,7 @@ html, body {
     font-size: 11px;
 }
 
-#fbPanelBars {
+#fbPanelBarBox {
     top: 28px;
     position: absolute;
     z-index: 8;
@@ -152,7 +152,7 @@ html, body {
     z-index: 11;
 }
 
-/* fbPanelBars
+/* fbPanelBarBox
 -----------------------------------------------------------------------------*/
 
 #fbPanelBar1 {
@@ -311,7 +311,7 @@ div.fbFitHeight {
     background: url(sprite.png) -48px -119px;
 }
 
-/* fbPanelBars tabs 
+/* fbPanelBarBox tabs 
 -----------------------------------------------------------------------------*/
 .tab {
     text-decoration: none;

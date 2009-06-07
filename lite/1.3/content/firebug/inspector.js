@@ -1,7 +1,7 @@
 FBL.ns(function() { with (FBL) {
 // ************************************************************************************************
 
-//************************************************************************************************
+// ************************************************************************************************
 // Inspector Module
 
 Firebug.Inspector =
@@ -21,7 +21,7 @@ Firebug.Inspector =
         fbBtnInspect = $U("fbBtnInspect");
     },    
   
-    //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
     // Inspect functions
     
     startInspecting: function()
@@ -99,7 +99,7 @@ Firebug.Inspector =
         }
     },
     
-    //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
     // Inspector Outline
     
     drawOutline: function(el)
@@ -153,7 +153,7 @@ Firebug.Inspector =
         outlineVisible = true;
     },
   
-    //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
     // Box Model
     
     drawBoxModel: function(el)
@@ -198,7 +198,7 @@ Firebug.Inspector =
         boxModelVisible = true;
     },
      
-    //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
     // Measurement Funtions
     
     getMeasurement: function(el, name)
@@ -414,7 +414,7 @@ Firebug.Inspector =
     },
     
     
-    //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
     // Unit Funtions
   
     pointsToPixels: function(name, value)
@@ -465,7 +465,7 @@ Firebug.Inspector =
         return value;
     },
     
-    //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
     
     getCSS: isIE ? function(el, name)
     {
@@ -479,16 +479,16 @@ Firebug.Inspector =
 
 };
 
-//************************************************************************************************
+// ************************************************************************************************
 // Inspector Internals
 
 
-//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 // Shared variables
 
 
 
-//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 // Internal variables
 
 var offlineFragment = null;
@@ -498,7 +498,7 @@ var boxModelVisible = false;
 var pixelsPerInch, boxModel, boxModelStyle, boxMargin, boxMarginStyle, 
 boxPadding, boxPaddingStyle, boxContent, boxContentStyle;
 
-//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 var resetStyle = "margin:0; padding:0; border:0; position:absolute; overflow:hidden; display:block;";
 var offscreenStyle = resetStyle + "top:-1234px; left:-1234px;";
@@ -518,14 +518,14 @@ var outlineStyle = {
     fbVerticalLine: "background: #3875D7; width: 2px;"
 }
 
-//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 var lastInspecting = 0;
 var fbInspectFrame = null;
 var fbBtnInspect = null;
 
 
-//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 var outlineVisible = false;
 var outlineElements = {};
@@ -537,7 +537,7 @@ var outline = {
 };
 
 
-//************************************************************************************************
+// ************************************************************************************************
 // Measurement Functions
 
 var calculatePixelsPerInch = function calculatePixelsPerInch()
@@ -555,7 +555,7 @@ var calculatePixelsPerInch = function calculatePixelsPerInch()
 };
 
 
-//************************************************************************************************
+// ************************************************************************************************
 // Section
 
 var createInspectorFrame = function createInspectorFrame()
@@ -612,7 +612,7 @@ var createBoxModelInspector = function createBoxModelInspector()
 
 
 
-//************************************************************************************************
+// ************************************************************************************************
 // Section
 
 

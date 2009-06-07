@@ -8,7 +8,7 @@ window.FBDev =
 {
     modules:
     [ 
-        //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+        // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
         // Application Core
         "firebug/lib.js",
         "firebug/firebug.js",
@@ -18,15 +18,15 @@ window.FBDev =
         "firebug/context.js",
         "firebug/chrome.js",
         "firebug/chrome.injected.js",
-        //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+        // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
         // Application Classes
         "firebug/selector.js",
         "firebug/inspector.js",
         "firebug/commandLine.js",
-        //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+        // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
         // Application Panels
         "firebug/html.js",
-        //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+        // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
         // Bootstrap
         "firebug/boot.js"
         /**/
