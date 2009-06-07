@@ -133,11 +133,14 @@ var ChromeBase = extend(Firebug.Controller, {
     {
         // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
         // create the interface elements cache
+        
         fbTop = $("fbTop");
         fbContent = $("fbContent");
         fbContentStyle = fbContent.style;
         fbBottom = $("fbBottom");
         fbBtnInspect = $("fbBtnInspect");
+        
+        fbToolbar = $("fbToolbar");
       
         fbPanelBox1 = $("fbPanelBox1");
         fbPanelBox1Style = fbPanelBox1.style;
@@ -162,8 +165,9 @@ var ChromeBase = extend(Firebug.Controller, {
         
         // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
         // static values cache
+        
         topHeight = fbTop.offsetHeight;
-        toolbarHeight = null;
+        topPartialHeight = fbToolbar.offsetHeight;
         
         // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
         
@@ -184,12 +188,15 @@ var ChromeBase = extend(Firebug.Controller, {
     {
         // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
         // Remove the interface elements cache
+        
         fbTop = null;
         fbContent = null;
         fbContentStyle = null;
         fbBottom = null;
         fbBtnInspect = null;
-  
+        
+        fbToolbar = null;
+
         fbPanelBox1 = null;
         fbPanelBox1Style = null;
         fbPanelBox2 = null;
@@ -211,7 +218,12 @@ var ChromeBase = extend(Firebug.Controller, {
   
         fbCommandLine = null;
         
-        //topHeight = null;
+        // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+        // static values cache
+        
+        topHeight = null;
+        topPartialHeight = null;
+        
         // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
         // destroy the instance of the CommandLine class
@@ -228,40 +240,40 @@ var ChromeBase = extend(Firebug.Controller, {
         // TODO: Revise
         var commandLineVisible = true;
         var rightPanelVisible = false;
-        var topHeight = fbTop.offsetHeight;
+        var sidePanelWidth = 0;
         // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
         
         var size = Firebug.chrome.getWindowSize();
         
         // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
         // Height related drawings
-        var height = size.height;
-        var cmdHeight = commandLineVisible ? fbCommandLine.offsetHeight : 0;
-        var fixedHeight = topHeight + cmdHeight;
-        var y = Math.max(height, topHeight);
+        var windowHeight = size.height;
+        var commandLineHeight = commandLineVisible ? fbCommandLine.offsetHeight : 0;
+        var fixedHeight = topHeight + commandLineHeight;
+        var height = Math.max(windowHeight, fixedHeight);
         
-        fbVSplitterStyle.height = y - 27 /*fbToolbar height*/ - cmdHeight + "px";
-        fbPanel1Style.height = Math.max(y - fixedHeight, 0)+ "px";
+        fbVSplitterStyle.height = height - topPartialHeight - commandLineHeight + "px";
+        fbPanel1Style.height = Math.max(height - fixedHeight, 0)+ "px";
 
         // Fix Firefox problem with table rows with 100% height (fit height)
         if (isFirefox)
         {
-            fbContentStyle.maxHeight = Math.max(y - fixedHeight, 0)+ "px";
+            fbContentStyle.maxHeight = Math.max(height - fixedHeight, 0)+ "px";
         }
   
         // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
         // Width related drawings
-        var width = size.width - 2 /*window borders*/;
-        var x = rightPanelVisible ? sidePanelWidth : 0;
+        var windowWidth = size.width - 2 /*window borders*/;
+        var sideWidth = rightPanelVisible ? sidePanelWidth : 0;
         
-        fbPanelBox1Style.width = Math.max(width - x, 0) + "px";
-        fbPanel1Style.width = Math.max(width - x, 0) + "px";
+        fbPanelBox1Style.width = Math.max(windowWidth - sideWidth, 0) + "px";
+        fbPanel1Style.width = Math.max(windowWidth - sideWidth, 0) + "px";
         
         if (rightPanelVisible)
         {
-            fbPanelBox2Style.width = x + "px";
-            fbPanelBar2BoxStyle.width = Math.max(x -1, 0) + "px";
-            fbVSplitterStyle.right = Math.max(x - 6, 0) + "px";
+            fbPanelBox2Style.width = sideWidth + "px";
+            fbPanelBar2BoxStyle.width = Math.max(sideWidth - 1, 0) + "px";
+            fbVSplitterStyle.right = Math.max(sideWidth - 6, 0) + "px";
         }
     }
     
@@ -339,6 +351,8 @@ var fbContentStyle = null;
 var fbBottom = null;
 var fbBtnInspect = null;
 
+var fbToolbar = null;
+
 var fbPanelBox1 = null;
 var fbPanelBox1Style = null;
 var fbPanelBox2 = null;
@@ -360,8 +374,8 @@ var fbHTML = null;
 
 var fbCommandLine = null;
 
-//var topHeight = null;
-
+var topHeight = null;
+var topPartialHeight = null;
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *

@@ -679,17 +679,6 @@ div.objectBox-element {
     display: none !important;
 }
 
-.FirebugPopup #mainButtons {
-    display: none !important;
-}
-
 .FirebugPopup #fbHSplitter {
     display: none !important;
-}
-
-.FirebugPopup #fbCommandBox {
-    height: 18px !important;
-    /*
-    _height: 17px !important;
-    /**/
 }
