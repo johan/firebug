@@ -9,7 +9,7 @@ FBL.Context = function(win){
     this.window = win.window;
     this.document = win.document;
     
-    // Some windows, like iframe, doesn't have a eval() method in IE
+    // Some windows in IE, like iframe, doesn't have the eval() method
     if (isIE && !this.window.eval)
     {
         // But after executing the following line the method magically appears!
@@ -22,9 +22,9 @@ FBL.Context = function(win){
     // Create a new "black-box" eval() method that runs in the global namespace
     // of the context window, without exposing the local variables declared
     // by the function that calls it
-    this.eval = new this.window.Function(
-        "try{ return window.eval.apply(window,arguments) }catch(E){ E."+evalError+"=true; return E }"
-    );
+    this.eval = this.window.eval("new Function('" +
+            "try{ return window.eval.apply(window,arguments) }catch(E){ E."+evalError+"=true; return E }" +
+        "')");
 };
 
 FBL.Context.prototype =

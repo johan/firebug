@@ -95,7 +95,6 @@ var initializeApplication = function initializeApplication()
     else
     {
         // TODO: get preferences here...
-        
         FBL.application.global = window;
         FBL.application.destroy = destroyApplication;
     }
@@ -126,7 +125,7 @@ var destroyApplication = function destroyApplication()
 };
 
 //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-//Chrome loading
+// Chrome loading
 
 var onChromeLoad = function onChromeLoad(chrome)
 {
