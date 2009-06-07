@@ -71,7 +71,7 @@ this.application = {
     //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
     // Application preferences
     isBookmarletMode: false, //TODO!!
-    isPersistentMode: false, //TODO!!
+    isPersistentMode: true, //TODO!!
     skin: "xp",
     //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
     // Application States
@@ -107,7 +107,7 @@ var createApplication = function createApplication()
     
     var options = FBL.extend({}, WindowDefaultOptions);
     
-    new FBL.FirebugChrome(FBL.application.global, options, onChromeLoad);
+    FBL.createChrome(FBL.application.global, options, onChromeLoad);
     
     /*
     var options = FBL.extend({}, WindowDefaultOptions);
@@ -130,29 +130,29 @@ var destroyApplication = function destroyApplication()
 
 var onChromeLoad = function onChromeLoad(chrome)
 {
- FBL.application.chrome = chrome;
- 
- if (FBL.application.isPersistentMode)
- {
-     chrome.window.FirebugApplication = FBL.application;
- 
-     if (FBL.application.isDevelopmentMode)
-     {
-         FBDev.loadChromeApplication(chrome);
-     }
-     else
-     {
-         var doc = chrome.document;
-         var script = doc.createElement("script");
-         script.src = application.location.app;
-         doc.getElementsByTagName("head")[0].appendChild(script);
-     }
- }
- else
-     // initialize the chrome application
-     setTimeout(function(){
-         FBL.Firebug.initialize();
-     },100);
+    FBL.application.chrome = chrome;
+    
+    if (FBL.application.isPersistentMode)
+    {
+        chrome.window.FirebugApplication = FBL.application;
+    
+        if (FBL.application.isDevelopmentMode)
+        {
+            FBDev.loadChromeApplication(chrome);
+        }
+        else
+        {
+            var doc = chrome.document;
+            var script = doc.createElement("script");
+            script.src = application.location.app;
+            doc.getElementsByTagName("head")[0].appendChild(script);
+        }
+    }
+    else
+        // initialize the chrome application
+        setTimeout(function(){
+            FBL.Firebug.initialize();
+        },100);
 };
 
 
@@ -161,7 +161,7 @@ var onChromeLoad = function onChromeLoad(chrome)
 
 var WindowDefaultOptions = 
 {
-    type: "frame"
+    type: "popup"
 };
 
 var FrameDefaultOptions = 

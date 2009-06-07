@@ -13,25 +13,24 @@ var ChromeDefaultOptions =
 
 //************************************************************************************************
 // 
-    
-FBL.FirebugChrome = function(context, options, onChromeLoad)
+
+FBL.createChrome = function(context, options, onChromeLoad)
 {
     options = options || {};
     options = FBL.extend(ChromeDefaultOptions, options);
     
-    this.type = options.type;
+    var chrome = {};
     
-    var isChromeFrame = this.type == "frame";
+    chrome.type = options.type;
+    
+    var isChromeFrame = chrome.type == "frame";
     var isBookmarletMode = application.isBookmarletMode;
     var url = isBookmarletMode ? "" : application.location.skin;
-    
-    var ChromeBase = isChromeFrame ? ChromeFrameBase : ChromePopupBase; 
-    append(this, ChromeBase);
     
     if (isChromeFrame)
     {
         // Create the Chrome Frame
-        var node = this.node = context.document.createElement("iframe");
+        var node = chrome.node = context.document.createElement("iframe");
         
         node.setAttribute("id", options.id);
         node.setAttribute("frameBorder", "0");
@@ -84,7 +83,6 @@ FBL.FirebugChrome = function(context, options, onChromeLoad)
     }
     
     var win;
-    var chrome = Firebug.chrome = this;
     var waitForChrome = function()
     {
               
@@ -109,9 +107,20 @@ FBL.FirebugChrome = function(context, options, onChromeLoad)
     waitForChrome();    
 }
 
+//************************************************************************************************
+// FirebugChrome Class
+    
+FBL.FirebugChrome = function(chrome)
+{
+    var Base = chrome.type == "frame" ? ChromeFrameBase : ChromePopupBase; 
+    append(this, chrome);
+    append(this, Base);
+    
+    return this;
+}
 
 // ************************************************************************************************
-// Chrome API
+// ChromeBase
     
 var ChromeBase = extend(Firebug.Controller, {
     
@@ -160,14 +169,6 @@ var ChromeBase = extend(Firebug.Controller, {
         
         // initialize all panels here...
         
-        
-        // initialize the chrome instance
-        /*
-        var chrome = application.chrome;
-        var ChromeClass = chrome.type == "frame" ? ChromeFrame : ChromePopup;
-        Firebug.chrome = new ChromeClass(chrome);
-        Firebug.chrome.initialize();
-        /**/
         
         flush();
         
@@ -275,7 +276,7 @@ var ChromeBase = extend(Firebug.Controller, {
 });
 
 //************************************************************************************************
-// Chrome Frame Base Class
+// ChromeFrameBase
 
 var ChromeContext = extend(ChromeBase, Context.prototype); 
 
@@ -304,12 +305,14 @@ var ChromeFrameBase = extend(ChromeContext, {
 
 
 //************************************************************************************************
-// Chrome Popup Class
+// ChromePopupBase
 
 var ChromePopupBase = extend(ChromeContext, {
     
     initialize: function()
     {
+        ChromeBase.initialize.call(this)
+        Firebug.Controller.initialize.call(this, this.node);
     },
     
     shutdown: function()
@@ -322,7 +325,7 @@ var ChromePopupBase = extend(ChromeContext, {
 
 
 //************************************************************************************************
-//
+// Internals
 
 
 //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *

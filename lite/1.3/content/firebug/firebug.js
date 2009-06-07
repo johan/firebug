@@ -33,12 +33,13 @@ FBL.Firebug =
     
     initialize: function()
     {
-        FBL.Firebug.browser = new Context(application.global);
-        FBL.Firebug.context = FBL.Firebug.browser;
+        Firebug.browser = new Context(application.global);
+        Firebug.context = Firebug.browser;
         
-        this.cacheDocument();
+        Firebug.chrome = new FirebugChrome(application.chrome);
+        Firebug.chrome.initialize();
         
-        this.chrome.initialize();
+        Firebug.cacheDocument();
         
         dispatch(modules, "initialize", []);
     },
