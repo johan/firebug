@@ -17,7 +17,7 @@ var ChromeDefaultOptions =
 FBL.createChrome = function(context, options, onChromeLoad)
 {
     options = options || {};
-    options = FBL.extend(ChromeDefaultOptions, options);
+    options = extend(ChromeDefaultOptions, options);
     
     var chrome = {};
     
@@ -38,15 +38,15 @@ FBL.createChrome = function(context, options, onChromeLoad)
         node.style.border = "0";
         node.style.visibility = "hidden";
         node.style.zIndex = "2147483647"; // MAX z-index = 2147483647
-        node.style.position = FBL.isIE6 ? "absolute" : "fixed";
+        node.style.position = isIE6 ? "absolute" : "fixed";
         node.style.width = "100%"; // "102%"; IE auto margin bug
         node.style.left = "0";
-        node.style.bottom = FBL.isIE6 ? "-1px" : "0";
+        node.style.bottom = isIE6 ? "-1px" : "0";
         node.style.height = options.height + "px";
         
-        var isBookmarletMode = FBL.application.isBookmarletMode;
+        var isBookmarletMode = application.isBookmarletMode;
         if (!isBookmarletMode)
-            node.setAttribute("src", FBL.application.location.skin);
+            node.setAttribute("src", application.location.skin);
         
         context.document.body.appendChild(node);
     }
@@ -64,7 +64,7 @@ FBL.createChrome = function(context, options, onChromeLoad)
                 ",resizable"          
             ].join("");
         
-        var node = chrome.node = window.open(
+        var node = chrome.node = Firebug.browser.window.open(
             url, 
             "popup", 
             options
@@ -74,12 +74,9 @@ FBL.createChrome = function(context, options, onChromeLoad)
     
     if (isBookmarletMode)
     {
+        var tpl = getChromeTemplate();
         var doc = isChromeFrame ? node.contentWindow.document : node.document;
-        // create getChromeTemplate Function?
-        doc.write('<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/DTD/strict.dtd">');
-        doc.write('<head><style>'+ FirebugChrome.injected.CSS + '</style>');
-        doc.write('</head><body>'+ FirebugChrome.injected.HTML) + '</body>';        
-        //doc.write( getChromeTemplate() );
+        doc.write(tpl);
         doc.close();
     }
     
@@ -106,7 +103,24 @@ FBL.createChrome = function(context, options, onChromeLoad)
     }
     
     waitForChrome();    
-}
+};
+
+var getChromeTemplate = function()
+{
+    var tpl = FirebugChrome.injected; 
+    var r = [], i = -1;
+    
+    r[++i] = '<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/DTD/strict.dtd">';
+    r[++i] = '<head><style>';
+    r[++i] = tpl.CSS;
+    r[++i] = (isIE6 && tpl.IE6CSS) ? tpl.IE6CSS : '';
+    r[++i] = '</style>';
+    r[++i] = '</head><body>';
+    r[++i] = tpl.HTML;
+    r[++i] = '</body>';
+    
+    return r.join("");
+};
 
 // ************************************************************************************************
 // FirebugChrome Class
@@ -118,7 +132,7 @@ FBL.FirebugChrome = function(chrome)
     append(this, Base);
     
     return this;
-}
+};
 
 // ************************************************************************************************
 // ChromeBase
@@ -321,22 +335,23 @@ var ChromeFrameBase = extend(ChromeContext, {
     
     hide: function()
     {
-        var main = $("fbChrome");
-        main.style.display = "none";
-
         var chrome = Firebug.chrome;
-        chrome.document.body.style.backgroundColor = "transparent";
-        
         var node = chrome.node;
         node.style.height = "27px";
         node.style.width = "100px";
         node.style.left = "";        
         node.style.right = 0;
+
+        if (isIE6)
+            chrome.fixPosition();
+        
+        var main = $("fbChrome");
+        main.style.display = "none";
+
+        chrome.document.body.style.backgroundColor = "transparent";
         
         var mini = $("fbMiniChrome");
         mini.style.display = "block";
-        
-        chrome.draw();
     },
     
     shutdown: function()
@@ -346,6 +361,9 @@ var ChromeFrameBase = extend(ChromeContext, {
     
     fixPosition: function()
     {
+        
+        // fix IE problem with offset when not in fullscreen mode
+        var offset = isIE ? this.document.body.clientTop || this.document.documentElement.clientTop: 0;
         
         var size = Firebug.Inspector.getWindowSize();
         var scroll = Firebug.Inspector.getWindowScrollPosition();

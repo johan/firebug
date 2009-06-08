@@ -4,6 +4,9 @@
 <meta http-equiv="content-type" content="text/html; charset=utf-8">
 <title></title>
 <link href="firebug.css" rel="stylesheet" type="text/css" />
+<!--[if lte IE 6]>
+<link rel="stylesheet" href="firebug.IE6.css" type="text/css" />
+<![endif]-->
 </head>
 <body>
 <table id="fbChrome" cellpadding="0" cellspacing="0" border="0">
@@ -14,8 +17,10 @@
       
         <!-- Main Buttons -->
         <div id="mainButtons">
-          <a id="detach" href="javascript:FB.detach()">&nbsp;</a>
           <a id="close" href="javascript:FB.close()">&nbsp;</a>
+          <a id="detach" href="javascript:FB.detach()">&nbsp;</a>
+          <input id="fbToolbarSearch"></input>        
+          <span id="fbToolbarErrors" class="fbErrors">2 errors</span>
         </div>
         
         <!-- Horizontal Splitter -->
@@ -52,6 +57,10 @@
             <!-- HTML Panel Status Bar -->
             <span id="fbHTMLStatusBar" class="fbStatusBar">
               <span><a href="#"><b>body</b></a></span><span>&lt;</span><span><a href="#">html</a></span>
+              <span>&lt;</span><span><a href="#">iframe</a></span><span>&lt;</span><span><a href="#">div</a></span>
+              <span>&lt;</span><span><a href="#">div.class</a></span><span>&lt;</span><span><a href="#">iframe</a></span>
+              <span>&lt;</span><span><a href="#">body</a></span><span>&lt;</span><span><a href="#">html</a></span>
+              <span>&lt;</span><span><a href="#">div</a></span><span>&lt;</span><span><a href="#">div</a></span>
             </span>
             
           </span>
@@ -131,7 +140,7 @@
 </table>
 <div id="fbMiniChrome">
   <div id="fbMiniContent">
-    <div id="fbMiniErrors">2 errors</div>
+    <div id="fbMiniErrors" class="fbErrors">2 errors</div>
     <div id="fbMiniIcon"></div>
   </div>
 </div>

@@ -1,4 +1,20 @@
 ################################################################################
+User Interface
+################################################################################
+
+General
+    - Where exactly the errors indicator should be placed in the UI?
+
+MiniChrome
+    - 
+
+Skins
+    - each skin has in his own folder a file called "firebug.json" (or similar)
+    - improve the build skin methods in FBDev
+    - loadJSON method
+    - loadSkin method
+
+################################################################################
 TODO's
 ################################################################################
 
