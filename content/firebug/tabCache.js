@@ -150,8 +150,9 @@ Firebug.TabCacheModel = extend(Firebug.Module,
     {
         try
         {
-            if (!this.shouldCacheRequest(request))
-                return;
+            // Due to #489317, the content type must be checked in onStartRequest
+            //if (!this.shouldCacheRequest(request))
+            //    return;
 
             request.QueryInterface(Ci.nsITraceableChannel);
 
@@ -164,6 +165,17 @@ Firebug.TabCacheModel = extend(Firebug.Module,
             // Set proxy for proper passing nsIRequest objects from XPCOM scope.
             newListener.QueryInterface(Ci.nsITraceableChannel);
             newListener.setNewListener(new ChannelListenerProxy(win));
+
+            // xxxHonza: this is a workaround for #489317. Just passing
+            // shouldCacheRequest method to the component so, onStartRequest
+            // can decide whether to cache or not.
+            newListener.wrappedJSObject.shouldCacheRequest = function(request)
+            {
+                try {
+                    return Firebug.TabCacheModel.shouldCacheRequest(request)
+                } catch (err) {}
+                return false;
+            }
 
             // xxxHonza: this is a workaround for the tracing-listener to get the
             // right context. Notice that if the window (parent browser) is closed
@@ -298,9 +310,14 @@ Firebug.TabCache.prototype = extend(Firebug.SourceCache.prototype,
             currLines = this.cache[url] = [];
 
         // Join the last line with the new first one so, the source code
-        // lines are properly formatted.
+        // lines are properly formatted...
         if (currLines.length)
-            currLines[currLines.length-1] += lines.shift();
+        {
+            // ... but only if the last line isn't already completed.
+            var lastLine = currLines[currLines.length-1];
+            if (lastLine && lastLine.search(/\r|\n/) == -1)
+                currLines[currLines.length-1] += lines.shift();
+        }
 
         // Append new lines (if any) into the array for specified url.
         if (lines.length)

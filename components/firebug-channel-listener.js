@@ -117,10 +117,24 @@ ChannelListener.prototype =
     {
         try
         {
+            request = request.QueryInterface(Ci.nsIChannel);
+
+            if (FBTrace.DBG_CACHE)
+                FBTrace.sysout("tabCache.ChannelListener.onStartRequest; " +
+                    request.contentType + ", " + safeGetName(request));
+
             // Pass to the proxy only if the associated context exists (the window is not unloaded)
             var context = this.getContext(this.window);
             if (context)
-                this.proxyListener.onStartRequest(request, requestContext);
+            {
+                // Due to #489317, the check whether this response should be cached
+                // must be done here (the content type is not valid before calling 
+                // onStartRequest). Let's ignore the response if it should not be cached.
+                this.ignore = !this.shouldCacheRequest(request);
+
+                if (!this.ignore)
+                    this.proxyListener.onStartRequest(request, requestContext);
+            }
         }
         catch (err)
         {
@@ -139,7 +153,7 @@ ChannelListener.prototype =
         try
         {
             var context = this.getContext(this.window);
-            if (context)
+            if (context && !this.ignore)
                 this.proxyListener.onStopRequest(request, requestContext, statusCode);
         }
         catch (err)
