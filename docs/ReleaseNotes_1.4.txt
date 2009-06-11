@@ -77,6 +77,7 @@ Firebug 1.1 is Firebug 1.05 by Joe Hewitt with additions by John J. Barton and M
     * Issue 749: Hungarian Locale
     * Issue 716: Add "Inspect element" context menu element in Fx3 for button and select elements
     * Issue 834: Not displayed POST variables in NET tab
+    * Issue 872:  JS Errors in IFrame with 1.2.0b3.
     * Issue 895: Firebug toolbar button should behave the same way as clicking on status bar icon.
     * Issue 902: Allow adding new CSS rule
     * Issue 1021: Editing of DOM properties fail
@@ -180,3 +181,5 @@ Firebug 1.1 is Firebug 1.05 by Joe Hewitt with additions by John J. Barton and M
     * Issue 1801: refreshing in detached window refreshes wrong tab
     * Issue 1812: console.log(arguments)
     * Issue 1814: Frames still cause problems in a30, though fewer. (ref Issue 1793)
+    * Issue 1815: "New Watch" context menu item copies entire script from selection onwards
+    * Issue 1850: Empty stack panel
