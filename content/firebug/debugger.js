@@ -1589,9 +1589,12 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
         }
 
         this.onFunctionCall = bind(this.onFunctionCall, this);
-        fbs.registerClient(this);   // allow callbacks for jsd
         Firebug.ActivableModule.initialize.apply(this, arguments);
+    },
 
+    enable: function()
+    {
+        fbs.registerClient(this);   // allow callbacks for jsd
         if (this.isAlwaysEnabled())
             this.registerDebugger();
     },
