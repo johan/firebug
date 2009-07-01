@@ -1943,6 +1943,8 @@ Firebug.ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
                 this.scrollToLine(sourceLink.href, sourceLink.line, this.jumpHighlightFactory(sourceLink.line, this.context));
                 dispatch([Firebug.A11yModel], "onShowSourceLink", [this, sourceLink.line]);
             }
+            if (sourceLink == this.selection)  // then clear it so the next link will scroll and highlight.
+                delete this.selection;
         }
     },
 
