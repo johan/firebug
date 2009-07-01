@@ -93,7 +93,10 @@ top.FirebugChrome =
         }
 
         if (detachArgs.Firebug)
+        {
             Firebug = detachArgs.Firebug;
+            FirebugContext = detachArgs.FirebugContext;
+        }
         else
             Firebug.initialize();
 
@@ -138,10 +141,7 @@ top.FirebugChrome =
                 var detachArgs = window.arguments[0];
 
             if (detachArgs)
-            {
-                FirebugContext = detachArgs.context ? detachArgs.context : FirebugContext;
                 externalBrowser = detachArgs.browser;// else undefined
-            }
 
             this.applyTextSize(Firebug.textSize);
 
