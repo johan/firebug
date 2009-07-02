@@ -134,15 +134,15 @@
 }
 
 #fbCommandToggleLarge {
-    list-style-image: url(chrome://firebug/skin/win/min.png);
+    list-style-image: url(chrome://firebug/skin/win/down.png);
 }
 
 #fbCommandToggleLarge:hover {
-    list-style-image: url(chrome://firebug/skin/win/minHover.png);
+    list-style-image: url(chrome://firebug/skin/win/downHover.png);
 }
 
 #fbCommandToggleLarge:hover:active {
-    list-style-image: url(chrome://firebug/skin/win/minActive.png);
+    list-style-image: url(chrome://firebug/skin/win/downActive.png);
 }
 
 /************************************************************************************************/
@@ -332,4 +332,113 @@ panelTab[selected="true"] > .panelTab-right {
 .menuHeader {
     margin: 2px 6px;
     font-weight: bold;
+}
+
+/************************************************************************************************/
+
+#fbDebuggerButtons {
+    margin-right: 2px;
+}
+
+#fbContinueButton,
+#fbBreakOnNextButton,
+#fbStepOverButton,
+#fbStepIntoButton,
+#fbStepOutButton {
+    -moz-image-region: rect(auto,auto,auto,auto) !important;
+}
+
+/*
+fbContinueButton has three states:
+   breakable true: default.
+   breakable false: breakOnNext is armed.
+   breakable off: we are stopped in debugger. always goes to true
+   true -> false: onBreakingNext
+   true -> off: syncCommands with context.stopped true
+   false -> true: resume w/!context.stopped and !breakable
+   false -> off: syncCommands with context.stopped true
+   off -> true:  resume w/context.stopped
+   off -> false: not allowed
+*/
+#fbContinueButton[breakable="off"],
+#fbBreakOnNextButton[breakable="off"] {
+    list-style-image: url(chrome://firebug/skin/win/continue.png);
+    padding-right: 2px;
+}
+/*
+#fbContinueButton:hover:active,
+#fbBreakOnNextButton:hover:active {
+    list-style-image: url(chrome://firebug/skin/continueActive.png);
+}
+
+#fbContinueButton[disabled="true"],
+#fbBreakOnNextButton[disabled="true"] {   no longer used
+    list-style-image: url(chrome://firebug/skin/continueDisabled.png) !important;
+}
+ */
+
+#fbContinueButton[breakable="true"],
+#fbBreakOnNextButton[breakable="true"] {
+    list-style-image: url(chrome://firebug/skin/win/breakNext.png);
+    padding-right: 2px;
+}
+#fbContinueButton:hover:active[breakable="true"],
+#fbBreakOnNextButton:hover:active[breakable="true"] {
+    list-style-image: url(chrome://firebug/skin/win/breakNextActive.png);
+    padding-right: 2px;
+}
+#fbContinueButton:hover:active[breakable="false"],
+#fbBreakOnNextButton:hover:active[breakable="false"] {
+    list-style-image: url(chrome://firebug/skin/win/breakNextActive.png);
+    padding-right: 2px;
+}
+#fbContinueButton[breakable="false"],
+#fbBreakOnNextButton[breakable="false"] {
+    list-style-image: url(chrome://firebug/skin/win/breakNextArmed.png);
+    padding-right: 2px;
+}
+
+#fbStepOverButton {
+    list-style-image: url(chrome://firebug/skin/win/stepOver.png);
+    padding-right: 2px;
+}
+
+#fbStepOverButton:hover:active {
+    list-style-image: url(chrome://firebug/skin/win/stepOverActive.png);
+    padding-right: 2px;
+}
+
+#fbStepOverButton[disabled="true"] {
+    list-style-image: url(chrome://firebug/skin/win/stepOverDisabled.png) !important;
+    padding-right: 2px;
+}
+
+#fbStepIntoButton {
+    list-style-image: url(chrome://firebug/skin/win/stepInto.png);
+    padding-right: 2px;
+}
+
+#fbStepIntoButton:hover:active {
+    list-style-image: url(chrome://firebug/skin/win/stepIntoActive.png);
+    padding-right: 2px;
+}
+
+#fbStepIntoButton[disabled="true"] {
+    list-style-image: url(chrome://firebug/skin/win/stepIntoDisabled.png) !important;
+    padding-right: 2px;
+}
+
+#fbStepOutButton {
+    list-style-image: url(chrome://firebug/skin/win/stepOut.png);
+    padding-right: 2px;
+}
+
+#fbStepOutButton:hover:active {
+    list-style-image: url(chrome://firebug/skin/win/stepOutActive.png);
+    padding-right: 2px;
+}
+
+#fbStepOutButton[disabled="true"] {
+    list-style-image: url(chrome://firebug/skin/win/stepOutDisabled.png) !important;
+    padding-right: 2px;
 }
