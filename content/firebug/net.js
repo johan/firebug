@@ -2726,7 +2726,7 @@ function getFileCategory(file)
     {
         if (FBTrace.DBG_NET)
             FBTrace.sysout("net.getFileCategory; XHR for: " + file.href, file);
-        return "xhr";
+        return file.category = "xhr";
     }
 
     if (!file.mimeType)
