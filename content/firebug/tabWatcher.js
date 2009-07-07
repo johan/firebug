@@ -369,6 +369,7 @@ top.TabWatcher = extend(new Firebug.Listener(),
         var context = this.getContextByWindow(win);
         if (FBTrace.DBG_WINDOWS) FBTrace.sysout("-> tabWatcher.unwatchTopWindow for: "+win.location.href+", context: "+context+"\n");
         this.unwatchContext(win, context);
+
         return true; // we might later allow extensions to reject unwatch
     },
 
@@ -427,10 +428,7 @@ top.TabWatcher = extend(new Firebug.Listener(),
         if (!browser)
             return;
 
-        var detached = Firebug.isDetached();
-        var shouldDispatch = true;
-        if (!detached)  // if we are detached we don't want to unwatchTopWindow, just go dormant
-            shouldDispatch = this.unwatchTopWindow(browser.contentWindow);
+        var shouldDispatch = this.unwatchTopWindow(browser.contentWindow);
 
         if (shouldDispatch)
         {
@@ -463,7 +461,7 @@ top.TabWatcher = extend(new Firebug.Listener(),
                 browser.persistedState = {};
                 delete browser.showFirebug;
             }
-            dispatch(this.fbListeners, "destroyContext", [null, browser?browser.persistedState:null, browser]);
+            dispatch(this.fbListeners, "destroyContext", [null, (browser?browser.persistedState:null), browser]);
             return;
         }
 
@@ -491,6 +489,9 @@ top.TabWatcher = extend(new Firebug.Listener(),
 
         context.destroy(persistedState);
         remove(contexts, context);
+
+        if (!Firebug.tabBrowser.selectedBrowser.showFirebug)  // unwatchContext can be called on an unload event after another tab is selected
+            dispatch(this.fbListeners, "showContext", [browser, null]); // context is null if we don't want to debug this browser
     },
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *

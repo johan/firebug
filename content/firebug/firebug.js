@@ -980,11 +980,11 @@ top.Firebug =
             keys[i].setAttribute("disabled", !!shouldShow);
     },
 
-    closeFirebug: function(userCommand)
+    closeFirebug: function(userCommand)  // this is really deactivate
     {
         var browser = FirebugChrome.getCurrentBrowser();
 
-        if (Firebug.isDetached())
+        /*if (Firebug.isDetached())
         {
             // The current detached chrome object is Firebug.chrome.
             Firebug.chrome.close();  // should call unwatchBrowser
@@ -998,6 +998,7 @@ top.Firebug =
             this.showBar(false);
         }
         // else minimized nothing to do
+        */
 
         TabWatcher.unwatchBrowser(browser, userCommand);
         Firebug.resetTooltip();
@@ -1012,7 +1013,7 @@ top.Firebug =
         if (panelName)
             Firebug.chrome.selectPanel(panelName);
 
-        if (!Firebug.isClosed() && FirebugContext && browser.showFirebug)  // then we are debugging the selected tab
+        if (!Firebug.isClosed() && FirebugContext && browser.showFirebug)  // then we are already debugging the selected tab
         {
             if (Firebug.isDetached()) // if we are out of the browser focus the window
                 Firebug.chrome.focus();
@@ -1021,7 +1022,7 @@ top.Firebug =
             else if (!forceOpen)  // else isInBrowser
                 Firebug.minimizeBar();
         }
-        else // then user commands debugging the selected tab
+        else  // closed or no context or no showFirebug
         {
             if (FBTrace.DBG_ERRORS)
             {
@@ -1039,6 +1040,9 @@ top.Firebug =
                     FBTrace.sysout("Rejected page should explain to user!");
                 return false;
             }
+
+            if (Firebug.isMinimized()) // then toggle minimize
+                Firebug.unMinimize();
         }
         return true;
      },
@@ -1220,8 +1224,21 @@ top.Firebug =
                 TabWatcher.unwatchBrowser(context.browser);
         });
 
-        Firebug.closeFirebug();
+        if (Firebug.isDetached())
+        {
+            // The current detached chrome object is Firebug.chrome.
+            Firebug.chrome.close();  // should call unwatchBrowser
+            detachCommand.setAttribute("checked", false);
+            return;
+        }
 
+        if (Firebug.isInBrowser())
+        {
+            Firebug.chrome.hidePanel();
+            this.showBar(false);
+        }
+
+        Firebug.closeFirebug();
         Firebug.URLSelector.clearAll();  // and the past pages with contexts are forgotten.
     },
 
@@ -1652,15 +1669,14 @@ top.Firebug =
             var resumeBox = Firebug.chrome.$('fbResumeBox');
             if (context)
             {
-                contentBox.setAttribute("collapsed", false);
+                collapse(contentBox, false);
                 Firebug.chrome.syncPanel();
-                resumeBox.setAttribute("collapsed", "true");
+                collapse(resumeBox, true);
             }
             else
             {
-                contentBox.setAttribute("collapsed", true);
-                resumeBox.removeAttribute("collapsed");
-
+                collapse(contentBox, true);
+                collapse(resumeBox, false);
                 // xxxHonza: localization
                 Firebug.chrome.window.document.title = $STR("Firebug - inactive for selected Firefox tab");
             }
@@ -1693,8 +1709,6 @@ top.Firebug =
     unwatchBrowser: function(browser)  // the context for this browser has been destroyed and removed
     {
         Firebug.updateActiveContexts(null);
-        if (TabWatcher.contexts.length < 1)  // TODO shutdown ?
-            Firebug.setPlacement("none");
     },
 
     // Either a top level or a frame, (interior window) for an exist context is seen by the tabWatcher.

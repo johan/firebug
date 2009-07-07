@@ -373,6 +373,11 @@ top.FirebugChrome =
         return winMediator.getMostRecentWindow(null) == window;
     },
 
+    isOpen: function()
+    {
+        return !($("fbContentBox").collapsed);
+    },
+
     reload: function(skipCache)
     {
         var reloadFlags = skipCache
