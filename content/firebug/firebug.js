@@ -1066,8 +1066,11 @@ top.Firebug =
 
     toggleDetachBar: function(forceOpen)  // detached -> closed; inBrowser -> detached TODO reattach
     {
-        if (!forceOpen && Firebug.isDetached())  // detached -> closed
-            this.closeFirebug();
+        if (!forceOpen && Firebug.isDetached())  // detached -> minimized
+        {
+            Firebug.chrome.close();
+            detachCommand.setAttribute("checked", false);
+        }
         else
             this.detachBar(FirebugContext);
     },
@@ -1182,10 +1185,12 @@ top.Firebug =
 
         if (offOrOn == "on" || offOrOn == "off")
         {
-            if (Firebug.URLSelector.allPagesActivation == offOrOn)
+            if (Firebug.URLSelector.allPagesActivation == offOrOn) // then we were armed
                 delete Firebug.URLSelector.allPagesActivation;
             else
                 (offOrOn == "off") ? Firebug.allOff() : Firebug.allOn();
+
+            Firebug.chrome.disableOff(Firebug.URLSelector.allPagesActivation == "on");  // don't show Off if we are always on
         }
         else
             delete Firebug.URLSelector.allPagesActivation;
@@ -1543,11 +1548,17 @@ top.Firebug =
         if (FBTrace.DBG_ACTIVATION)
             FBTrace.sysout("Firebug.setPlacement from "+Firebug.getPlacement()+" to "+toPlacement+" with chrome "+Firebug.chrome.window.location);
 
-        for (Firebug.placement = 0; Firebug.placement < Firebug.placements.length; Firebug.placement++)
+        for (var i = 0; i < Firebug.placements.length; i++)
         {
-            if (toPlacement == Firebug.placements[Firebug.placement])
+            if (toPlacement == Firebug.placements[i])
             {
                 Firebug.resetTooltip();
+                if (Firebug.placement != i) // then we are changing the value
+                {
+                    Firebug.placement = i;
+                    delete Firebug.previousPlacement;
+                    Firebug.setPref(Firebug.prefDomain, "previousPlacement", Firebug.placement);
+                }
                 return Firebug.placement;
             }
         }
@@ -1559,6 +1570,13 @@ top.Firebug =
         return Firebug.placements[Firebug.placement];
     },
 
+    openMinimized: function()
+    {
+        if (!Firebug.previousPlacement)
+            Firebug.previousPlacement = Firebug.getPref(Firebug.prefDomain, "previousPlacement");
+
+        return (Firebug.previousPlacement && (Firebug.previousPlacement == PLACEMENT_MINIMIZED) )
+    },
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
     // TabWatcher Listener
 
@@ -1651,8 +1669,12 @@ top.Firebug =
         {
             if (context)  // then we are opening a new context
             {
-                if (Firebug.openInWindow)
-                    this.detachBar(context);  // the placement will be set once the external window opens
+                if (Firebug.openInWindow)     // user wants detached
+                    this.detachBar(context);  //   the placement will be set once the external window opens
+                else if (Firebug.openMinimized())  // previous browser.xul had placement minimized
+                {
+                    this.minimizeBar();
+                }
                 else
                 {
                     this.setPlacement("inBrowser");
@@ -3385,13 +3407,24 @@ Firebug.URLSelector =
     {
 
         var uri = makeURI(normalizeURL(url));
-        if (Firebug.activateSameOrigin)
+
+        if (url == "about:blank")  // avoid exceptions.
+            return uri;
+
+        if (uri && Firebug.activateSameOrigin)
         {
             var prePath = uri.prePath; // returns the string before the path (such as "scheme://user:password@host:port").
-            uri = makeURI(prePath);
-            var host = uri.host;
-            var crossDomain = host.split('.').slice(-2)
-            uri.host = crossDomain.join('.');
+            var shortURI = makeURI(prePath);
+            if (!shortURI)
+                return uri;
+
+            var host = shortURI.host;
+            if (host)
+            {
+                var crossDomain = host.split('.').slice(-2)
+                shortURI.host = crossDomain.join('.');
+                return shortURI
+            }
         }
         return uri;
     },

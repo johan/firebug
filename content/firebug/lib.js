@@ -210,13 +210,13 @@ this.safeToString = function(ob)
 {
     try
     {
-        if (ob && toString in ob && typeof (ob[toString]) == "function")
+        if (ob && (typeof (ob['toString']) == "function") )
             return ob.toString();
     }
     catch (exc)
     {
-        return "[an object with no toString() function]";
     }
+    return "[object has no toString() function]";
 };
 
 this.convertToUnicode = function(text, charset)
@@ -2200,14 +2200,20 @@ this.getAllStyleSheets = function(context)
         if (!sheet.href || !recordedSheets[sheet.href])
         {
             styleSheets.push(sheet);
-
-            for (var i = 0; i < sheet.cssRules.length; ++i)
+            try
             {
-                var rule = sheet.cssRules[i];
-                if (rule instanceof CSSImportRule)
-                    addSheet(rule.styleSheet);
+                for (var i = 0; i < sheet.cssRules.length; ++i)
+                {
+                    var rule = sheet.cssRules[i];
+                    if (rule instanceof CSSImportRule)
+                        addSheet(rule.styleSheet);
+                }
             }
-
+            catch(e)
+            {
+                if (FBTrace.DBG_ERRORS)
+                    FBTrace.sysout("getAllStyleSheets sheet.cssRules FAILS for "+(sheet?sheet.href:"null sheet")+e, e);
+            }
             recordedSheets[sheet.href] = true;
         }
     }
@@ -4003,7 +4009,7 @@ this.SourceFile.prototype =
 
         return (scripts.length > 0) ? scripts : false;
     },
-
+    // TODO XXXjjb the scripts are probably ordered, at least do a binary search
     addScriptAtLineNumber: function(scripts, script, targetLineNo, mustBeExecutableLine, offset)
     {
         // script.isValid will be true.
