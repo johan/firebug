@@ -437,12 +437,17 @@ top.Firebug =
                 $STR("Total_Firebug"):$STR("Total_Firebugs"));
         }
 
-        if (Firebug.URLSelector.allPagesActivation)
+        if (Firebug.URLSelector.allPagesActivation == "on")
         {
-            var label = Firebug.URLSelector.allPagesActivation == "on" ?
-                $STR("enablement.on") : $STR("enablement.off");
+            var label = $STR("enablement.on");
             tooltip += "\n"+label+" "+$STR("enablement.for all pages");
         }
+        if (Firebug.URLSelector.allPagesActivation == "off")
+        {
+            var label = $STR("enablement.off");
+            tooltip += "\n"+label+" "+$STR("enablement.for all pages");
+        }
+        // else allPagesActivation == "none" we don't show it.
 
         tooltip += "\n" + $STR(Firebug.getPlacement());
 
@@ -1013,7 +1018,7 @@ top.Firebug =
         if (panelName)
             Firebug.chrome.selectPanel(panelName);
 
-        if (!Firebug.isClosed() && FirebugContext && browser.showFirebug)  // then we are already debugging the selected tab
+        if (FirebugContext && browser.showFirebug)  // then we are already debugging the selected tab
         {
             if (Firebug.isDetached()) // if we are out of the browser focus the window
                 Firebug.chrome.focus();
@@ -1026,8 +1031,6 @@ top.Firebug =
         {
             if (FBTrace.DBG_ERRORS)
             {
-                if (FirebugContext && Firebug.isClosed())
-                    FBTrace.sysout("ASSERT: Firebug.isClosed() and FirebugContext:"+FirebugContext.getName()+getStackDump());
                 var context = TabWatcher.getContextByWindow(browser.contentWindow);
                 if (context) // ASSERT: we should not have showFirebug false on a page with a context
                     FBTrace.sysout("Firebug.toggleBar: placement "+this.getPlacement()+ " context: "+context.getName()+" FirebugContext: "+(FirebugContext?FirebugContext.getName():"null")+" browser.showFirebug:"+browser.showFirebug);
@@ -1190,15 +1193,16 @@ top.Firebug =
         if (offOrOn == "on" || offOrOn == "off")
         {
             if (Firebug.URLSelector.allPagesActivation == offOrOn) // then we were armed
-                delete Firebug.URLSelector.allPagesActivation;
+                Firebug.URLSelector.allPagesActivation = "none";
             else
                 (offOrOn == "off") ? Firebug.allOff() : Firebug.allOn();
 
             Firebug.chrome.disableOff(Firebug.URLSelector.allPagesActivation == "on");  // don't show Off if we are always on
         }
         else
-            delete Firebug.URLSelector.allPagesActivation;
+            Firebug.URLSelector.allPagesActivation = "none";
 
+        Firebug.setPref(Firebug.prefDomain, "allPagesActivation",  Firebug.URLSelector.allPagesActivation);
         Firebug.updateAllPagesActivation();
     },
 
@@ -1536,11 +1540,6 @@ top.Firebug =
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
     // Placement
 
-    isClosed: function()
-    {
-        return Firebug.placement == PLACEMENT_NONE;
-    },
-
     isDetached: function()
     {
         return Firebug.placement == PLACEMENT_DETACHED;
@@ -1558,7 +1557,7 @@ top.Firebug =
 
     placements: ["none", "inBrowser", "detached", "minimized"],
 
-    placement: 0,
+    placement: 1,
 
     setPlacement: function(toPlacement)
     {
@@ -1659,51 +1658,47 @@ top.Firebug =
 
         dispatch(modules, "showContext", [browser, context]);  // tell modules we may show UI
 
-        if (Firebug.isMinimized())
+        if (Firebug.openInWindow && !Firebug.isDetached())  // user wants detached but we are not yet
         {
-            this.showBar(false);  // don't show, we are minimized
-        }
-        else if (Firebug.isDetached())
-        {
-            var contentBox = Firebug.chrome.$('fbContentBox');
-            var resumeBox = Firebug.chrome.$('fbResumeBox');
             if (context)
-            {
-                collapse(contentBox, false);
-                Firebug.chrome.syncPanel();
-                collapse(resumeBox, true);
-            }
-            else
-            {
-                collapse(contentBox, true);
-                collapse(resumeBox, false);
-                // xxxHonza: localization
-                Firebug.chrome.window.document.title = $STR("Firebug - inactive for selected Firefox tab");
-            }
-        }
-        else if (Firebug.isClosed())
-        {
-            if (context)  // then we are opening a new context
-            {
-                if (Firebug.openInWindow)     // user wants detached
-                    this.detachBar(context);  //   the placement will be set once the external window opens
-                else if (Firebug.openMinimized())  // previous browser.xul had placement minimized
-                {
-                    this.minimizeBar();
-                }
-                else
-                {
-                    this.setPlacement("inBrowser");
-                    this.showBar(true);
-                }
-            }
-            // else should not happen
-        }
-        else  // inBrowser
-        {
-            this.showBar(context?true:false);
+                this.detachBar(context);  //   the placement will be set once the external window opens
+            else  // just make sure we are not showing
+                this.showBar(false);
+
+            return;
         }
 
+        if (Firebug.openMinimized() && !Firebug.isMinimized())  // previous browser.xul had placement minimized
+        {
+            this.minimizeBar();
+            return;
+        }
+
+        if (Firebug.isMinimized())
+            this.showBar(false);  // don't show, we are minimized
+        else if (Firebug.isDetached())
+            this.syncResumeBox(context);
+        else  // inBrowser
+            this.showBar(context?true:false);
+
+    },
+
+    syncResumeBox: function(context)
+    {
+        var contentBox = Firebug.chrome.$('fbContentBox');
+        var resumeBox = Firebug.chrome.$('fbResumeBox');
+        if (context)
+        {
+            collapse(contentBox, false);
+            Firebug.chrome.syncPanel();
+            collapse(resumeBox, true);
+        }
+        else
+        {
+            collapse(contentBox, true);
+            collapse(resumeBox, false);
+            Firebug.chrome.window.document.title = $STR("Firebug - inactive for selected Firefox tab");
+        }
     },
 
     unwatchBrowser: function(browser)  // the context for this browser has been destroyed and removed
@@ -3410,11 +3405,14 @@ Firebug.ModuleManager =
 Firebug.URLSelector =
 {
     annotationName: "firebug/history",
+    allPagesActivation: "none",
 
     initialize: function()  // called once
     {
         this.annotationSvc = Components.classes["@mozilla.org/browser/annotation-service;1"]
             .getService(Components.interfaces.nsIAnnotationService);
+        this.allPagesActivation = Firebug.getPref(Firebug.prefDomain, "allPagesActivation");
+        Firebug.updateAllPagesActivation();
     },
 
     convertToURIKey: function(url)  // process the URL to canonicalize it. Need not be reversible.
