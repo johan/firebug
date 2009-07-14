@@ -1424,6 +1424,9 @@ NetPanel.prototype = domplate(Firebug.ActivablePanel,
 
     enumerateRequests: function(fn)
     {
+        if (!this.table)
+            return;
+
         var rows = getElementsByClass(this.table, "netRow");
         for (var i=0; i<rows.length; i++)
         {
