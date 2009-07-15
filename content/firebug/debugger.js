@@ -672,7 +672,12 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
             chrome.setGlobalAttribute("cmd_stepInto", "disabled", "true");
             chrome.setGlobalAttribute("cmd_stepOut", "disabled", "true");
 
-            var panel = Firebug.chrome.getSelectedPanel();
+            var breakable = chrome.getGlobalAttribute("cmd_resumeExecution", "breakable").toString();
+            if (breakable == "true")
+                chrome.setGlobalAttribute("cmd_resumeExecution", "tooltiptext",
+                    $STR("script.Break On Next"));
+
+            var panel = chrome.getSelectedPanel();
             if (panel && panel.name != "script") // take down the disabled buttons altogether
                 panel.showToolbarButtons("fbDebuggerButtons", false);
         }
@@ -728,6 +733,9 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
 
     onPauseJSDRequested: function(rejection)
     {
+        if (FirebugContext)  // then we are active in this browser.xul
+            rejection.push(true); // so reject the suspend
+
         dispatch2(this.fbListeners, "onPauseJSDRequested", [rejection]);
     },
 
@@ -1041,7 +1049,8 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
             var source = creatorURL + "/"+getUniqueId();
         }
 
-        var url = this.getDynamicURL(context, normalizeURL(frame.script.fileName), source, "event");
+        var urlDescribed = this.getDynamicURL(context, normalizeURL(frame.script.fileName), source, "event");
+        var url = urlDescribed.href;
 
         var lines = context.sourceCache.store(url, source);
         var sourceFile = new FBL.EventSourceFile(url, frame.script, "event:"+script.functionName+"."+script.tag, lines, new ArrayEnumerator(innerScriptArray));
@@ -1126,10 +1135,22 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
                     if (isSet && props)
                     {
                         row.setAttribute("condition", props.condition ? "true" : "false");
+                        if (props.condition)  // issue 1371
+                        {
+                            var watchPanel = this.ableWatchSidePanel(context);
+                            watchPanel.addWatch(props.condition);
+                        }
                         row.setAttribute("disabledBreakpoint", new Boolean(props.disabled).toString());
-                    } else
+                    }
+                    else
                     {
                         row.removeAttribute("condition");
+                        if (props.condition)
+                        {
+                            var watchPanel = this.ableWatchSidePanel(context);
+                            watchPanel.removeWatch(props.condition);
+                            watchPanel.rebuild();
+                        }
                         row.removeAttribute("disabledBreakpoint");
                     }
                 }
@@ -1352,14 +1373,14 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
         var url = null;
         if (context.onReadySpy)  // coool we can get the request URL.
         {
-            url = new String(context.onReadySpy.getURL());
-            if (context.sourceFileName && context.sourceFileName[url]) // oops taken
-                url = null;
+            var href = new String(context.onReadySpy.getURL());
+            if (context.sourceFileName && context.sourceFileName[href]) // oops taken
+                return null;
             else
             {
-                url.kind = "data";
+                url = {href: href, kind: "data"};
                 if (FBTrace.DBG_SOURCEFILES)
-                    FBTrace.sysout("debugger.getURLFromSpy "+url, url);
+                    FBTrace.sysout("debugger.getURLFromSpy "+url.href, url);
             }
         }
 
@@ -1381,11 +1402,11 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
                 m[1] = loc.protocol + '//' + loc.host + m[1]; // prepend protocol and host
             }
 
-            url = new String(m[1]);
+            var href = new String(m[1]);
 
-            url.kind = "source";
+            url = {href: href, kind: "source"};
             if (FBTrace.DBG_SOURCEFILES)
-                FBTrace.sysout("debugger.getURLFromLastLine "+url, url);
+                FBTrace.sysout("debugger.getURLFromLastLine "+url.href, url);
         }
         else
         {
@@ -1402,10 +1423,10 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
         {
             // If no breakpoints live in dynamic code then we don't need to compare
             // the previous and reloaded source. In that case let's use a cheap URL.
-            url = new String(callerURL + (kind ? "/"+kind+"/" : "/nokind/")+"seq/" +(context.dynamicURLIndex++));
-            url.kind = "seq";
+            var href = new String(callerURL + (kind ? "/"+kind+"/" : "/nokind/")+"seq/" +(context.dynamicURLIndex++));
+            url = {href: href, kind: "seq"};
             if (FBTrace.DBG_SOURCEFILES || isNaN(context.dynamicURLIndex) )
-                FBTrace.sysout("debugger.getSequentialURL context:"+context.getName()+" url:"+url+" index: "+context.dynamicURLIndex, url);
+                FBTrace.sysout("debugger.getSequentialURL context:"+context.getName()+" url:"+url.href+" index: "+context.dynamicURLIndex, url);
         }
         return url;
     },
@@ -1423,30 +1444,31 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
         var hash = this.hash_service.finish(true);
 
         // encoding the hash should be ok, it should be information-preserving? Or at least reversable?
-        var url = new String(callerURL + (kind ? "/"+kind+"/" : "/nokind/")+"MD5/" + encodeURIComponent(hash));
-        url.kind = "MD5";
+        var href= new String(callerURL + (kind ? "/"+kind+"/" : "/nokind/")+"MD5/" + encodeURIComponent(hash));
+        url = {href: href, kind: "MD5"};
         if (FBTrace.DBG_SOURCEFILES)
-            FBTrace.sysout("debugger.getURLFromMD5 "+url, url);
+            FBTrace.sysout("debugger.getURLFromMD5 "+url.href, url);
         return url;
     },
 
     getDataURLForScript: function(callerURL, lines)
     {
         var url = null;
+        var href = null;
         if (!source)
-            url = "eval."+script.tag;
+            href = "eval."+script.tag;
         else
         {
             // data:text/javascript;fileName=x%2Cy.js;baseLineNumber=10,<the-url-encoded-data>
-            var url = new String("data:text/javascript;");
-            url += "fileName="+encodeURIComponent(callerURL);
+            href = new String("data:text/javascript;");
+            href += "fileName="+encodeURIComponent(callerURL);
             var source = lines.join('\n');
             //url +=  ";"+ "baseLineNumber="+encodeURIComponent(script.baseLineNumber) +
-            url +="," + encodeURIComponent(source);
+            href +="," + encodeURIComponent(source);
         }
-        url.kind = "data";
+        url = {href:href, kind:"data"};
         if (FBTrace.DBG_SOURCEFILES)
-            FBTrace.sysout("debugger.getDataURLForScript "+url, url);
+            FBTrace.sysout("debugger.getDataURLForScript "+url.href, url);
         return url;
     },
 
@@ -1643,6 +1665,23 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
             FBTrace.sysout("debugger("+this.debuggerName+").loadedContext enabled on load: "+context.onLoadWindowContent+" context.sourceFileMap", context.sourceFileMap);
     },
 
+    unwatchWindow: function(context, win)  // clean up the source file map in case the frame is being reloaded.
+    {
+        var scriptTags = win.document.getElementsByTagName("script");
+        for (var i = 0; i < scriptTags.length; i++)
+        {
+            var src = scriptTags[i].getAttribute("src");
+            if (src)
+                delete context.sourceFileMap[src];
+            else
+                delete context.sourceFileMap[safeGetWindowLocation(win)];
+            if (FBTrace.DBG_SOURCEFILES)
+                FBTrace.sysout("debugger.unWatchWindow delete sourceFileMap entry for "+(src?src:safeGetWindowLocation(win)) );
+        }
+        if (scriptTags.length > 0)
+            context.invalidatePanels('script');
+    },
+
     destroyContext: function(context, persistedState)
     {
         Firebug.ActivableModule.destroyContext.apply(this, arguments);
@@ -1714,7 +1753,8 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
 
     onSourceFileCreated: function(context, sourceFile)
     {
-
+        // This event can come at any time, eg by frame reloads or ajax, so we need to update the display.
+        context.invalidatePanels("script", "breakpoints");
     },
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
     // extends ActivableModule
@@ -1765,7 +1805,8 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
             if (!this.isAlwaysEnabled()) // then we need to enable
             {
                 this.setDefaultState(true);
-                Firebug.Console.log("enabling javascript debugger to support "+dependentAddedOrRemoved.dispatchName);
+                if (FirebugContext)
+                    Firebug.Console.log("enabling javascript debugger to support "+dependentAddedOrRemoved.dispatchName, FirebugContext);
             }
         }
     },
@@ -2510,6 +2551,30 @@ Firebug.ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
             return (normalizeURL(object.script.fileName) in this.context.sourceFileMap);
         else if (object instanceof "function")
             return false; //TODO
+    },
+
+    refresh: function()  // delete any sourceBox-es that are not in sync with sourceFiles
+    {
+        for(var url in this.sourceBoxes)
+        {
+            if (this.sourceBoxes.hasOwnProperty(url))
+            {
+                var sourceBox = this.sourceBoxes[url];
+                var sourceFile = this.context.sourceFileMap[url];
+                if (sourceFile != sourceBox.repObject)
+                {
+                    var victim = this.sourceBoxes[url];
+                    delete this.sourceBoxes[url];
+                    if (this.selectedSourceBox == victim)
+                        this.showSourceFile(sourceFile);
+                    if (FBTrace.DBG_SOURCEFILES)
+                        FBTrace.sysout("debugger.refresh deleted sourceBox for "+url);
+                }
+            }
+        }
+
+        if (!this.selectedSourceBox)  // then show() has not run, but we have to refresh, so do the default.
+            this.navigate();
     },
 
     updateLocation: function(sourceFile)
