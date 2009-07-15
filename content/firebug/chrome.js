@@ -258,6 +258,11 @@ top.FirebugChrome =
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
+    getBrowsers: function()
+    {
+          return Firebug.tabBrowser.browsers;
+    },
+
     getCurrentBrowser: function()
     {
         return Firebug.tabBrowser.selectedBrowser;
@@ -541,7 +546,7 @@ top.FirebugChrome =
         // a function that returns an object with .getObjectDescription() and .getLocationList()
         return function getSelectedPanelFromCurrentContext()
         {
-            return FirebugContext.chrome.getSelectedPanel();  // panels provide location, use the selected panel
+            return Firebug.chrome.getSelectedPanel();  // panels provide location, use the selected panel
         }
     },
 
@@ -1111,6 +1116,28 @@ top.FirebugChrome =
         var extensionManager = CCSV("@mozilla.org/extensions/manager;1", "nsIExtensionManager");
         openDialog("chrome://mozapps/content/extensions/about.xul", "",
             "chrome,centerscreen,modal", "urn:mozilla:item:firebug@software.joehewitt.com", extensionManager.datasource);
+    },
+
+    resume: function(context)
+    {
+        if (!context)
+        {
+            FBTrace.sysout("Firebug chrome: resume with no context??");
+            return;
+        }
+
+        var panel = panelBar1.selectedPanel;
+        if (!panel)
+            return;
+
+        if (!context.stopped && panel.resume)
+        {
+            panel.resume();
+            return;
+        }
+
+        // Use debugger as the default handler.
+        Firebug.Debugger.resume(context);
     }
 };
 
