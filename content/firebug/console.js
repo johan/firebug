@@ -208,6 +208,12 @@ Firebug.Console = extend(ActivableConsole,
         Firebug.chrome.setGlobalAttribute("cmd_clearConsole", "disabled", !context);
 
         Firebug.ActivableModule.showContext.apply(this, arguments);
+
+        if (context && !context.onLoadWindowContent) // then context was not active during load
+        {
+            if (Firebug.Console.isAlwaysEnabled())
+                Firebug.Console.log("Reload to activate window console", context, "info");  // XXXjjb Honza NLS
+        }
     },
 
     destroyContext: function(context, persistedState)
@@ -705,7 +711,7 @@ Firebug.ConsolePanel.prototype = extend(Firebug.ActivablePanel,
         {
             // Make sure that entire content of the Console panel is hidden when
             // the panel is disabled.
-            Firebug.CommandLine.setMultiLine(false, Firebug.chrome);
+            Firebug.CommandLine.setMultiLine(false, Firebug.chrome, Firebug.largeCommandLine);
             collapse(Firebug.chrome.$("fbCommandBox"), true);
         }
     },
