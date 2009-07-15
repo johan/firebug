@@ -170,7 +170,7 @@ top.TabWatcher = extend(new Firebug.Listener(),
         }
 
         // Call showContext only for currently active tab.
-        if (tabBrowser.currentURI.spec != context.browser.currentURI.spec)
+        if (Firebug.chrome.getCurrentURI().spec != context.browser.currentURI.spec)
         {
             if (FBTrace.DBG_WINDOWS)
                 FBTrace.sysout("-> watchTopWindow: Do not show context as it's not the active tab: " +
@@ -499,6 +499,9 @@ top.TabWatcher = extend(new Firebug.Listener(),
 
     getContextByWindow: function(winIn)
     {
+        if (!winIn)
+            return;
+
         var rootWindow = getRootWindow(winIn);
 
         if (rootWindow)
