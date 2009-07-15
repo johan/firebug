@@ -1977,7 +1977,7 @@ this.findScriptForFunctionInContext = function(context, fn)
     var fns = fn.toString();
     this.forEachFunction(context, function findMatchingScript(script, aFunction)
     {
-        if (!aFunction.toString || typeof(aFunction.toString) != "function")
+        if (!aFunction['toString'] || typeof(aFunction['toString']) != "function")
             return;
         try {
             var tfs = aFunction.toString();
@@ -2423,6 +2423,36 @@ this.iterateBrowserTabs = function(browserWindow, callback)
     return false;
 }
 
+this.safeGetWindowLocation = function(window)
+{
+    try
+    {
+        if (window)
+        {
+            if (window.closed)
+                return "about:closed";
+            if ("location" in window)
+            {
+                if ("toString" in window.location)
+                    return window.location.toString();
+                else
+                    return "(window.location has no toString)";
+            }
+            else
+                return "(no window.location)";
+        }
+        else
+            return "(no context.window)";
+    }
+    catch(exc)
+    {
+        //if (FBTrace.DBG_WINDOWS || FBTrace.DBG_ERRORS)
+            FBTrace.sysout("TabContext.getWindowLocation failed "+exc, exc);
+            FBTrace.sysout("TabContext.getWindowLocation failed window:", window);
+        return "(getWindowLocation: "+exc+")";
+    }
+};
+
 // ************************************************************************************************
 // JavaScript Parsing
 
@@ -2572,7 +2602,7 @@ this.dispatch = function(listeners, name, args)
                             exc.stack = stack.split('\n');
                         }
                         var culprit = listeners[i] ? listeners[i].dispatchName : null;
-                        FBTrace.sysout(" Exception in lib.dispatch "+(culprit?culprit+".":"")+ name+": "+exc, exc);
+                        FBTrace.sysout(" Exception in lib.dispatch "+(culprit?culprit+".":"")+ name+": "+exc+(exc.fileName?exc.fileName:"")+(exc.lineNumber?":"+exc.lineNumber:""), exc);
                     }
                 }
             }
@@ -4196,7 +4226,8 @@ this.addScriptsToSourceFile = function(sourceFile, outerScript, innerScripts)
 //------------
 this.EvalLevelSourceFile = function(url, script, eval_expr, source, mapType, innerScriptEnumerator) // ctor
 {
-    this.href = url;
+    this.href = url.href;
+    this.hrefKind = url.kind;
     this.outerScript = script;
     this.containingURL = script.fileName;
     this.evalExpression = eval_expr;
@@ -4238,7 +4269,7 @@ this.EvalLevelSourceFile.prototype.getBaseLineOffset = function()
 
 this.EvalLevelSourceFile.prototype.getObjectDescription = function()
 {
-    if (this.href.kind == "source" || this.href.kind == "data")
+    if (this.hrefKind == "source" || this.hrefKind == "data")
         return FBL.splitURLBase(this.href);
 
     if (!this.summary)
