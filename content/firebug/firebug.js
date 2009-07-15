@@ -501,7 +501,7 @@ top.Firebug =
     },
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-    // Dead Windows
+    // Dead Windows  XXXjjb this code is not used by 1.4, external placement.
 
     killWindow: function(browser, chrome)
     {
@@ -1602,6 +1602,11 @@ top.Firebug =
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
     // TabWatcher Listener
 
+    getContextType: function()
+    {
+        return Firebug.TabContext;
+    },
+
     initContext: function(context, persistedState)  // called after a context is created.
     {
         context.panelName = context.browser.panelName;
@@ -1745,11 +1750,7 @@ top.Firebug =
     destroyContext: function(context, persistedState, browser)
     {
         if (!context)  // then we are called just to clean up
-        {
-            if(browser && Firebug.isDetached())
-                this.killWindow(browser, Firebug.chrome);
             return;
-        }
 
         dispatch(modules, "destroyContext", [context, persistedState]);
 
@@ -2753,6 +2754,8 @@ Firebug.SourceBoxPanel = extend( extend(Firebug.MeasureBox, Firebug.ActivablePan
     // should only be called onScroll
     buildViewAround: function(sourceBox, lines)  // defaults to first viewable lines
     {
+        if (sourceBox.scrollTop === sourceBox.lastScrollTop && sourceBox.clientHeight === sourceBox.lastClientHeight)
+            return;
         var lineNo = this.setViewableLines(sourceBox, lines);
 
         var topLine = 1; // will be view.firstChild
@@ -2818,7 +2821,8 @@ Firebug.SourceBoxPanel = extend( extend(Firebug.MeasureBox, Firebug.ActivablePan
             var link = new SourceLink(sourceBox.repObject.href, lineNo, this.getSourceType());
             dispatch(uiListeners, "onViewportChange", [link]);
         }
-
+        sourceBox.lastScrollTop = sourceBox.scrollTop;
+        sourceBox.lastClientHeight = sourceBox.clientHeight;
         return;
     },
 
@@ -3458,6 +3462,9 @@ Firebug.URLSelector =
         try
         {
             var uri = this.convertToURIKey(url);
+            if (!uri)
+                return false;
+
             var hasAnnotation = this.annotationSvc.pageHasAnnotation(uri, this.annotationName);
             if (FBTrace.DBG_ACTIVATION)
                 FBTrace.sysout("shouldCreateContext hasAnnotation "+hasAnnotation+" for "+uri.spec+" in "+browser.contentWindow.location+ " using activateSameOrigin: "+Firebug.activateSameOrigin);
@@ -3481,7 +3488,7 @@ Firebug.URLSelector =
                     var dstURI = this.convertToURIKey(dst.spec);
                     if (FBTrace.DBG_ACTIVATION)
                         FBTrace.sysout("shouldCreateContext found FirebugLink pointing to does not match "+dstURI.spec, browser.FirebugLink);
-                    if (dstURI.equals(uri)) // and it matches us now
+                    if (dstURI && dstURI.equals(uri)) // and it matches us now
                     {
                         var srcURI = this.convertToURIKey(browser.FirebugLink.src.spec);
                         if (srcURI.schemeIs("file") || (dstURI.host == srcURI.host) ) // and it's on the same domain
@@ -3549,6 +3556,7 @@ Firebug.URLSelector =
 
         // mark this URI as firebugged
         var uri = this.convertToURIKey(browser.currentURI.spec);
+        if (uri)
         this.annotationSvc.setPageAnnotation(uri, this.annotationName, annotation, null, this.annotationSvc.EXPIRE_WITH_HISTORY);
 
         if (FBTrace.DBG_ACTIVATION)
@@ -3562,6 +3570,9 @@ Firebug.URLSelector =
     unwatchBrowser: function(browser, userCommands)  // Firebug closes in browser
     {
         var uri  = this.convertToURIKey(browser.currentURI.spec);
+
+        if (!uri)
+            return;
 
         if (userCommands)  // then mark to not open virally.
         {
