@@ -501,7 +501,8 @@ top.FirebugChrome =
         this.previouslyFocused = Firebug.isDetached() && this.isFocused();  // TODO previouslyMinimized
 
         var switchPanel = this.selectPanel(switchToPanelName);
-        this.previousObject = switchPanel.selection;
+        if (switchPanel)
+            this.previousObject = switchPanel.selection;
         return switchPanel;
     },
 

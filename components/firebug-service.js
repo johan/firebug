@@ -2622,8 +2622,16 @@ function getRootWindow(win)
 function countFrames(frame)
 {
     var frameCount = 0;
-    for (; frame; frame = frame.callingFrame)
-        ++frameCount;
+    try
+    {
+        for (; frame; frame = frame.callingFrame)
+            ++frameCount;
+    }
+    catch(exc)
+    {
+        
+    }
+    
     return frameCount;
 }
 

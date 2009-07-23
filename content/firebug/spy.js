@@ -82,7 +82,7 @@ Firebug.Spy = extend(Firebug.Module,
 
     skipSpy: function(win)
     {
-        var uri = win.location.href; // don't attach spy to chrome
+        var uri = safeGetWindowLocation(win); // don't attach spy to chrome
         if (uri &&  (uri.indexOf("about:") == 0 || uri.indexOf("chrome:") == 0))
             return true;
     },
@@ -102,6 +102,9 @@ Firebug.Spy = extend(Firebug.Module,
             if ( contexts.length == 0 )
                 observerService.addObserver(httpObserver, "firebug-http-event", false);
             contexts.push({ context: context, win: win });
+
+            if (FBTrace.DBG_SPY)
+                FBTrace.sysout("spy.attachObserver " + contexts.length + " ", context.getName());
         }
     },
 
@@ -116,6 +119,9 @@ Firebug.Spy = extend(Firebug.Module,
                 contexts.splice(i, 1);
                 if ( contexts.length == 0 )
                     observerService.removeObserver(httpObserver, "firebug-http-event");
+
+                if (FBTrace.DBG_SPY)
+                    FBTrace.sysout("spy.detachObserver " + contexts.length + " ", context.getName());
                 return;
             }
         }
@@ -130,6 +136,9 @@ Firebug.Spy = extend(Firebug.Module,
 
         if (Firebug.showXMLHttpRequests  && Firebug.Console.isAlwaysEnabled())
             this.attachObserver(context, context.window);
+
+        if (FBTrace.DBG_SPY)
+            FBTrace.sysout("spy.initContext " + contexts.length + " ", context.getName());
     },
 
     destroyContext: function(context)
@@ -137,6 +146,9 @@ Firebug.Spy = extend(Firebug.Module,
         // For any spies that are in progress, remove our listeners so that they don't leak
         this.detachObserver(context, null);
         delete context.spies;
+
+        if (FBTrace.DBG_SPY)
+            FBTrace.sysout("spy.destroyContext " + contexts.length + " ", context.getName());
     },
 
     watchWindow: function(context, win)
@@ -339,7 +351,11 @@ top.XMLHttpRequestSpy.prototype =
 
         this.onreadystatechange = this.xhrRequest.onreadystatechange;
 
-        this.xhrRequest.onreadystatechange = this.onReadyStateChange;
+        // xxxHonza: Workaround for FB issue 1948 and FF bug #502959
+        // Don't replace the original onreadystatechange callback since there is an 
+        // exception when the callback is executed (see onHTTPSpyReadyStateChange)
+        // Only the "load" and "error" event handlers are used to monitor the XHR. 
+        //this.xhrRequest.onreadystatechange = this.onReadyStateChange;
         this.xhrRequest.addEventListener("load", this.onLoad, true);
         this.xhrRequest.addEventListener("error", this.onError, true);
 
@@ -506,7 +522,7 @@ function onHTTPSpyReadyStateChange(spy, event)
     {
         spy.context.onReadySpy = spy; // maybe the handler will eval(), we want the URL.
         if (spy.onreadystatechange)
-            spy.onreadystatechange.handleEvent(event);
+            spy.onreadystatechange.handleEvent(event);  // This throws an exception see #502959
     }
     catch (exc)
     {

@@ -96,16 +96,18 @@ top.TabWatcher = extend(new Firebug.Listener(),
             return false;
         }
 
-        if (tabBrowser.selectedBrowser.cancelNextLoad)
+        var selectedBrowser = Firebug.chrome.getCurrentBrowser();
+        if (selectedBrowser.cancelNextLoad)
         {
             // We need to cancel this load and try again after a delay... this is used
             // mainly to prevent chaos while when the debugger is active when a page
             // is unloaded
-            delete tabBrowser.selectedBrowser.cancelNextLoad;
-            tabBrowser.selectedBrowser.webNavigation.stop(STOP_ALL);
-            delayBrowserLoad(tabBrowser.selectedBrowser, win.location.href);
+            delete selectedBrowser.cancelNextLoad;
+            selectedBrowser.webNavigation.stop(STOP_ALL);
+            var url = (uri instanceof nsIURI?uri.spec:uri);
+            delayBrowserLoad(selectedBrowser, url);
             if (FBTrace.DBG_WINDOWS)
-                FBTrace.sysout("-> tabWatcher.watchTopWindow **CANCEL&RETRY** for: "+win.location.href+
+                FBTrace.sysout("-> tabWatcher.watchTopWindow **CANCEL&RETRY** for: "+url+
                     ", tab: "+Firebug.getTabIdForWindow(win)+"\n");
             return;
         }
