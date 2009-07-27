@@ -303,51 +303,7 @@ Firebug.Console = extend(ActivableConsole,
 
         var container = panel.panelNode;
         container.insertBefore(nodes[0], container.firstChild);
-    },
-
-    insertLogLimit: function(context)
-    {
-        // Create limit row. This row is the first in the list of entries
-        // and initially hidden. It's displayed as soon as the number of
-        // entries reaches the limit.
-        var panel = context.getPanel(this.panelName);
-        var row = panel.createRow("limitRow");
-
-        var limitInfo = {
-            totalCount: 0,
-            limitPrefsTitle: $STRF("LimitPrefsTitle", [Firebug.prefDomain+".console.logLimit"])
-        };
-
-        var netLimitRep = Firebug.NetMonitor.NetLimit;
-        var nodes = netLimitRep.createTable(row, limitInfo);
-
-        panel.limit = nodes[1];
-
-        var container = panel.panelNode;
-        container.insertBefore(nodes[0], container.firstChild);
-    },
-
-    insertLogLimit: function(context)
-    {
-        // Create limit row. This row is the first in the list of entries
-        // and initially hidden. It's displayed as soon as the number of
-        // entries reaches the limit.
-        var panel = context.getPanel(this.panelName);
-        var row = panel.createRow("limitRow");
-
-        var limitInfo = {
-            totalCount: 0,
-            limitPrefsTitle: $STRF("LimitPrefsTitle", [Firebug.prefDomain+".console.logLimit"])
-        };
-
-        var netLimitRep = Firebug.NetMonitor.NetLimit;
-        var nodes = netLimitRep.createTable(row, limitInfo);
-
-        panel.limit = nodes[1];
-
-        var container = panel.panelNode;
-        container.insertBefore(nodes[0], container.firstChild);
-     }
+    }
 });
 
 Firebug.ConsoleListener =
