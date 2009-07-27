@@ -205,7 +205,7 @@ function FirebugService()
 
 FirebugService.prototype =
 {
-    shutdown: function()
+    shutdown: function()  // call disableDebugger first
     {
         timer = null;
 
@@ -235,7 +235,6 @@ FirebugService.prototype =
             FBTrace.sysout("fbs prefs.removeObserver fails "+exc, exc);
         }
 
-        jsd.off();
         jsd = null;
         if (!jsd)
             FBTrace.sysout("*********************** SHUTDOWN JSD NULL ");
@@ -970,7 +969,14 @@ FirebugService.prototype =
         if (rejection.length == 0)
         {
             if (jsd.pauseDepth == 0)  // marker only UI in debugger.js
+            {
                 jsd.pause();
+                 fbs.unhookScripts();
+                 /* jsd.off();
+                if (FBTrace.DBG_ACTIVATION)
+                    FBTrace.sysout("fbs.pause turned jsd OFF,  depth "+jsd.pauseDepth);
+                    */
+            }
             dispatch(clients, "onJSDDeactivate", [jsd, "pause depth "+jsd.pauseDepth]);
         }
         else
@@ -989,14 +995,20 @@ FirebugService.prototype =
 
     unPause: function()
     {
-        if (jsd.pauseDepth)
+        if (jsd.pauseDepth || !jsd.isOn)
         {
+            if (!jsd.isOn)
+            {
+                jsd.on();
+                if (FBTrace.DBG_ACTIVATION)
+                    FBTrace.sysout("fbs.unpause turned on jsd and hooked scripts pauseDepth:"+jsd.pauseDepth);
+            }
+            fbs.hookScripts();
             var depth = jsd.unPause();
             if (FBTrace.DBG_ACTIVATION)
-                FBTrace.sysout("fbs.unPause depth "+depth);
+                FBTrace.sysout("fbs.unPause depth "+depth+" jsd.isOn: "+jsd.isOn);
             dispatch(clients, "onJSDActivate", [jsd, "unpause depth"+jsd.pauseDepth]);
-            if (FBTrace.DBG_FBS_FINDDEBUGGER || FBTrace.DBG_ACTIVATION)
-                FBTrace.sysout("fbs.unpause depth "+jsd.pauseDepth);
+
         }
         return jsd.pauseDepth;
     },
@@ -2629,9 +2641,9 @@ function countFrames(frame)
     }
     catch(exc)
     {
-        
+
     }
-    
+
     return frameCount;
 }
 
@@ -2710,7 +2722,11 @@ var QuitApplicationRequestedObserver =
     observe: function(subject, topic, data)
     {
         if (FBTrace.DBG_FBS_ERRORS)
-            FBTrace.sysout("FirebugService QuitApplicationRequestedObserver\n");
+            FBTrace.sysout("xxxxxxxxxxxx FirebugService QuitApplicationGrantedObserver start xxxxxxxxxxxxxxx\n");
+        fbs.disableDebugger();
+        fbs.shutdown();
+        if (FBTrace.DBG_FBS_ERRORS)
+            FBTrace.sysout("xxxxxxxxxxxx FirebugService QuitApplicationGrantedObserver end xxxxxxxxxxxxxxxxx\n");
     }
 };
 var QuitApplicationObserver =

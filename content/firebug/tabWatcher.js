@@ -119,7 +119,10 @@ top.TabWatcher = extend(new Firebug.Listener(),
                 FBTrace.sysout("-> tabWatcher.watchTopWindow context exists "+context.getName());
             if (!this.shouldShowContext(context))
             {
-                this.watchContext(win, null);
+                // ...but now it is not wanted.
+                if (context.browser)
+                    delete context.browser.showFirebug;
+                this.unwatchContext(win, context);
 
                 // There shouldn't be context for this window so, remove it from the
                 // global array.
@@ -137,7 +140,10 @@ top.TabWatcher = extend(new Firebug.Listener(),
             {
                 if (FBTrace.DBG_ACTIVATION)
                     FBTrace.sysout("-> tabWatcher will not create context ");
+
+                delete selectedBrowser.showFirebug;
                 this.watchContext(win, null);
+
                 return false;  // we did not create a context
             }
 
@@ -430,6 +436,8 @@ top.TabWatcher = extend(new Firebug.Listener(),
         if (!browser)
             return;
 
+        delete browser.showFirebug;
+
         var shouldDispatch = this.unwatchTopWindow(browser.contentWindow);
 
         if (shouldDispatch)
@@ -462,6 +470,7 @@ top.TabWatcher = extend(new Firebug.Listener(),
             {
                 browser.persistedState = {};
                 delete browser.showFirebug;
+                dispatch(this.fbListeners, "showContext", [browser, null]); // context is null if we don't want to debug this browser
             }
             dispatch(this.fbListeners, "destroyContext", [null, (browser?browser.persistedState:null), browser]);
             return;
@@ -475,7 +484,6 @@ top.TabWatcher = extend(new Firebug.Listener(),
             dispatch(TabWatcher.fbListeners, "unwatchWindow", [context, win]);
         });
 
-        delete context.browser.showFirebug;
         dispatch(this.fbListeners, "destroyContext", [context, persistedState, context.browser]);
 
         if (FBTrace.DBG_WINDOWS)
@@ -566,15 +574,20 @@ var TabProgressListener = extend(BaseProgressListener,
         if (progress.DOMWindow.parent == progress.DOMWindow)
         {
             var srcWindow = getWindowForRequest(request);
-            if (srcWindow)
-                var browser = TabWatcher.getBrowserByWindow(srcWindow);
+            var browser = srcWindow ? TabWatcher.getBrowserByWindow(srcWindow) : null;
             var requestFromFirebuggedWindow = browser && browser.showFirebug;
 
             if (FBTrace.DBG_WINDOWS || FBTrace.DBG_ACTIVATION)
-                FBTrace.sysout("-> TabProgressListener.onLocationChange "+progress.DOMWindow.location+" to: "
-                                          +(uri?uri.spec:"null location")+(requestFromFirebuggedWindow?" from firebugged window":" no firebug"));
-
-            TabWatcher.watchTopWindow(progress.DOMWindow, uri);
+            {
+                FBTrace.sysout("-> TabProgressListener.onLocationChange "+
+                    progress.DOMWindow.location+" to: "+
+                    (uri?uri.spec:"null location")+
+                    (requestFromFirebuggedWindow?" from firebugged window":" no firebug"));
+            }
+            if (uri)
+                TabWatcher.watchTopWindow(progress.DOMWindow, uri);
+            else // the location change to a non-uri means we need to hide
+                TabWatcher.watchContext(progress.DOMWindow, null, true);
         }
     },
 

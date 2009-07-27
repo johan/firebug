@@ -1368,6 +1368,8 @@ top.Firebug =
     /**
      * Gets an object containing the state of the panel from the last time
      * it was displayed before one or more page reloads.
+     * The 'null' return here is a too-subtle signal to the panel code in bindings.xml.
+     * Note that panel.context may not have a persistedState, but in addition the persisted state for panel.name may be null.
      */
     getPanelState: function(panel)
     {
@@ -3430,13 +3432,16 @@ Firebug.URLSelector =
         this.annotationSvc = Components.classes["@mozilla.org/browser/annotation-service;1"]
             .getService(Components.interfaces.nsIAnnotationService);
         this.allPagesActivation = Firebug.getPref(Firebug.prefDomain, "allPagesActivation");
+        this.expires = this.annotationSvc.EXPIRE_NEVER;
         Firebug.updateAllPagesActivation();
     },
 
     convertToURIKey: function(url)  // process the URL to canonicalize it. Need not be reversible.
     {
-
         var uri = makeURI(normalizeURL(url));
+
+        if (Firebug.filterSystemURLs && isSystemURL(url))
+            return uri;
 
         if (url == "about:blank")  // avoid exceptions.
             return uri;
@@ -3462,6 +3467,12 @@ Firebug.URLSelector =
     shouldCreateContext: function(browser, url, userCommands)  // true if the Places annotation the URI "firebugged"
     {
         if (this.allPagesActivation == "off")
+            return false;
+
+        if (this.allPagesActivation == "on")
+            return true;
+
+        if (Firebug.filterSystemURLs && isSystemURL(url)) // if about:blank gets thru, 1483 fails
             return false;
 
         if (userCommands)
@@ -3495,19 +3506,28 @@ Firebug.URLSelector =
                     var dst = browser.FirebugLink.dst;
                     var dstURI = this.convertToURIKey(dst.spec);
                     if (FBTrace.DBG_ACTIVATION)
-                        FBTrace.sysout("shouldCreateContext found FirebugLink pointing to does not match "+dstURI.spec, browser.FirebugLink);
+                        FBTrace.sysout("shouldCreateContext found FirebugLink pointing to " +
+                            dstURI.spec, browser.FirebugLink);
+
                     if (dstURI && dstURI.equals(uri)) // and it matches us now
                     {
                         var srcURI = this.convertToURIKey(browser.FirebugLink.src.spec);
-                        if (srcURI.schemeIs("file") || (dstURI.host == srcURI.host) ) // and it's on the same domain
+                        if (srcURI)
                         {
-                            hasAnnotation = this.annotationSvc.pageHasAnnotation(srcURI, this.annotationName);
-                            if (hasAnnotation) // and the source page was annotated.
+                            if (FBTrace.DBG_ACTIVATION)
+                                FBTrace.sysout("shouldCreateContext found FirebugLink pointing from " +
+                                    srcURI.spec, browser.FirebugLink);
+
+                            if (srcURI.schemeIs("file") || (dstURI.host == srcURI.host) ) // and it's on the same domain
                             {
-                                var srcShow = this.checkAnnotation(browser, srcURI);
-                                if (srcShow)  // and the source annotation said show it
-                                    this.watchBrowser(browser);  // so we show dst as well.
-                                return srcShow;
+                                hasAnnotation = this.annotationSvc.pageHasAnnotation(srcURI, this.annotationName);
+                                if (hasAnnotation) // and the source page was annotated.
+                                {
+                                    var srcShow = this.checkAnnotation(browser, srcURI);
+                                    if (srcShow)  // and the source annotation said show it
+                                        this.watchBrowser(browser);  // so we show dst as well.
+                                    return srcShow;
+                                }
                             }
                         }
                     }
@@ -3565,7 +3585,8 @@ Firebug.URLSelector =
         // mark this URI as firebugged
         var uri = this.convertToURIKey(browser.currentURI.spec);
         if (uri)
-        this.annotationSvc.setPageAnnotation(uri, this.annotationName, annotation, null, this.annotationSvc.EXPIRE_WITH_HISTORY);
+            this.annotationSvc.setPageAnnotation(uri, this.annotationName, annotation,
+                null, this.expires);
 
         if (FBTrace.DBG_ACTIVATION)
         {

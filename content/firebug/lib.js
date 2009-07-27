@@ -1619,9 +1619,11 @@ this.wrapText = function(text, noEscapeHTML)
     var html = [];
     var wrapWidth = Firebug.textWrapWidth;
 
-    // Split long text into lines and put every line into an <pre> element (only in case
+    // Split long text into lines and put every line into an <code> element (only in case
     // if noEscapeHTML is false). This is useful for automatic scrolling when searching
     // within response body (in order to scroll we need an element).
+    // Don't use <pre> elements since these adds addiontanl new line ending when copying
+    // selected source code using Firefox->Edit->Copy (Ctrl+C) (issue 2093).
     var lines = this.splitLines(text);
     for (var i = 0; i < lines.length; ++i)
     {
@@ -1633,14 +1635,14 @@ this.wrapText = function(text, noEscapeHTML)
             var subLine = line.substr(0, wrapIndex);
             line = line.substr(wrapIndex);
 
-            if (!noEscapeHTML) html.push("<pre>");
+            if (!noEscapeHTML) html.push("<code>");
             html.push(noEscapeHTML ? subLine : escapeHTML(subLine));
-            if (!noEscapeHTML) html.push("</pre>");
+            if (!noEscapeHTML) html.push("</code>");
         }
 
-        if (!noEscapeHTML) html.push("<pre>");
+        if (!noEscapeHTML) html.push("<code>");
         html.push(noEscapeHTML ? line : escapeHTML(line));
-        if (!noEscapeHTML) html.push("</pre>");
+        if (!noEscapeHTML) html.push("</code>");
     }
 
     return html.join("");
@@ -2355,6 +2357,7 @@ this.updateScriptFiles = function(context, eraseSourceFileMap)  // scan windows 
     var dummySourceFile = new this.NoScriptSourceFile(context, notificationURL);
     context.sourceCache.store(notificationURL, 'reload to see all source files');
     context.addSourceFile(dummySourceFile);
+    context.notificationSourceFile = dummySourceFile;
 
     if (FBTrace.DBG_SOURCEFILES)
     {
@@ -4564,7 +4567,7 @@ this.getSourceFileByScript = function(context, script)
         return lucky;
 
     if (FBTrace.DBG_SOURCEFILES)
-        FBTrace.sysout("getSourceFileByScript looking for "+script.tag+" in "+context.getName()+": ", context.sourceFileMap);
+        FBTrace.sysout("getSourceFileByScript looking for "+script.tag+"@"+script.fileName+" in "+context.getName()+": ", context.sourceFileMap);
 
     for (var url in context.sourceFileMap)
     {
@@ -4578,7 +4581,7 @@ this.getScriptAnalyzer = function(context, script)
 {
     var sourceFile = this.getSourceFileByScript(context, script);
     if (FBTrace.DBG_STACK)
-        FBTrace.sysout("getScriptAnalyzer finds sourceFile: ", sourceFile);
+        FBTrace.sysout("getScriptAnalyzer "+ (sourceFile?"finds sourceFile: ":"FAILS to find sourceFile"), sourceFile);
     if (sourceFile)
     {
         var analyzer = sourceFile.getScriptAnalyzer(script);
