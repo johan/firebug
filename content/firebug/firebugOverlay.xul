@@ -228,7 +228,7 @@
                                     <toolbarseparator id="fbLocationSeparator" collapsed="true"/>
                                     <hbox id="fbLocationList" locationProvider="FirebugChrome.getLocationProvider();"
                                           collapsed="true" labeltooltip="fbTooltip" labelcontextmenu="fbContextMenu"
-                                          class="noTabStop"></hbox>
+                                          class="noTabStop" role="button" aria-haspopup="true" aria-label="file selector"/>
 
                                     <toolbarseparator id="fbStatusSeparator" collapsed="true"/>
                                     <panelStatus id="fbPanelStatus" flex="1"
@@ -252,7 +252,8 @@
                             <browser id="fbPanelBar1-browser"
                                      tooltip="fbTooltip" contextmenu="fbContextMenu"
                                      disablehistory="true"
-                                     src="chrome://firebug/content/panel.html"/>
+                                     src="chrome://firebug/content/panel.html"
+                                     role="tabpanel" />
                         </deck>
                     </vbox>
 
@@ -268,7 +269,8 @@
                                 <browser id="fbPanelBar2-browser"
                                          tooltip="fbTooltip" contextmenu="fbContextMenu"
                                          disablehistory="true"
-                                         src="chrome://firebug/content/panel.html"/>
+                                         src="chrome://firebug/content/panel.html"
+                                         role="tabpanel" />
                             </deck>
                         </panelBar>
 

@@ -3422,13 +3422,13 @@ CallstackPanel.prototype = extend(Firebug.Panel,
                     FBL.setClass(div, "objectLink");
                     FBL.setClass(div, "objectLink-stackFrame");
                     FBL.setClass(div, "panelStatusLabel");
-                    FBL.setClass(div, "a11yFocus");
                     FBL.setClass(div, "focusRow");
+                    div.setAttribute('role', "listitem");
 
                     this.panelNode.appendChild(div);
                 }
             }
-            dispatch([Firebug.A11yModel], 'onLogRowContentCreated', [this, this.panelNode]);
+            dispatch([Firebug.A11yModel], 'onstackCreated', [this]);
         }
     },
 

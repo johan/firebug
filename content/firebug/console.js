@@ -456,7 +456,6 @@ Firebug.ConsolePanel.prototype = extend(Firebug.ActivablePanel,
         else
             this.appendFormatted(objects, innerRow, rep);
         row.appendChild(innerRow);
-        innerRow.setAttribute('aria-expanded', 'true');
         dispatch([Firebug.A11yModel], 'onLogRowCreated', [this, innerRow]);
         var groupBody = this.createRow("logGroupBody");
         row.appendChild(groupBody);
@@ -624,14 +623,16 @@ Firebug.ConsolePanel.prototype = extend(Firebug.ActivablePanel,
 
         var logRow = search.find(text);
         if (!logRow)
+        {
+            dispatch([Firebug.A11yModel], 'onConsoleSearchMatchFound', [this, text, []]);
             return false;
-
+        }
         for (; logRow; logRow = search.findNext())
         {
             setClass(logRow, "matched");
             this.matchSet.push(logRow);
         }
-
+        dispatch([Firebug.A11yModel], 'onConsoleSearchMatchFound', [this, text, this.matchSet]);
         return true;
     },
 
