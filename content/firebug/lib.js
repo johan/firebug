@@ -212,6 +212,9 @@ this.safeToString = function(ob)
     {
         if (ob && (typeof (ob['toString']) == "function") )
             return ob.toString();
+        var str = ob + "";
+        if (str.length > 0)
+            return str;
     }
     catch (exc)
     {
@@ -1631,7 +1634,7 @@ this.wrapText = function(text, noEscapeHTML)
         while (line.length > wrapWidth)
         {
             var m = reNonAlphaNumeric.exec(line.substr(wrapWidth, 100));
-            var wrapIndex = wrapWidth+ (m ? m.index : 0);
+            var wrapIndex = wrapWidth + (m ? m.index : 0);
             var subLine = line.substr(0, wrapIndex);
             line = line.substr(wrapIndex);
 
@@ -1645,12 +1648,13 @@ this.wrapText = function(text, noEscapeHTML)
         if (!noEscapeHTML) html.push("</code>");
     }
 
-    return html.join("");
+    return html;
 }
 
 this.insertWrappedText = function(text, textBox, noEscapeHTML)
 {
-    textBox.innerHTML = "<pre>" + this.wrapText(text, noEscapeHTML) + "</pre>";
+    var html = this.wrapText(text, noEscapeHTML);
+    textBox.innerHTML = "<pre>" + html.join("") + "</pre>";
 }
 
 // ************************************************************************************************

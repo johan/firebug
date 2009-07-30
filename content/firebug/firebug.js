@@ -60,7 +60,7 @@ const prefNames =
     // Global
     "defaultPanelName", "throttleMessages", "textSize", "showInfoTips",
     "largeCommandLine", "textWrapWidth", "openInWindow", "showErrorCount",
-    "activateSameOrigin",
+    "activateSameOrigin", "allPagesActivation",
 
     // Search
     "searchCaseSensitive", "searchGlobal", "netSearchHeaders", "netSearchParameters",
@@ -443,12 +443,12 @@ top.Firebug =
                 $STR("Total_Firebug"):$STR("Total_Firebugs"));
         }
 
-        if (Firebug.URLSelector.allPagesActivation == "on")
+        if (Firebug.allPagesActivation == "on")
         {
             var label = $STR("enablement.on");
             tooltip += "\n"+label+" "+$STR("enablement.for all pages");
         }
-        if (Firebug.URLSelector.allPagesActivation == "off")
+        if (Firebug.allPagesActivation == "off")
         {
             var label = $STR("enablement.off");
             tooltip += "\n"+label+" "+$STR("enablement.for all pages");
@@ -1198,33 +1198,33 @@ top.Firebug =
     toggleAll: function(offOrOn)
     {
         if (FBTrace.DBG_WINDOWS)
-            FBTrace.sysout("Firebug.toggleAll("+offOrOn+") with allPagesActivation: "+Firebug.URLSelector.allPagesActivation);
+            FBTrace.sysout("Firebug.toggleAll("+offOrOn+") with allPagesActivation: "+Firebug.allPagesActivation);
 
         if (offOrOn == "on" || offOrOn == "off")
         {
-            if (Firebug.URLSelector.allPagesActivation == offOrOn) // then we were armed
-                Firebug.URLSelector.allPagesActivation = "none";
+            if (Firebug.allPagesActivation == offOrOn) // then we were armed
+                Firebug.allPagesActivation = "none";
             else
                 (offOrOn == "off") ? Firebug.allOff() : Firebug.allOn();
 
-            Firebug.chrome.disableOff(Firebug.URLSelector.allPagesActivation == "on");  // don't show Off if we are always on
+            Firebug.chrome.disableOff(Firebug.allPagesActivation == "on");  // don't show Off if we are always on
         }
         else
-            Firebug.URLSelector.allPagesActivation = "none";
+            Firebug.allPagesActivation = "none";
 
-        Firebug.setPref(Firebug.prefDomain, "allPagesActivation",  Firebug.URLSelector.allPagesActivation);
+        Firebug.setPref(Firebug.prefDomain, "allPagesActivation",  Firebug.allPagesActivation);
         Firebug.updateAllPagesActivation();
     },
 
     allOn: function()
     {
-        Firebug.URLSelector.allPagesActivation = "on";  // In future we always create contexts,
+        Firebug.allPagesActivation = "on";  // In future we always create contexts,
         Firebug.toggleBar(true);  // and we turn on for the current page
     },
 
     allOff: function()
     {
-        Firebug.URLSelector.allPagesActivation = "off";  // In future we don't create contexts,
+        Firebug.allPagesActivation = "off";  // In future we don't create contexts,
 
         TabWatcher.iterateContexts(function turnOff(context)  // we close the current contexts,
         {
@@ -1256,10 +1256,16 @@ top.Firebug =
         Firebug.URLSelector.clearAll();  // and the past pages with contexts are forgotten.
     },
 
+    updateOption: function(name, value)
+    {
+        if (name = "allPagesActivation")
+            this.updateAllPagesActivation();
+    },
+
     updateAllPagesActivation: function()
     {
-        $('menu_AllOff').setAttribute("checked", (Firebug.URLSelector.allPagesActivation=="off") );
-        $('menu_AllOn').setAttribute("checked", (Firebug.URLSelector.allPagesActivation=="on"));
+        $('menu_AllOff').setAttribute("checked", (Firebug.allPagesActivation=="off") );
+        $('menu_AllOn').setAttribute("checked", (Firebug.allPagesActivation=="on"));
     },
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -3425,13 +3431,11 @@ Firebug.ModuleManager =
 Firebug.URLSelector =
 {
     annotationName: "firebug/history",
-    allPagesActivation: "none",
 
     initialize: function()  // called once
     {
         this.annotationSvc = Components.classes["@mozilla.org/browser/annotation-service;1"]
             .getService(Components.interfaces.nsIAnnotationService);
-        this.allPagesActivation = Firebug.getPref(Firebug.prefDomain, "allPagesActivation");
         this.expires = this.annotationSvc.EXPIRE_NEVER;
         Firebug.updateAllPagesActivation();
     },
@@ -3466,10 +3470,10 @@ Firebug.URLSelector =
 
     shouldCreateContext: function(browser, url, userCommands)  // true if the Places annotation the URI "firebugged"
     {
-        if (this.allPagesActivation == "off")
+        if (Firebug.allPagesActivation == "off")
             return false;
 
-        if (this.allPagesActivation == "on")
+        if (Firebug.allPagesActivation == "on")
             return true;
 
         if (Firebug.filterSystemURLs && isSystemURL(url)) // if about:blank gets thru, 1483 fails
@@ -3494,10 +3498,10 @@ Firebug.URLSelector =
             }
             else  // not annotated
             {
-                if (this.allPagesActivation == "on")
+                if (Firebug.allPagesActivation == "on")
                 {
                     if (FBTrace.DBG_WINDOWS)
-                        FBTrace.sysout("shouldCreateContext allPagesActivation "+this.allPagesActivation);
+                        FBTrace.sysout("shouldCreateContext allPagesActivation "+Firebug.allPagesActivation);
                     return true;
                 }
 
@@ -3567,7 +3571,7 @@ Firebug.URLSelector =
         if (FBTrace.DBG_ACTIVATION)
             FBTrace.sysout("shouldCreateContext read back annotation "+annotation+" for uri "+uri.spec);
 
-        if ((this.allPagesActivation != "on") && (annotation.indexOf("closed") > 0)) // then the user closed Firebug on this page last time
+        if ((Firebug.allPagesActivation != "on") && (annotation.indexOf("closed") > 0)) // then the user closed Firebug on this page last time
             return false; // annotated as 'closed', don't create
         else
             return true;    // annotated, createContext
