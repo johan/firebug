@@ -28,7 +28,7 @@ var baseURI = "chrome://firebugTests/content/";
  *                              opening of the test page from FBTest console (context menu "Open Test Page").
  */
 var testList = [
-    {group: "firebug", uri: "firebug/allOpenAllClose.js",              desc: "First test: all open and all close"},
+    {group: "firebug", uri: "firebug/allOpenAllClose1.5.js",           desc: "First test: all open and all close"},
     {group: "firebug", uri: "firebug/openInNewWindow.js",              desc: "Firebug opened in a new window" },
     {group: "firebug", uri: "firebug/viralActivation.js",              desc: "Links from active pages should be active" },
     {group: "firebug", uri: "firebug/activeContextAfterReload.js",     desc: "Reloading a FF tab with Firebug open." },
@@ -50,9 +50,9 @@ var testList = [
     {group: "console", uri: "console/onreadystatechange.js",           desc: "Log an onreadystatechange function." },
     {group: "console", uri: "console/issue1591.js",                    desc: "Issue 1591: Firebug cannot find _firebugConsole element." },
     {group: "console", uri: "console/reps/console_array.js",           desc: "Rendering of Array and Array-like objects." },
-    {group: "console", uri: "console/1693/Issue1693.js",               desc: "Viewing requests with large message bodies in Console tab temporarily freezes browser", testPage: "console/1693/Issue1693.html" },
+    {group: "console", uri: "console/1693/issue1693.js",               desc: "Viewing requests with large message bodies in Console tab temporarily freezes browser", testPage: "console/1693/issue1693.html" },
     {group: "console", uri: "console/872/872.js",                      desc: "Show errors from reloaded iframes", testPage: "console/872/main.html" },
-    {group: "console", uri: "console/882/driver.html",                 desc: "Issue 882: console.log() reports wrong source file and line number", testPage: "console/882/issue882.html"},
+    {group: "console", uri: "console/882/issue882.js",                 desc: "Issue 882: console.log() reports wrong source file and line number", testPage: "console/882/issue882.html"},
     {group: "dom",     uri: "dom/1738/1738.js",                        desc: "Editing DOM values", testPage: "dom/1738/main.html" },
     {group: "net",     uri: "net/1256/issue1256.js",                   desc: "Issue1256: Firebug displays spaces as plus signs in POST fields", testPage: "net/1256/issue1256.html" },
     {group: "net",     uri: "net/1275/issue1275.js",                   desc: "Issue1275: firebug does not show JSON answers from server" },
@@ -62,7 +62,7 @@ var testList = [
     {group: "net",     uri: "net/369/issue369.js",                     desc: "Issue 369: Inspect JSON data in HTTP responses" },
     {group: "net",     uri: "net/1299/issue1299Driver.js",             desc: "Issue 1299: Failed to load source for sourceFile." },
     {group: "net",     uri: "net/activation/activation.js",            desc: "Verify Net panel content after activation on more tabs (Firebug opened within Firefox)." },
-    {group: "net",     uri: "net/372/issue372.js",                     desc: "Issue 372: Outgoing XML isn't displayed in 'post'-tab" },
+    {group: "net",     uri: "net/372/issue372-1.4.js",                 desc: "Issue 372: Outgoing XML isn't displayed in 'post'-tab", testPage: "net/372/issue372.html" },
     {group: "net",     uri: "net/1468/issue1468.js",                   desc: "Issue 1468: File Locking on File upload when firebug is installed" },
     {group: "net",     uri: "net/1308/issue1308.js",                   desc: "Issue 1308: Missing URL-Encoding of reserved characters when using 'Copy Location with Parameters' from Net Panel" },
     {group: "net",     uri: "net/601/issue601.js",                     desc: "Issue 601: XHR in console shows stale/cached output", testPage: "net/601/issue601.html"},
