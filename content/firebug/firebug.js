@@ -241,7 +241,7 @@ top.Firebug =
             "fbCommandLine", "fbFirebugMenu", "fbLargeCommandLine", "menu_customizeShortcuts",
             "menu_enableA11y", "menu_activateSameOrigin", "fbContinueButton", "fbBreakOnNextButton",
             "fbMinimizeButton", "FirebugMenu_Sites", "fbResumeBoxButton",
-            "menu_AllOff", "menu_AllOn"];
+            "menu_AllOn", "menu_clearActivationList"];
 
         var tooltipTextElements = ["fbContinueButton", "fbBreakOnNextButton", "fbMinimizeButton"];
         for (var i=0; i<elements.length; i++)
@@ -274,18 +274,6 @@ top.Firebug =
         TabWatcher.initialize(this);
         TabWatcher.addListener(this);
 
-        try
-        {
-            Firebug.URLSelector.initialize();
-            TabWatcher.addListener(Firebug.URLSelector);  // listen for shouldCreateContext
-            uiListeners.push(Firebug.URLSelector); // listen for showUI
-        }
-        catch (exc)
-        {
-            if (FBTrace.DBG_ERRORS)
-                FBTrace.sysout("Firebug.initializeUI failed to connect to URLSelector "+exc, exc);
-        }
-
         // If another window is opened, then the creation of our first context won't
         // result in calling of enable, so we have to enable our modules ourself
         //if (fbs.enabled)
@@ -302,9 +290,6 @@ top.Firebug =
         // destroyContext event is properly dispatched to the Firebug object and
         // consequently to all registered modules.
         TabWatcher.removeListener(this);
-
-        // It's more logical if URLSelector is also removed after TabWatcher.destroy().
-        TabWatcher.removeListener(Firebug.URLSelector);
 
         dispatch(modules, "disable", [FirebugChrome]);
 
@@ -448,10 +433,10 @@ top.Firebug =
             var label = $STR("enablement.on");
             tooltip += "\n"+label+" "+$STR("enablement.for all pages");
         }
-        if (Firebug.allPagesActivation == "off")
+        else if (Firebug.allPagesActivation != "none")
         {
-            var label = $STR("enablement.off");
-            tooltip += "\n"+label+" "+$STR("enablement.for all pages");
+            if (FBTrace.DBG_ERRORS)
+                FBTrace.sysout("Firebug.allPagesActivation has an unexpected value: "+Firebug.allPagesActivation);
         }
         // else allPagesActivation == "none" we don't show it.
 
@@ -1195,79 +1180,6 @@ top.Firebug =
         }
     },
 
-    toggleAll: function(offOrOn)
-    {
-        if (FBTrace.DBG_WINDOWS)
-            FBTrace.sysout("Firebug.toggleAll("+offOrOn+") with allPagesActivation: "+Firebug.allPagesActivation);
-
-        if (offOrOn == "on" || offOrOn == "off")
-        {
-            if (Firebug.allPagesActivation == offOrOn) // then we were armed
-                Firebug.allPagesActivation = "none";
-            else
-                (offOrOn == "off") ? Firebug.allOff() : Firebug.allOn();
-
-            Firebug.chrome.disableOff(Firebug.allPagesActivation == "on");  // don't show Off if we are always on
-        }
-        else
-            Firebug.allPagesActivation = "none";
-
-        Firebug.setPref(Firebug.prefDomain, "allPagesActivation",  Firebug.allPagesActivation);
-        Firebug.updateAllPagesActivation();
-    },
-
-    allOn: function()
-    {
-        Firebug.allPagesActivation = "on";  // In future we always create contexts,
-        Firebug.toggleBar(true);  // and we turn on for the current page
-    },
-
-    allOff: function()
-    {
-        Firebug.allPagesActivation = "off";  // In future we don't create contexts,
-
-        TabWatcher.iterateContexts(function turnOff(context)  // we close the current contexts,
-        {
-            if (!context.browser)
-            {
-                if (FBTrace.DBG_ERRORS)
-                    FBTrace.sysout("context with no browser??!! "+context.getName());
-                return;
-            }
-            if (context != FirebugContext)
-                TabWatcher.unwatchBrowser(context.browser);
-        });
-
-        if (Firebug.isDetached())
-        {
-            // The current detached chrome object is Firebug.chrome.
-            Firebug.chrome.close();  // should call unwatchBrowser
-            detachCommand.setAttribute("checked", false);
-            return;
-        }
-
-        if (Firebug.isInBrowser())
-        {
-            Firebug.chrome.hidePanel();
-            this.showBar(false);
-        }
-
-        Firebug.closeFirebug();
-        Firebug.URLSelector.clearAll();  // and the past pages with contexts are forgotten.
-    },
-
-    updateOption: function(name, value)
-    {
-        if (name = "allPagesActivation")
-            this.updateAllPagesActivation();
-    },
-
-    updateAllPagesActivation: function()
-    {
-        $('menu_AllOff').setAttribute("checked", (Firebug.allPagesActivation=="off") );
-        $('menu_AllOn').setAttribute("checked", (Firebug.allPagesActivation=="on"));
-    },
-
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
     resetAllOptions: function(confirm)  // to default state
@@ -1611,12 +1523,28 @@ top.Firebug =
 
         return (Firebug.previousPlacement && (Firebug.previousPlacement == PLACEMENT_MINIMIZED) )
     },
+    
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
     // TabWatcher Listener
 
     getContextType: function()
     {
         return Firebug.TabContext;
+    },
+
+    shouldShowContext: function(context)
+    {
+        return dispatch2(modules, "shouldShowContext", [context]);
+    },
+
+    shouldCreateContext: function(browser, url, userCommands)
+    {
+        return dispatch2(modules, "shouldCreateContext", [browser, url, userCommands]);
+    },
+
+    shouldNotCreateContext: function(browser, url, userCommands)
+    {
+        return dispatch2(modules, "shouldNotCreateContext", [browser, url, userCommands]);
     },
 
     initContext: function(context, persistedState)  // called after a context is created.
@@ -3426,218 +3354,5 @@ Firebug.ModuleManager =
     },
 }
 
-//*************************************************************************************************
-// A TabWatch listener and a uiListener
-
-Firebug.URLSelector =
-{
-    annotationName: "firebug/history",
-
-    initialize: function()  // called once
-    {
-        this.annotationSvc = Components.classes["@mozilla.org/browser/annotation-service;1"]
-            .getService(Components.interfaces.nsIAnnotationService);
-        this.expires = this.annotationSvc.EXPIRE_NEVER;
-        Firebug.updateAllPagesActivation();
-    },
-
-    convertToURIKey: function(url)  // process the URL to canonicalize it. Need not be reversible.
-    {
-        var uri = makeURI(normalizeURL(url));
-
-        if (Firebug.filterSystemURLs && isSystemURL(url))
-            return uri;
-
-        if (url == "about:blank")  // avoid exceptions.
-            return uri;
-
-        if (uri && Firebug.activateSameOrigin)
-        {
-            var prePath = uri.prePath; // returns the string before the path (such as "scheme://user:password@host:port").
-            var shortURI = makeURI(prePath);
-            if (!shortURI)
-                return uri;
-
-            var host = shortURI.host;
-            if (host)
-            {
-                var crossDomain = host.split('.').slice(-2)
-                shortURI.host = crossDomain.join('.');
-                return shortURI
-            }
-        }
-        return uri;
-    },
-
-    shouldCreateContext: function(browser, url, userCommands)  // true if the Places annotation the URI "firebugged"
-    {
-        if (Firebug.allPagesActivation == "off")
-            return false;
-
-        if (Firebug.allPagesActivation == "on")
-            return true;
-
-        if (Firebug.filterSystemURLs && isSystemURL(url)) // if about:blank gets thru, 1483 fails
-            return false;
-
-        if (userCommands)
-            return true;
-
-        try
-        {
-            var uri = this.convertToURIKey(url);
-            if (!uri)
-                return false;
-
-            var hasAnnotation = this.annotationSvc.pageHasAnnotation(uri, this.annotationName);
-            if (FBTrace.DBG_ACTIVATION)
-                FBTrace.sysout("shouldCreateContext hasAnnotation "+hasAnnotation+" for "+uri.spec+" in "+browser.contentWindow.location+ " using activateSameOrigin: "+Firebug.activateSameOrigin);
-
-            if (hasAnnotation)
-            {
-                return this.checkAnnotation(browser, uri);
-            }
-            else  // not annotated
-            {
-                if (Firebug.allPagesActivation == "on")
-                {
-                    if (FBTrace.DBG_WINDOWS)
-                        FBTrace.sysout("shouldCreateContext allPagesActivation "+Firebug.allPagesActivation);
-                    return true;
-                }
-
-                if (browser.FirebugLink) // then TabWatcher found a connection
-                {
-                    var dst = browser.FirebugLink.dst;
-                    var dstURI = this.convertToURIKey(dst.spec);
-                    if (FBTrace.DBG_ACTIVATION)
-                        FBTrace.sysout("shouldCreateContext found FirebugLink pointing to " +
-                            dstURI.spec, browser.FirebugLink);
-
-                    if (dstURI && dstURI.equals(uri)) // and it matches us now
-                    {
-                        var srcURI = this.convertToURIKey(browser.FirebugLink.src.spec);
-                        if (srcURI)
-                        {
-                            if (FBTrace.DBG_ACTIVATION)
-                                FBTrace.sysout("shouldCreateContext found FirebugLink pointing from " +
-                                    srcURI.spec, browser.FirebugLink);
-
-                            if (srcURI.schemeIs("file") || (dstURI.host == srcURI.host) ) // and it's on the same domain
-                            {
-                                hasAnnotation = this.annotationSvc.pageHasAnnotation(srcURI, this.annotationName);
-                                if (hasAnnotation) // and the source page was annotated.
-                                {
-                                    var srcShow = this.checkAnnotation(browser, srcURI);
-                                    if (srcShow)  // and the source annotation said show it
-                                        this.watchBrowser(browser);  // so we show dst as well.
-                                    return srcShow;
-                                }
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if (FBTrace.DBG_ACTIVATION)
-                            FBTrace.sysout("shouldCreateContext FirebugLink does not match "+uri.spec, browser.FirebugLink);
-                    }
-                }
-                else if (browser.contentWindow.opener)
-                {
-                    var openerContext = TabWatcher.getContextByWindow(browser.contentWindow.opener);
-
-                    if (FBTrace.DBG_ACTIVATION)
-                        FBTrace.sysout("shouldCreateContext opener found, has "+
-                            (openerContext?"a ":"no ")+" context: "+
-                            browser.contentWindow.opener.location);
-
-                    if (openerContext)
-                        return true;  // popup windows of Firebugged windows are Firebugged
-                }
-
-                return false;   // don't createContext
-            }
-        }
-        catch (exc)
-        {
-            if (FBTrace.DBG_ERRORS)
-                FBTrace.sysout("pageHasAnnoation FAILS for url: "+url+" which gave uri "+(uri?uri.spec:"null"), exc);
-        }
-    },
-
-    checkAnnotation: function(browser, uri)
-    {
-        var annotation = this.annotationSvc.getPageAnnotation(uri, this.annotationName);
-
-        if (FBTrace.DBG_ACTIVATION)
-            FBTrace.sysout("shouldCreateContext read back annotation "+annotation+" for uri "+uri.spec);
-
-        if ((Firebug.allPagesActivation != "on") && (annotation.indexOf("closed") > 0)) // then the user closed Firebug on this page last time
-            return false; // annotated as 'closed', don't create
-        else
-            return true;    // annotated, createContext
-    },
-
-    shouldShowContext: function(context)
-    {
-        return Firebug.URLSelector.shouldCreateContext(context.browser, context.getWindowLocation().toString());
-    },
-
-    watchBrowser: function(browser)  // Firebug is opened in browser
-    {
-        var annotation = "firebugged.showFirebug";
-
-        // mark this URI as firebugged
-        var uri = this.convertToURIKey(browser.currentURI.spec);
-        if (uri)
-            this.annotationSvc.setPageAnnotation(uri, this.annotationName, annotation,
-                null, this.expires);
-
-        if (FBTrace.DBG_ACTIVATION)
-        {
-            if (!this.annotationSvc.pageHasAnnotation(uri, this.annotationName))
-                FBTrace.sysout("nsIAnnotationService FAILS for "+uri.spec);
-            FBTrace.sysout("Firebug.URLSelector.watchBrowser tagged "+uri.spec+" with: "+annotation);
-        }
-    },
-
-    unwatchBrowser: function(browser, userCommands)  // Firebug closes in browser
-    {
-        var uri  = this.convertToURIKey(browser.currentURI.spec);
-
-        if (!uri)
-            return;
-
-        if (userCommands)  // then mark to not open virally.
-        {
-            var annotation = "firebugged.closed";
-            this.annotationSvc.setPageAnnotation(uri, this.annotationName, annotation, null, this.annotationSvc.EXPIRE_WITH_HISTORY);
-        }
-        else
-        {
-            this.annotationSvc.removePageAnnotation(uri, this.annotationName); // unmark this URI
-
-            if (FBTrace.DBG_ACTIVATION)
-                FBTrace.sysout("Firebug.URLSelector.unwatchBrowser untagged "+uri.spec);
-        }
-    },
-
-    clearAll: function()
-    {
-        var resultCount = {};
-        var results = [];
-        var uris = this.annotationSvc.getPagesWithAnnotation(this.annotationName, resultCount, results);
-        for (var i = 0; i < uris.length; i++)
-        {
-            var uri = uris[i];
-            this.annotationSvc.removePageAnnotation(uri, this.annotationName); // unmark this URI
-            if (FBTrace.DBG_ACTIVATION)
-                FBTrace.sysout("Firebug.URLSelector.clearAll untagged "+uri.spec);
-        }
-    },
-
-}
-
 // ************************************************************************************************
-
 }});
