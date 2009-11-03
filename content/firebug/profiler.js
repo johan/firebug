@@ -377,7 +377,7 @@ Firebug.Profiler.ProfileCall = domplate(Firebug.Rep,
     {
         try
         {
-            var fn = call.script.functionObject.getWrappedValue();
+            var fn = unwrapIValue(call.script.functionObject);
             return FirebugReps.Func.getTooltip(fn, call.context);
         }
         catch (exc)
@@ -389,7 +389,7 @@ Firebug.Profiler.ProfileCall = domplate(Firebug.Rep,
 
     getContextMenuItems: function(call, target, context)
     {
-        var fn = call.script.functionObject.getWrappedValue();
+        var fn = unwrapIValue(call.script.functionObject);
         return FirebugReps.Func.getContextMenuItems(fn, call.script, context);
     }
 });

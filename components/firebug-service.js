@@ -1649,7 +1649,7 @@ FirebugService.prototype =
         {
                 try
                 {
-                    var global = jscontext.globalObject.getWrappedValue();
+                    var global = unwrapIValue(jscontext.globalObject);
 
                     if (FBTrace.DBG_FBS_JSCONTEXTS)
                         FBTrace.sysout("getJSContexts jsIContext tag:"+jscontext.tag+(jscontext.isValid?" - isValid\n":" - NOT valid\n"));
@@ -1817,10 +1817,11 @@ FirebugService.prototype =
         {
             var prop = listValue.value[i];
             try {
-            var name = prop.name.getWrappedValue();
-            FBTrace.sysout(i+"]"+name+"="+prop.value.getWrappedValue());
+                var name = unwrapIValue(prop.name);
+                var value = unwrapIValue(prop.value);
+                FBTrace.sysout(i+"]"+name+"="+value);
             } catch (e) {
-            FBTrace.sysout(i+"]"+e);
+                FBTrace.sysout(i+"]"+e);
             }
         }
     },
@@ -2574,7 +2575,7 @@ function getFrameScopeWindowAncestor(frame)  // walk script scope chain to botto
             scope = scope.jsParent;
 
         if (scope.jsClassName == "Window" || scope.jsClassName == "ChromeWindow")
-            return  scope.getWrappedValue();
+            return  new XPCNativeWrapper(scope.getWrappedValue());
 
         if (FBTrace.DBG_FBS_FINDDEBUGGER)
             FBTrace.sysout("fbs.getFrameScopeWindowAncestor found scope chain bottom, not Window: "+scope.jsClassName, scope);
@@ -2590,7 +2591,7 @@ function getFrameGlobal(frame)
     {
         return getFrameWindow(frame);
     }
-    var frameGlobal = jscontext.globalObject.getWrappedValue();
+    var frameGlobal = new XPCNativeWrapper(jscontext.globalObject.getWrappedValue());
     if (frameGlobal)
         return frameGlobal;
     else
@@ -2607,7 +2608,7 @@ function getFrameWindow(frame)
     {
         var result = {};
         frame.eval("window", "", 1, result);
-        var win = result.value.getWrappedValue();
+        var win = new XPCNativeWrapper(result.value.getWrappedValue());
         if (win instanceof Ci.nsIDOMWindow)
             return getRootWindow(win);
         else
@@ -2647,6 +2648,40 @@ function countFrames(frame)
     return frameCount;
 }
 
+const jsdIValue_TYPE_BOOLEAN = 0;
+const jsdIValue_TYPE_DOUBLE = 1;
+const jsdIValue_TYPE_INT = 2;
+const jsdIValue_TYPE_FUNCTION = 3;
+const jsdIValue_TYPE_NULL = 4;
+const jsdIValue_TYPE_OBJECT = 5;
+const jsdIValue_TYPE_STRING = 6;
+const jsdIValue_TYPE_VOID = 7;
+
+function unwrapIValue(object)
+{
+    var unwrapped = object.getWrappedValue();
+
+    switch(object.jsType)  // these objects are immutable, and thus safe.
+    {
+    case jsdIValue_TYPE_BOOLEAN: return unwrapped;
+    case jsdIValue_TYPE_DOUBLE: return unwrapped;
+    case jsdIValue_TYPE_INT: return unwrapped;
+    case jsdIValue_TYPE_NULL: return unwrapped;
+    case jsdIValue_TYPE_STRING: return unwrapped;
+    case jsdIValue_TYPE_VOID: return unwrapped;
+    }
+
+    try
+    {
+        return new XPCSafeJSObjectWrapper(unwrapped);
+    }
+    catch (exc)
+    {
+        if (FBTrace.DBG_ERRORS)
+            FBTrace.sysout("fbs.unwrapIValue FAILS for "+object+" unwrapped "+unwrapped,{exc: exc, object: object, unwrapped: unwrapped});
+    }
+}
+
 function testBreakpoint(frame, bp)
 {
     if (FBTrace.DBG_FBS_BP) FBTrace.sysout("fbs.testBreakpoint "+bp.condition, bp);
@@ -2662,7 +2697,7 @@ function testBreakpoint(frame, bp)
                     return false;
             } else
             {
-                var value = result.value.getWrappedValue();
+                var value = unwrapIValue(result.value);
                 if (typeof bp.lastValue == "undefined")
                 {
                     bp.lastValue = value;
@@ -2808,7 +2843,7 @@ var trackFiles  = {
     {
         var jscontext = frame.executionContext;
         if (jscontext)
-            frameGlobal = jscontext.globalObject.getWrappedValue();
+            frameGlobal = unwrapIValue(jscontext.globalObject);
 
         var scopeName = fbs.getLocationSafe(frameGlobal);
         if (!scopeName)

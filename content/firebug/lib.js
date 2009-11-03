@@ -2025,7 +2025,7 @@ this.forEachFunction = function(context, cb)
                 var testFunctionObject = script.functionObject;
                 if (!testFunctionObject.isValid)
                     return false;
-                var theFunction = testFunctionObject.getWrappedValue();
+                var theFunction = unwrapIValue(testFunctionObject);
 
                 var rc = cb(script, theFunction);
                 if (rc)
@@ -2060,7 +2060,7 @@ this.findScriptForFunction = function(fn)
 
                 var iValueFunctionObject = script.functionObject;
                 //FBTrace.dumpIValue("lib.findScriptForFunction iValueFunctionObject", iValueFunctionObject);
-                var testFunctionObject = script.functionObject.getWrappedValue();
+                var testFunctionObject = unwrapIValue(script.functionObject);
                 if (testFunctionObject instanceof Function)
                     FBTrace.sysout("lib.findScriptForFunction testFunctionObject "+testFunctionObject+" vs "+fn+"\n");
                 if (testFunctionObject == fn)
@@ -2186,7 +2186,7 @@ this.getFunctionArgValues = function(fn, frame)
     {
         var argName = argNames[i];
         var pvalue = frame.scope.getProperty(argName);
-        var value = pvalue ? pvalue.value.getWrappedValue() : undefined;
+        var value = pvalue ? unwrapIValue(pvalue.value) : undefined;
         values.push({name: argName, value: value});
     }
 
@@ -4169,7 +4169,7 @@ this.SourceFile.prototype.NestedScriptAnalyzer.prototype =
         if (frame)
         {
             var name = frame.name;
-            var fnc = script.functionObject.getWrappedValue();
+            var fnc = unwrapIValue(script.functionObject);
             var args = FBL.getFunctionArgValues(fnc, frame);
         }
         else
@@ -4336,7 +4336,7 @@ this.EventSourceFile.prototype.OuterScriptAnalyzer.prototype =
     // Interpret frame to give fn(args)
     getFunctionDescription: function(script, context, frame)
     {
-        var fn = script.functionObject.getWrappedValue();  //?? should be name of?
+        var fn = unwrapIValue(script.functionObject);  //?? should be name of?
         if (frame)
             var args = FBL.getFunctionArgValues(fn, frame);
         else
@@ -6872,6 +6872,42 @@ this.DOMWalker = function(doc, root)
 
     this.reset();
 };
+
+const jsdIValue_TYPE_BOOLEAN = 0;
+const jsdIValue_TYPE_DOUBLE = 1;
+const jsdIValue_TYPE_INT = 2;
+const jsdIValue_TYPE_FUNCTION = 3;
+const jsdIValue_TYPE_NULL = 4;
+const jsdIValue_TYPE_OBJECT = 5;
+const jsdIValue_TYPE_STRING = 6;
+const jsdIValue_TYPE_VOID = 7;
+
+this.unwrapIValue = function(object)
+{
+    var unwrapped = object.getWrappedValue();
+
+    switch(object.jsType)  // these objects are immutable, and thus safe.
+    {
+    case jsdIValue_TYPE_BOOLEAN: return unwrapped;
+    case jsdIValue_TYPE_DOUBLE: return unwrapped;
+    case jsdIValue_TYPE_INT: return unwrapped;
+    case jsdIValue_TYPE_NULL: return unwrapped;
+    case jsdIValue_TYPE_STRING: return unwrapped;
+    case jsdIValue_TYPE_VOID: return unwrapped;
+    }
+
+    var unwrapped = object.getWrappedValue();
+    try
+    {
+        if (unwrapped)
+            return new XPCSafeJSObjectWrapper(unwrapped);
+    }
+    catch (exc)
+    {
+        if (FBTrace.DBG_ERRORS)
+            FBTrace.sysout("FBL.unwrapIValue FAILS for "+object+" unwrapped "+unwrapped,{exc: exc, object: object, unwrapped: unwrapped});
+    }
+}
 
 }).apply(FBL);
 } catch(e) /*@explore*/
