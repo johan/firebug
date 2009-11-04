@@ -2025,7 +2025,7 @@ this.forEachFunction = function(context, cb)
                 var testFunctionObject = script.functionObject;
                 if (!testFunctionObject.isValid)
                     return false;
-                var theFunction = unwrapIValue(testFunctionObject);
+                var theFunction = FBL.unwrapIValue(testFunctionObject);
 
                 var rc = cb(script, theFunction);
                 if (rc)
@@ -2060,7 +2060,7 @@ this.findScriptForFunction = function(fn)
 
                 var iValueFunctionObject = script.functionObject;
                 //FBTrace.dumpIValue("lib.findScriptForFunction iValueFunctionObject", iValueFunctionObject);
-                var testFunctionObject = unwrapIValue(script.functionObject);
+                var testFunctionObject = FBL.unwrapIValue(script.functionObject);
                 if (testFunctionObject instanceof Function)
                     FBTrace.sysout("lib.findScriptForFunction testFunctionObject "+testFunctionObject+" vs "+fn+"\n");
                 if (testFunctionObject == fn)
@@ -2186,7 +2186,7 @@ this.getFunctionArgValues = function(fn, frame)
     {
         var argName = argNames[i];
         var pvalue = frame.scope.getProperty(argName);
-        var value = pvalue ? unwrapIValue(pvalue.value) : undefined;
+        var value = pvalue ? FBL.unwrapIValue(pvalue.value) : undefined;
         values.push({name: argName, value: value});
     }
 
@@ -4169,7 +4169,7 @@ this.SourceFile.prototype.NestedScriptAnalyzer.prototype =
         if (frame)
         {
             var name = frame.name;
-            var fnc = unwrapIValue(script.functionObject);
+            var fnc = FBL.unwrapIValue(script.functionObject);
             var args = FBL.getFunctionArgValues(fnc, frame);
         }
         else
@@ -4336,7 +4336,7 @@ this.EventSourceFile.prototype.OuterScriptAnalyzer.prototype =
     // Interpret frame to give fn(args)
     getFunctionDescription: function(script, context, frame)
     {
-        var fn = unwrapIValue(script.functionObject);  //?? should be name of?
+        var fn = FBL.unwrapIValue(script.functionObject);  //?? should be name of?
         if (frame)
             var args = FBL.getFunctionArgValues(fn, frame);
         else
