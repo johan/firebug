@@ -252,6 +252,17 @@ FirebugService.prototype =
         {
             FBTrace.sysout("fbs prefs.removeObserver fails "+exc, exc);
         }
+        
+        try 
+        {
+	        observerService.removeObserver(QuitApplicationGrantedObserver);
+	        observerService.removeObserver(QuitApplicationRequestedObserver);
+	        observerService.removeObserver(QuitApplicationObserver);
+        }
+        catch (exc)
+        {
+            FBTrace.sysout("fbs quit-application-observers removeObserver fails "+exc, exc);
+        }
 
         jsd = null;
         if (!jsd)
