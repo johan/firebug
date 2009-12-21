@@ -90,7 +90,7 @@ const COMPONENTS_FILTERS = [
     new RegExp("^(file:/.*/)extensions/firebug@software\\.joehewitt\\.com/components/.*\\.js$"),
     new RegExp("^(file:/.*/extensions/)\\w+@mozilla\\.org/components/.*\\.js$"),
     new RegExp("^(file:/.*/components/)ns[A-Z].*\\.js$"),
-    new RegExp("^(file:/.*/components/)firebug-service\\.js$"),
+    new RegExp("^(file:/.*/components/)firebug-[^\\.]*\\.js$"),
     new RegExp("^(file:/.*/Contents/MacOS/extensions/.*/components/).*\\.js$"),
     new RegExp("^(file:/.*/modules/).*\\.jsm$"),
     ];
@@ -252,12 +252,12 @@ FirebugService.prototype =
         {
             FBTrace.sysout("fbs prefs.removeObserver fails "+exc, exc);
         }
-        
-        try 
+
+        try
         {
-	        observerService.removeObserver(QuitApplicationGrantedObserver);
-	        observerService.removeObserver(QuitApplicationRequestedObserver);
-	        observerService.removeObserver(QuitApplicationObserver);
+            observerService.removeObserver(QuitApplicationGrantedObserver);
+            observerService.removeObserver(QuitApplicationRequestedObserver);
+            observerService.removeObserver(QuitApplicationObserver);
         }
         catch (exc)
         {
@@ -1692,6 +1692,10 @@ FirebugService.prototype =
     {
         jsd.appendFilter(this.noFilterHalter);  // must be first
         jsd.appendFilter(this.filterChrome);
+        jsd.appendFilter(this.filterComponents);
+        jsd.appendFilter(this.filterFirebugComponents);
+        jsd.appendFilter(this.filterModules);
+        jsd.appendFilter(this.filterStringBundle);
         jsd.appendFilter(this.filterPrettyPrint);
         jsd.appendFilter(this.filterWrapper);
 
@@ -1709,6 +1713,10 @@ FirebugService.prototype =
         if (fbs.isChromeBlocked)
         {
             jsd.removeFilter(this.filterChrome);
+            jsd.removeFilter(this.filterComponents);
+            jsd.removeFilter(this.filterFirebugComponents);
+            jsd.removeFilter(this.filterModules);
+            jsd.removeFilter(this.filterStringBundle);
             jsd.removeFilter(this.filterPrettyPrint);
             jsd.removeFilter(this.filterWrapper);
             jsd.removeFilter(this.noFilterHalter);
@@ -1725,38 +1733,42 @@ FirebugService.prototype =
     {
         try
         {
-        this.filterChrome = this.createFilter("chrome://*");
-        this.filterPrettyPrint = this.createFilter("x-jsd:ppbuffer*");
-        this.filterWrapper = this.createFilter("XPCSafeJSObjectWrapper.cpp");
-        this.noFilterHalter = this.createFilter("chrome://firebug/content/debuggerHalter.js", true);
+            this.filterModules = this.createFilter("*/firefox/modules/*");
+            this.filterComponents = this.createFilter("*/firefox/components/*");
+            this.filterFirebugComponents = this.createFilter("*/components/firebug-*");
+            this.filterStringBundle = this.createFilter("XStringBundle");
+            this.filterChrome = this.createFilter("chrome://*");
+            this.filterPrettyPrint = this.createFilter("x-jsd:ppbuffer*");
+            this.filterWrapper = this.createFilter("XPCSafeJSObjectWrapper.cpp");
+            this.noFilterHalter = this.createFilter("chrome://firebug/content/debuggerHalter.js", true);
 
-        // jsdIFilter does not allow full regexp matching.
-        // So to filter components, we filter their directory names, which we obtain by looking for
-        // scripts that match regexps
+            // jsdIFilter does not allow full regexp matching.
+            // So to filter components, we filter their directory names, which we obtain by looking for
+            // scripts that match regexps
 
-        var componentsUnfound = [];
-        for( var i = 0; i < COMPONENTS_FILTERS.length; ++i )
-        {
-            componentsUnfound.push(COMPONENTS_FILTERS[i]);
-        }
+            var componentsUnfound = [];
+            for( var i = 0; i < COMPONENTS_FILTERS.length; ++i )
+            {
+                componentsUnfound.push(COMPONENTS_FILTERS[i]);
+            }
 
-        this.componentFilters = [];
+            this.componentFilters = [];
 
-        jsd.enumerateScripts( {
-            enumerateScript: function(script) {
-                var fileName = script.fileName;
+            jsd.enumerateScripts( {
+                enumerateScript: function(script) {
+                    var fileName = script.fileName;
                 for( var i = 0; i < componentsUnfound.length; ++i )
-                {
-                    if ( componentsUnfound[i].test(fileName) )
                     {
-                        var match = componentsUnfound[i].exec(fileName);
-                        fbs.componentFilters.push(fbs.createFilter(match[1]));
-                        componentsUnfound.splice(i, 1);
-                        return;
+                        if ( componentsUnfound[i].test(fileName) )
+                        {
+                            var match = componentsUnfound[i].exec(fileName);
+                            fbs.componentFilters.push(fbs.createFilter(match[1]));
+                            componentsUnfound.splice(i, 1);
+                            return;
+                        }
                     }
                 }
-            }
-        });
+            });
         } catch (exc) {
             FBTrace.sysout("createChromeblockingFilters fails >>>>>>>>>>>>>>>>> "+exc, exc);
         }
