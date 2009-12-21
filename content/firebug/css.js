@@ -458,10 +458,23 @@ Firebug.CSSStyleSheetPanel.prototype = extend(Firebug.SourceBoxPanel,
     {
         var props = [];
 
-        var ruleRE = /\{(.*?)\}$/;
-        var m = ruleRE.exec(rule.cssText);
-        if (!m)
-            return props;
+        if (Firebug.expandShorthandProps)
+        {
+            var style = rule.style,
+                count = style.length-1,
+                index = style.length;
+            while (index--)
+            {
+                var propName = style.item(count - index);
+                this.addProperty(propName, style.getPropertyValue(propName), !!style.getPropertyPriority(propName), false, inheritMode, props);
+            }
+        }
+        else
+        {
+            var ruleRE = /\{(.*?)\}$/;
+            var m = ruleRE.exec(rule.cssText);
+            if (!m)
+                return props;
 
             var lines = m[1].match(/(?:[^;\(]*(?:\([^\)]*?\))?[^;\(]*)*;?/g);
             var propRE = /\s*([^:\s]*)\s*:\s*(.*?)\s*(! important)?;?$/;
@@ -474,6 +487,7 @@ Firebug.CSSStyleSheetPanel.prototype = extend(Firebug.SourceBoxPanel,
                 if (m[2])
                     this.addProperty(m[1], m[2], !!m[3], false, inheritMode, props);
             };
+        }
 
         line = domUtils.getRuleLine(rule);
         var ruleId = rule.selectorText+"/"+line;
@@ -846,6 +860,12 @@ Firebug.CSSStyleSheetPanel.prototype = extend(Firebug.SourceBoxPanel,
         }
     },
 
+    updateOption: function(name, value)
+    {
+        if (name == "expandShorthandProps")
+            this.refresh();
+    },
+
     getLocationList: function()
     {
         var styleSheets = getAllStyleSheets(this.context);
@@ -855,6 +875,9 @@ Firebug.CSSStyleSheetPanel.prototype = extend(Firebug.SourceBoxPanel,
     getOptionsMenuItems: function()
     {
         return [
+            {label: "Expand Shorthand Properties", type: "checkbox", checked: Firebug.expandShorthandProps,
+                    command: bindFixed(Firebug.togglePref, Firebug, "expandShorthandProps") },
+            "-",
             {label: "Refresh", command: bind(this.refresh, this) }
         ];
     },
@@ -1404,7 +1427,7 @@ CSSElementPanel.prototype = extend(Firebug.CSSStyleSheetPanel.prototype,
 
     updateOption: function(name, value)
     {
-        if (name == "showUserAgentCSS")
+        if (name == "showUserAgentCSS" || name == "expandShorthandProps")
             this.refresh();
     },
 
@@ -1412,7 +1435,9 @@ CSSElementPanel.prototype = extend(Firebug.CSSStyleSheetPanel.prototype,
     {
         var ret = [
             {label: "Show User Agent CSS", type: "checkbox", checked: Firebug.showUserAgentCSS,
-                    command: bindFixed(Firebug.togglePref, Firebug, "showUserAgentCSS") }
+                    command: bindFixed(Firebug.togglePref, Firebug, "showUserAgentCSS") },
+            {label: "Expand Shorthand Properties", type: "checkbox", checked: Firebug.expandShorthandProps,
+                    command: bindFixed(Firebug.togglePref, Firebug, "expandShorthandProps") }
         ];
         if (domUtils && this.selection)
         {
