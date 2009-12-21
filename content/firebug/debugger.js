@@ -1883,6 +1883,11 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
 
         if (FBTrace.DBG_ACTIVATION)
             FBTrace.sysout("debugger.onSuspendFirebug paused: "+paused+" isAlwaysEnabled " +Firebug.Debugger.isAlwaysEnabled()+"\n");
+
+        if (!paused)  // then we failed to suspend, undo
+            return true;
+
+        return false;
     },
 
     onResumeFirebug: function()

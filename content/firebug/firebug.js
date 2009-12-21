@@ -400,8 +400,13 @@ top.Firebug =
     suspendFirebug: function() // dispatch onSuspendFirebug to all modules
     {
         this.setSuspended("suspending");
-        dispatch(activableModules, 'onSuspendFirebug', [FirebugContext]);  // TODO no context arg
-        this.setSuspended("suspended");
+
+        var cancelSuspend = dispatch2(activableModules, 'onSuspendFirebug', [FirebugContext]);  // TODO no context arg
+
+        if (cancelSuspend)
+            Firebug.resume();
+        else
+            this.setSuspended("suspended");
     },
 
     resume: function()
@@ -989,7 +994,7 @@ top.Firebug =
 
         if(!show)
             Firebug.Inspector.inspectNode(null);
-        
+
         if (contentSplitter)
             contentSplitter.setAttribute("collapsed", !shouldShow);
 
@@ -1512,6 +1517,9 @@ top.Firebug =
 
     enableXULWindow: function()  // Called when the first context is created.
     {
+        if (window.closed)
+            throw new Error("enableXULWindow window is closed");
+
         if (FBTrace.DBG_ACTIVATION)
             FBTrace.sysout("enable XUL Window +++++++++++++++++++++++++++++++++++++++", Firebug.detachArgs);
 
@@ -1531,8 +1539,8 @@ top.Firebug =
 
     onPauseJSDRequested: function(rejection)
     {
-        if (FirebugContext)  // then we are active in this browser.xul
-            rejection.push(true); // so reject the
+        if (top.FirebugContext)  // then we are active in this browser.xul
+            rejection.push(true); // so reject the request
 
         dispatch2(Firebug.Debugger.fbListeners, "onPauseJSDRequested", [rejection]);
     },
@@ -1688,7 +1696,10 @@ top.Firebug =
                 Firebug.resume();  // This will cause onResumeFirebug for every context including this one.
         }
         else // this browser has no context
-        Firebug.suspend();
+        {
+            Firebug.suspend();
+        }
+
         Firebug.resetTooltip();
     },
 
