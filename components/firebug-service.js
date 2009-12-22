@@ -851,16 +851,14 @@ FirebugService.prototype =
                 FBTrace.sysout("enableDebugger gets jsd service, isOn:"+jsd.isOn+" initAtStartup:"+jsd.initAtStartup+" now have "+debuggers.length+" debuggers"+" in "+clients.length+" clients");
         }
 
-        while(jsd.pauseDepth)  // unwind completely
-            jsd.unPause();
-
         if (!jsd.isOn)
         {
-            jsd.on();
+            jsd.on(); // this should be the only call to jsd.on().
             jsd.flags |= DISABLE_OBJECT_TRACE;
+
+            if (jsd.pauseDepth && FBTrace.DBG_FBS_ERRORS)
+                FBTrace.sysout("fbs.enableDebugger found non-zero jsd.pauseDepth !! "+jsd.pauseDepth)
         }
-
-
 
         if (!this.filterChrome)
             this.createChromeBlockingFilters();
@@ -908,9 +906,16 @@ FirebugService.prototype =
 
         enabledDebugger = false;
 
-        jsd.pause();
-        fbs.unhookScripts();
-        jsd.off();
+        if (jsd.isOn)
+        {
+            jsd.pause();
+            fbs.unhookScripts();
+
+            while (jsd.pauseDepth > 0)  // unwind completely
+                jsd.unPause();
+
+            jsd.off();
+        }
 
         var active = fbs.isJSDActive();
         dispatch(clients, "onJSDDeactivate", [active, "fbs disableDebugger"]);
@@ -928,9 +933,9 @@ FirebugService.prototype =
         var rejection = [];
         dispatch(clients, "onPauseJSDRequested", [rejection]);
 
-        if (rejection.length == 0)
+        if (rejection.length == 0)  // then everyone wants to pause
         {
-            if (jsd.pauseDepth == 0)  // marker only UI in debugger.js
+            if (jsd.pauseDepth == 0)  // don't pause if we are paused.
             {
                 jsd.pause();
                 fbs.unhookScripts();
@@ -938,9 +943,9 @@ FirebugService.prototype =
             var active = fbs.isJSDActive();
             dispatch(clients, "onJSDDeactivate", [active, "pause depth "+jsd.pauseDepth]);
         }
-        else
+        else // we don't want to pause
         {
-            while (jsd.pauseDepth > 0)
+            while (jsd.pauseDepth > 0)  // make sure we are not paused.
                 jsd.unPause();
         }
         if (FBTrace.DBG_FBS_FINDDEBUGGER || FBTrace.DBG_ACTIVATION)
@@ -954,14 +959,11 @@ FirebugService.prototype =
 
     unPause: function()
     {
-        if (jsd.pauseDepth || !jsd.isOn)
+        if (jsd.pauseDepth)
         {
-            if (!jsd.isOn)
-            {
-                jsd.on();
-                if (FBTrace.DBG_ACTIVATION)
-                    FBTrace.sysout("fbs.unpause turned on jsd and hooked scripts pauseDepth:"+jsd.pauseDepth);
-            }
+            if (FBTrace.DBG_ACTIVATION && !jsd.isOn)
+                FBTrace.sysout("fbs.unpause while jsd.isOn is false!! and hooked scripts pauseDepth:"+jsd.pauseDepth);
+
             fbs.hookScripts();
 
             var depth = jsd.unPause();
@@ -973,7 +975,7 @@ FirebugService.prototype =
             dispatch(clients, "onJSDActivate", [active, "unpause depth"+jsd.pauseDepth]);
 
         }
-        else
+        else  // we were not paused.
         {
             if (FBTrace.DBG_ACTIVATION)
                 FBTrace.sysout("fbs.unPause no action: (jsd.pauseDepth || !jsd.isOn) = ("+ jsd.pauseDepth+" || "+ !jsd.isOn+")");
@@ -1702,22 +1704,25 @@ FirebugService.prototype =
 
     setChromeBlockingFilters: function()
     {
-        jsd.appendFilter(this.noFilterHalter);  // must be first
-        jsd.appendFilter(this.filterChrome);
-        jsd.appendFilter(this.filterComponents);
-        jsd.appendFilter(this.filterFirebugComponents);
-        jsd.appendFilter(this.filterModules);
-        jsd.appendFilter(this.filterStringBundle);
-        jsd.appendFilter(this.filterPrettyPrint);
-        jsd.appendFilter(this.filterWrapper);
+        if (!fbs.isChromeBlocked)
+        {
+            jsd.appendFilter(this.noFilterHalter);  // must be first
+            jsd.appendFilter(this.filterChrome);
+            jsd.appendFilter(this.filterComponents);
+            jsd.appendFilter(this.filterFirebugComponents);
+            jsd.appendFilter(this.filterModules);
+            jsd.appendFilter(this.filterStringBundle);
+            jsd.appendFilter(this.filterPrettyPrint);
+            jsd.appendFilter(this.filterWrapper);
 
-        for (var i = 0; i < this.componentFilters.length; i++)
-            jsd.appendFilter(this.componentFilters[i]);
+            for (var i = 0; i < this.componentFilters.length; i++)
+                jsd.appendFilter(this.componentFilters[i]);
 
-        fbs.isChromeBlocked = true;
+            fbs.isChromeBlocked = true;
 
-        if (FBTrace.DBG_FBS_BP)
-            this.traceFilters("setChromeBlockingFilters with "+this.componentFilters.length+" component filters");
+            if (FBTrace.DBG_FBS_BP)
+                this.traceFilters("setChromeBlockingFilters with "+this.componentFilters.length+" component filters");
+        }
     },
 
     removeChromeBlockingFilters: function()
