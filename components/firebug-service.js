@@ -298,6 +298,7 @@ FirebugService.prototype =
     registerClient: function(client)  // clients are essentially XUL windows
     {
         clients.push(client);
+        return clients.length;
     },
 
     unregisterClient: function(client)
@@ -862,7 +863,9 @@ FirebugService.prototype =
         if (!this.filterChrome)
             this.createChromeBlockingFilters();
 
-        dispatch(clients, "onJSDActivate", [jsd, "fbs enableDebugger"]);
+        var active = fbs.isJSDActive();
+
+        dispatch(clients, "onJSDActivate", [active, "fbs enableDebugger"]);
         this.hookScripts();
     },
 
@@ -906,7 +909,9 @@ FirebugService.prototype =
         jsd.pause();
         fbs.unhookScripts();
         jsd.off();
-        dispatch(clients, "onJSDDeactivate", [jsd, "fbs disableDebugger"]);
+
+        var active = fbs.isJSDActive();
+        dispatch(clients, "onJSDDeactivate", [active, "fbs disableDebugger"]);
 
         fbs.onXScriptCreatedByTag = {};  // clear any uncleared top level scripts
 
@@ -928,7 +933,8 @@ FirebugService.prototype =
                 jsd.pause();
                 fbs.unhookScripts();
             }
-            dispatch(clients, "onJSDDeactivate", [jsd, "pause depth "+jsd.pauseDepth]);
+            var active = fbs.isJSDActive();
+            dispatch(clients, "onJSDDeactivate", [active, "pause depth "+jsd.pauseDepth]);
         }
         else
         {
@@ -955,10 +961,14 @@ FirebugService.prototype =
                     FBTrace.sysout("fbs.unpause turned on jsd and hooked scripts pauseDepth:"+jsd.pauseDepth);
             }
             fbs.hookScripts();
+
             var depth = jsd.unPause();
+            var active = fbs.isJSDActive();
+
             if (FBTrace.DBG_ACTIVATION)
-                FBTrace.sysout("fbs.unPause hooked scripts and unPaused depth "+depth+" jsd.isOn: "+jsd.isOn);
-            dispatch(clients, "onJSDActivate", [jsd, "unpause depth"+jsd.pauseDepth]);
+                FBTrace.sysout("fbs.unPause hooked scripts and unPaused, active:"+active+" depth "+depth+" jsd.isOn: "+jsd.isOn);
+
+            dispatch(clients, "onJSDActivate", [active, "unpause depth"+jsd.pauseDepth]);
 
         }
         else

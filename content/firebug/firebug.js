@@ -198,6 +198,8 @@ top.Firebug =
 
         var basePrefNames = prefNames.length;
 
+        this.clientID = Firebug.Debugger.registerClient(this);
+
         dispatch(modules, "initialize", [this.prefDomain, prefNames]);
 
         for (var i = basePrefNames; i < prefNames.length; ++i)
@@ -209,7 +211,7 @@ top.Firebug =
                 FBTrace.sysout("firebug.initialize option "+this.prefDomain+"."+prefNames[i]+"="+this[prefNames[i]]+"\n");
         }
         if (FBTrace.DBG_INITIALIZE)
-            FBTrace.sysout("firebug.initialize prefDomain "+this.prefDomain);
+            FBTrace.sysout("firebug.initialize client: "+this.clientID+" with prefDomain "+this.prefDomain);
 
         // In the case that the user opens firebug in a new window but then closes Firefox window, we don't get the
         // quitApplicationGranted event (platform is still running) and we call shutdown (Firebug isDetached).
@@ -311,6 +313,8 @@ top.Firebug =
     {
         window.removeEventListener('unload', shutdownFirebug, false);
 
+        Firebug.Debugger.unregisterClient(this);
+
         TabWatcher.destroy();
 
         // Remove the listener after the TabWatcher.destroy() method is called so,
@@ -328,8 +332,9 @@ top.Firebug =
 
         this.closeDeadWindows();
         this.deleteTemporaryFiles();
+
         if (FBTrace.DBG_INITIALIZE)
-            FBTrace.sysout("firebug.shutdown exited\n");
+            FBTrace.sysout("firebug.shutdown exited client "+this.clientID);
     },
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -1513,12 +1518,12 @@ top.Firebug =
     },
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-    // nsIFireBugClient  These are per XUL window callbacks
+    // nsIFireBugClient  These are per Firefox XUL window callbacks
 
     enableXULWindow: function()  // Called when the first context is created.
     {
         if (window.closed)
-            throw new Error("enableXULWindow window is closed");
+            throw new Error("enableXULWindow window is closed!!");
 
         if (FBTrace.DBG_ACTIVATION)
             FBTrace.sysout("enable XUL Window +++++++++++++++++++++++++++++++++++++++", Firebug.detachArgs);
@@ -1545,29 +1550,28 @@ top.Firebug =
         dispatch2(Firebug.Debugger.fbListeners, "onPauseJSDRequested", [rejection]);
     },
 
-    onJSDActivate: function(jsd, why)  // just before hooks are set
+    onJSDActivate: function(active, why)  // just before hooks are set
     {
-        var active = this.setIsJSDActive();
+        this.setIsJSDActive(active);
 
         if (FBTrace.DBG_ACTIVATION)
             FBTrace.sysout("debugger.onJSDActivate "+why+" active:"+active+"\n");
 
-        dispatch2(Firebug.Debugger.fbListeners,"onJSDActivate",[fbs, why]);
+        dispatch2(Firebug.Debugger.fbListeners, "onJSDActivate", [active, why]);
     },
 
-    onJSDDeactivate: function(jsd, why)
+    onJSDDeactivate: function(active, why)
     {
-        var active = this.setIsJSDActive();
+        this.setIsJSDActive(active);
 
         if (FBTrace.DBG_ACTIVATION)
             FBTrace.sysout("debugger.onJSDDeactivate "+why+" active:"+active+"\n");
 
-        dispatch2(Firebug.Debugger.fbListeners,"onJSDDeactivate",[fbs, why]);
+        dispatch2(Firebug.Debugger.fbListeners, "onJSDDeactivate", [active, why]);
     },
 
-    setIsJSDActive: function()  // should only be call on the jsd activation events, so it correctly reflects jsd state
+    setIsJSDActive: function(active)  // should only be call on the jsd activation events, so it correctly reflects jsd state
     {
-        var active = fbs.isJSDActive();
         if (active)
             $('fbStatusIcon').setAttribute("script", "on");
         else
@@ -1576,7 +1580,6 @@ top.Firebug =
         if (FBTrace.DBG_ACTIVATION)
             FBTrace.sysout("debugger.setIsJSDActive "+active+"\n");
 
-        return active;
     },
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
