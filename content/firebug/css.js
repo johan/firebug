@@ -1397,7 +1397,7 @@ CSSElementPanel.prototype = extend(Firebug.CSSStyleSheetPanel.prototype,
         this.updateCascadeView(element);
         if (domUtils)
         {
-            this.contentState = domUtils.getContentState(element);
+            this.contentState = safeGetContentState(element);
             this.addStateChangeHandlers(element);
         }
     },
@@ -1441,8 +1441,8 @@ CSSElementPanel.prototype = extend(Firebug.CSSStyleSheetPanel.prototype,
         ];
         if (domUtils && this.selection)
         {
-            var state = domUtils.getContentState(this.selection);
-    
+            var state = safeGetContentState(this.selection);
+
             ret.push("-");
             ret.push({label: ":active", type: "checkbox", checked: state & STATE_ACTIVE,
               command: bindFixed(this.updateContentState, this, STATE_ACTIVE, state & STATE_ACTIVE)});
@@ -1451,6 +1451,7 @@ CSSElementPanel.prototype = extend(Firebug.CSSStyleSheetPanel.prototype,
         }
         return ret;
     },
+
     updateContentState: function(state, remove)
     {
         domUtils.setContentState(remove ? this.selection.ownerDocument.documentElement : this.selection, state);
@@ -1470,6 +1471,7 @@ CSSElementPanel.prototype = extend(Firebug.CSSStyleSheetPanel.prototype,
 
       this.stateChangeEl = el;
     },
+
     removeStateChangeHandlers: function()
     {
         var sel = this.stateChangeEl;
@@ -1483,24 +1485,40 @@ CSSElementPanel.prototype = extend(Firebug.CSSStyleSheetPanel.prototype,
             sel.removeEventListener("mouseout", this.onStateChange, false);
         }
     },
+
     contentStateCheck: function(state)
     {
       if (!state || this.contentState & state)
       {
           var timeoutRunner = bindFixed(function()
               {
-                  var newState = domUtils.getContentState(this.selection);
+                  var newState = safeGetContentState(this.selection);
                   if (newState != this.contentState)
                   { 
                       this.context.invalidatePanels(this.name);
                   }
               }, this);
-  
+
           // Delay exec until after the event has processed and the state has been updated
           setTimeout(timeoutRunner, 0);
       }
     }
 });
+
+function safeGetContentState(selection)
+{
+    try
+    {
+        domUtils.getContentState(selection);
+    }
+    catch (e)
+    {
+        if (FBTrace.DBG_ERRORS)
+            FBTrace.sysout("css.safeGetContentState; EXCEPTION", e)
+    }
+}
+
+// ************************************************************************************************
 
 function CSSComputedElementPanel() {}
 
