@@ -2929,14 +2929,14 @@ Firebug.DisabledPanelPage = function(module)
 Firebug.DisabledPanelPage.prototype = domplate(Firebug.Rep,
 {
     tag:
-        DIV({class: "disabledPanelBox"},
-            H1({class: "disabledPanelHead"},
+        DIV({"class": "disabledPanelBox"},
+            H1({"class": "disabledPanelHead"},
                 SPAN("$pageTitle")
             ),
-            P({class: "disabledPanelDescription", style: "margin-top: 15px;"},
-                $STR("moduleManager.desc3"),
+            P({"class": "disabledPanelDescription", style: "margin-top: 15px;"},
+                $STR("moduleManager.desc4"),
                 SPAN("&nbsp;"),
-                IMG({src: "chrome://firebug/skin/activation-menu.png"})
+                SPAN({"class": "descImage descImage-$panelName"})
             )
             /* need something here that pushes down any thing appended to the panel */
          ),
@@ -2985,6 +2985,7 @@ Firebug.DisabledPanelPage.prototype = domplate(Firebug.Rep,
         // Prepare arguments for the template.
         var args = {
             pageTitle: $STRF("moduleManager.title", [this.getModuleName(this.module)]),
+            panelName: this.module.panelName
         };
 
         // Render panel HTML
