@@ -851,14 +851,16 @@ FirebugService.prototype =
                 FBTrace.sysout("enableDebugger gets jsd service, isOn:"+jsd.isOn+" initAtStartup:"+jsd.initAtStartup+" now have "+debuggers.length+" debuggers"+" in "+clients.length+" clients");
         }
 
+        while(jsd.pauseDepth)  // unwind completely
+            jsd.unPause();
+
         if (!jsd.isOn)
         {
             jsd.on();
             jsd.flags |= DISABLE_OBJECT_TRACE;
         }
 
-        while(jsd.pauseDepth)  // unwind completely
-            jsd.unPause();
+
 
         if (!this.filterChrome)
             this.createChromeBlockingFilters();
