@@ -6969,8 +6969,6 @@ this.unwrapObject = unwrapObject;
 
 this.unwrapIValue = function(object)
 {
-    if (object.jsType === 3)  // function type jsdIValues cannot be re-wrappered.
-        return;
     var unwrapped = object.getWrappedValue();
     try
     {
