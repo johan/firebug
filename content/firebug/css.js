@@ -1509,7 +1509,7 @@ function safeGetContentState(selection)
 {
     try
     {
-        domUtils.getContentState(selection);
+        return domUtils.getContentState(selection);
     }
     catch (e)
     {
