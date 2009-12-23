@@ -187,6 +187,13 @@ top.TabWatcher = extend(new Firebug.Listener(),
         if (context && !context.loaded && !context.showContextTimeout)
         {
             // still loading, we want to showContext one time but not too agressively
+            // xxxHonza: In case where the timeout is fired before the context is actually
+            // loaded (i.e. context.loaded == false) and the showContext is called
+            // some panels (css, html, dome) are not initialized and remain empty.
+            // These panels use if (context.loaded) condidtion to execute the init process.
+            // I am increasing the timeout to 2000, I guess that in most cases this shouldn't
+            // caus any real delay since showContext should be called through
+            // watchLoadedTopWindow and this timeout cancelled.
             context.showContextTimeout = setTimeout(bindFixed( function delayShowContext()
             {
                 if (FBTrace.DBG_WINDOWS)
@@ -198,7 +205,7 @@ top.TabWatcher = extend(new Firebug.Listener(),
                     if(FBTrace.DBG_ERRORS)
                         FBTrace.sysout("tabWatcher watchTopWindow no context.window "+(context.browser? context.browser.currentURI.spec : " and no context.browser")+"\n");
                 }
-            }, this), 400);
+            }, this), 2000);
         }
         else
         {
