@@ -9,7 +9,7 @@
     position: relative;
     font-family: Monaco, monospace;
     padding-left: 13px;
-    -moz-user-select: none;
+    -moz-user-select: -moz-none;
 }
 
 .twisty {
@@ -126,18 +126,19 @@
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-.nodeBox.nodeHidden > .nodeLabel > .nodeLabelBox,
-.nodeBox.nodeHidden > .nodeCloseLabel,
-.nodeBox.nodeHidden > .nodeLabel > .nodeLabelBox > .nodeText {
+.nodeBox.nodeHidden .nodeLabel > .nodeLabelBox,
+.nodeBox.nodeHidden .nodeCloseLabel,
+.nodeBox.nodeHidden .nodeLabel > .nodeLabelBox > .nodeText,
+.nodeBox.nodeHidden .nodeText {
     color: #888888;
 }
 
-.nodeBox.nodeHidden > .nodeLabel > .nodeLabelBox > .nodeTag,
-.nodeBox.nodeHidden > .nodeCloseLabel > .nodeCloseLabelBox > .nodeTag {
+.nodeBox.nodeHidden .nodeLabel > .nodeLabelBox > .nodeTag,
+.nodeBox.nodeHidden .nodeCloseLabel > .nodeCloseLabelBox > .nodeTag {
     color: #5F82D9;
 }
 
-.nodeBox.nodeHidden > .nodeLabel > .nodeLabelBox > .nodeAttr > .nodeValue {
+.nodeBox.nodeHidden .nodeLabel > .nodeLabelBox > .nodeAttr > .nodeValue {
     color: #D86060;
 }
 

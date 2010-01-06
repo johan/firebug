@@ -1816,6 +1816,9 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
         if (!this.registered)
             return;
 
+        if (Firebug.Profiler.isProfiling()) // stay registered if we are profiling across a reload.
+            return;
+
         var check = fbs.unregisterDebugger(this);
 
         this.registered = false;
@@ -2522,6 +2525,8 @@ Firebug.ScriptPanel.prototype = extend(Firebug.SourceBoxPanel,
                         this.navigate(this.location);
                 }
             }
+            else // show default
+                this.navigate(this.location);
 
             var breakpointPanel = this.context.getPanel("breakpoints", true);
             if (breakpointPanel)

@@ -637,6 +637,10 @@ var TabProgressListener = extend(BaseProgressListener,
                     (uri?uri.spec:"null location")+
                     (requestFromFirebuggedWindow?" from firebugged window":" no firebug"));
             }
+
+            if (uri && uri.scheme === "wyciwyg")  // document.open() was called, the document was cleared.
+                evictTopWindow(progress.DOMWindow, uri);
+
             if (uri)
                 TabWatcher.watchTopWindow(progress.DOMWindow, uri);
             else // the location change to a non-uri means we need to hide
@@ -856,6 +860,13 @@ function onPageHideTopWindow(event)
         if (FBTrace.DBG_WINDOWS)
             FBTrace.sysout("-> tabWatcher onPageHideTopWindow set unload handler "+safeGetWindowLocation(win)+"\n");
     }
+}
+
+function evictTopWindow(win, uri)
+{
+    if (FBTrace.DBG_WINDOWS)
+        FBTrace.sysout("-> tabWatcher evictTopWindow win "+safeGetWindowLocation(win)+" uri "+uri.spec);
+    TabWatcher.unwatchTopWindow(win);
 }
 
 function onUnloadTopWindow(event)
