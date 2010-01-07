@@ -31,6 +31,7 @@ const pointlessErrors =
     "Key event not available on GTK2:": 1
 };
 
+const dupLimit = 10;
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
@@ -46,6 +47,7 @@ var Errors = Firebug.Errors = extend(Firebug.Module,
     clear: function(context)
     {
         this.setCount(context, 0); // reset the UI counter
+        delete context.errorMap;   // clear the duplication-removal table
         delete context.droppedErrors;    // clear the counts of dropped errors
     },
 
@@ -156,7 +158,7 @@ var Errors = Firebug.Errors = extend(Firebug.Module,
                         if (!msgId)
                             return;
                         if (context)
-                            Firebug.Console.log(object.message, context, "consoleMessage", FirebugReps.Text);
+                            context.errorRow[msgId] = Firebug.Console.log(object.message, context, "consoleMessage", FirebugReps.Text);
                     }
                     else if (object.message)
                     {
@@ -261,7 +263,24 @@ var Errors = Firebug.Errors = extend(Firebug.Module,
         var msgId = args.shift();
         var context = args.shift();
         var row = Firebug.Console.log.apply(Firebug.Console, args);
-        return row;
+        if (row)
+        {
+            var dupSpan = row.getElementsByClassName("errorDuplication")[0];
+            var times = context.errorMap[msgId];
+            if (times > 1)
+            {
+                if (times > dupLimit)
+                {
+                    dupSpan.innerHTML = dupLimit+"x";
+                    context.errorMap[msgId] -= dupLimit;
+                }
+                else
+                    dupSpan.innerHTML = times + "x";
+            }
+            context.errorRow[msgId] = row;
+        }
+        if (FBTrace.DBG_ERRORS)
+        	FBTrace.sysout("errors.delayedLogging create row, dups "+context.errorMap[msgId], context.errorRow[msgId]);
     },
 
     getErrorContext: function(object)
@@ -347,6 +366,7 @@ var Errors = Firebug.Errors = extend(Firebug.Module,
     initContext: function(context)
     {
         this.clear(context);
+        context.errorRow = {};
 
         if (FBTrace.DBG_ERRORS && FBTrace.DBG_CSS)
         {
@@ -583,6 +603,29 @@ function lessTalkMoreAction(context, object, isWarning)
     }
 
     var msgId = [incoming_message, object.sourceName, object.lineNumber].join("/");
+
+    if (!context.errorMap)
+        context.errorMap = {};
+
+    if (msgId in context.errorMap)
+    {
+        context.errorMap[msgId] += 1;
+        if (context.errorMap[msgId] % dupLimit != 1)
+        {
+            var console = context.getPanel("console");
+            if (console)
+                console.refresh();
+
+            if (FBTrace.DBG_ERRORS)
+                FBTrace.sysout("errors.observe dropping duplicate msg count:"+context.errorMap[msgId]+"\n");
+            return null;
+        }
+        // else put out another one, something bad is happening....
+    }
+    else
+    {
+        context.errorMap[msgId] = 1;
+    }
 
     return msgId;
 }
