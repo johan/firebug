@@ -542,6 +542,9 @@ NetPanel.prototype = extend(Firebug.ActivablePanel,
 
     updateSelection: function(object)
     {
+        if (!object)
+            return;
+
         var netProgress = this.context.netProgress;
         var file = netProgress.getRequestFile(object.request);
         if (!file)
@@ -2070,9 +2073,14 @@ Firebug.NetMonitor.NetPage = domplate(Firebug.Rep,
     pageTag:
         TR({"class": "netRow netPageRow", onclick: "$onPageClick"},
             TD({"class": "netCol netPageCol", colspan: 6, "role": "separator"},
-                DIV({"class": "netLabel netPageLabel netPageTitle"}, "$document.title")
+                DIV({"class": "netLabel netPageLabel netPageTitle"}, "$page|getTitle")
             )
         ),
+
+    getTitle: function(page)
+    {
+        return page.pageTitle;
+    },
 
     onPageClick: function(event)
     {
