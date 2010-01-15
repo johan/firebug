@@ -475,10 +475,13 @@ Firebug.HTMLPanel.prototype = extend(Firebug.Panel,
                     this.highlightMutation(objectBox, objectBox, "mutated");
                 }
             }
-            else
+            else // !parentNodeBox.populated
             {
                 var newParentNodeBox = newParentTag.replace({object: parent}, this.document);
                 parentNodeBox.parentNode.replaceChild(newParentNodeBox, parentNodeBox);
+
+                if (this.selection && (!this.selection.parentNode || parent == this.selection))
+                    this.ioBox.select(parent, true);
 
                 this.highlightMutation(newParentNodeBox, newParentNodeBox, "mutated");
 
@@ -489,7 +492,7 @@ Firebug.HTMLPanel.prototype = extend(Firebug.Panel,
                 }
             }
         }
-        else
+        else // newParentTag != oldParentTag
         {
             var newParentNodeBox = newParentTag.replace({object: parent}, this.document);
             if (parentNodeBox.parentNode)
@@ -568,6 +571,9 @@ Firebug.HTMLPanel.prototype = extend(Firebug.Panel,
             {
                 if (parentNode.defaultView)
                 {
+                    if (parentNode.defaultView == this.context.window) // for chromebug to avoid climbing put to browser.xul
+                        return null;
+
                     if (FBTrace.DBG_HTML)
                         FBTrace.sysout("getParentObject parentNode.nodeType 9, frameElement:"+parentNode.defaultView.frameElement+"\n");                  /*@explore*/
                     return parentNode.defaultView.frameElement;
@@ -1018,11 +1024,11 @@ Firebug.HTMLPanel.prototype = extend(Firebug.Panel,
             this.ioBox.sourceRow.removeAttribute("exe_line");
 
         if (object instanceof SourceLink) // && object.type == "css" and !reCSS(object.href) by supports
-         {
-             var sourceLink = object;
-             var stylesheet = getStyleSheetByHref(sourceLink.href, this.context);
-             if (stylesheet)
-             {
+        {
+            var sourceLink = object;
+            var stylesheet = getStyleSheetByHref(sourceLink.href, this.context);
+            if (stylesheet)
+            {
                 var ownerNode = stylesheet.ownerNode;
                 if (FBTrace.DBG_CSS)
                         FBTrace.sysout("html panel updateSelection stylesheet.ownerNode="+stylesheet.ownerNode
