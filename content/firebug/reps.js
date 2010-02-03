@@ -1154,7 +1154,20 @@ this.SourceLink = domplate(Firebug.Rep,
 
     hideSourceLink: function(sourceLink)
     {
-        return sourceLink ? sourceLink.href.indexOf("XPCSafeJSObjectWrapper") != -1 : true;
+        try
+        {
+            return (sourceLink && sourceLink.href && sourceLink.href.indexOf) ?
+                (sourceLink.href.indexOf("XPCSafeJSObjectWrapper") != -1) : true;
+        }
+        catch (e)
+        {
+            // xxxHonza: I see "Security error" code: "1000" nsresult: "0x805303e8 (NS_ERROR_DOM_SECURITY_ERR)"
+            // when accessing globalStorage property of a page.
+            if (FBTrace.DBG_ERRORS)
+                FBTrace.sysout("reps.hideSourceLink; EXCEPTION " + sourceLink + ", " + e, e);
+        }
+
+        return true;
     },
 
     getSourceLinkTitle: function(sourceLink)
@@ -1166,7 +1179,6 @@ this.SourceLink = domplate(Firebug.Rep,
         {
             var fileName = getFileName(sourceLink.href);
             fileName = decodeURIComponent(fileName);
-            fileName = cropString(fileName, 17);
         }
         catch(exc)
         {
@@ -1174,6 +1186,11 @@ this.SourceLink = domplate(Firebug.Rep,
                 FBTrace.sysout("reps.getSourceLinkTitle decodeURIComponent fails for \'"+fileName+"\': "+exc, exc);
             fileName = sourceLink.href;
         }
+
+        var maxWidth = Firebug.sourceLinkLabelWidth;
+        if (maxWidth > 0)
+            fileName = cropString(fileName, maxWidth);
+
         if (sourceLink.instance)
             return $STRF("InstanceLine", [fileName, sourceLink.instance+1, sourceLink.line]);
         else if (sourceLink.line)
@@ -1211,7 +1228,25 @@ this.SourceLink = domplate(Firebug.Rep,
 
     getTooltip: function(sourceLink)
     {
-        return decodeURI(sourceLink.href);
+        var text;
+        try
+        {
+            text = decodeURI(sourceLink.href);
+        }
+        catch(exc)
+        {
+            if (FBTrace.DBG_ERRORS)
+                FBTrace.sysout("reps.getTooltip decodeURI fails for " + sourceLink.href, exc);
+        }
+
+        text = unescape(sourceLink.href);
+
+        var lines = splitLines(text);
+        if (lines.length < 10)
+            return text;
+
+        lines.splice(10);
+        return lines.join("") + "...";
     },
 
     inspectObject: function(sourceLink, context)

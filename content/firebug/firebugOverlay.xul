@@ -93,6 +93,7 @@
         <key id="key_customizeFBKeys" keycode="VK_B" modifiers="accel shift alt" command="cmd_customizeFBKeys"/>
         <key id="key_toggleFirebug" keycode="VK_F12" command="cmd_toggleFirebug"/>
         <key id="key_detachFirebug" keycode="VK_F12" modifiers="accel" command="cmd_detachFirebug"/>
+        <key id="key_closeFirebug" keycode="VK_F12" modifiers="shift" command="cmd_closeFirebug"/>
         <key id="key_clearConsole" key="r" modifiers="accel,shift" command="cmd_clearConsole" class="fbOnlyKey"/>
     </keyset>
 
@@ -120,23 +121,35 @@
                     <hbox id="fbPanelBar1-buttons" class="innerToolbar" role="toolbar"
                           aria-label="Firebug Tools">
 
-                        <!-- Firebug Icon Menu -->
-                        <toolbarbutton id="fbFirebugMenu" type="menu" label="firebug options"
-                                role="button" aria-haspopup="true" owns="fbFirebugMenuPopup">
-                            <image src="chrome://firebug/skin/firebug.png"/>
-                            <!-- Content comes from fbFirebugMenuPopup -->
-                        </toolbarbutton>
+                            <!-- Firebug Icon Menu -->
+                            <toolbarbutton id="fbFirebugMenu" type="menu" label="firebug options"
+                                    role="button" aria-haspopup="true" owns="fbFirebugMenuPopup">
+                                <image src="chrome://firebug/skin/firebug.png"/>
+                                <!-- Content comes from fbFirebugMenuPopup -->
+                            </toolbarbutton>
 
-                        <!-- HTML Inspector -->
-                        <toolbarbutton id="fbInspectButton" tooltiptext="&firebug.InspectTooltip;"
-                                command="cmd_toggleInspecting" collapsed="false">
-                            <image src="chrome://firebug/skin/Templarian_inspector.png"/>
-                        </toolbarbutton>
+                            <!-- HTML Inspector -->
+                            <toolbarbutton id="fbInspectButton" tooltiptext="&firebug.InspectTooltip;"
+                                    command="cmd_toggleInspecting" collapsed="false">
+                                <image src="chrome://firebug/skin/Templarian_inspector.png"/>
+                            </toolbarbutton>
 
-                        <!-- Break On Next -->
-                        <toolbarbutton id="fbBreakOnNextButton" command="cmd_breakOnNext"
-                                tooltiptext="script.Break On Next" breakable="disabled" />
-                    </hbox>
+                            <!-- Break On Next -->
+                            <toolbarbutton id="fbBreakOnNextButton" command="cmd_breakOnNext"
+                                    tooltiptext="script.Break On Next" breakable="disabled">
+                                <stack id="fbBreakOnNextButtonStack">
+                                    <image                        id="fbBreakOnImageDisabled" src="chrome://firebug/skin/breakNextDisabled.png"></image>
+                                    <image class="fbBreakOnImage" id="fbBreakOnImage" src="chrome://firebug/skin/breakNext.png"></image>
+                                    <image class="fbBreakOnImage" id="fbBreakOnImageActive" src="chrome://firebug/skin/breakNextActive.png"></image>
+                                    <image class="fbBreakOnImage" id="fbBreakOnImageArmed" src="chrome://firebug/skin/breakNextArmed.png"></image>
+                                    <!-- Badges -->
+                                    <image class="fbBreakOnImage" id="fbBreakOnImageError" src="chrome://firebug/skin/breakOn/breakOnErrorSingle.png"></image>
+                                    <image class="fbBreakOnImage" id="fbBreakOnImageMutate" src="chrome://firebug/skin/breakOn/breakOnMutateSingle.png"></image>
+                                    <image class="fbBreakOnImage" id="fbBreakOnImageNext" src="chrome://firebug/skin/breakOn/breakOnNextSingle.png"></image>
+                                    <image class="fbBreakOnImage" id="fbBreakOnImageXHR" src="chrome://firebug/skin/breakOn/breakOnXHRSingle.png"></image>
+                                </stack>
+                            </toolbarbutton>
+                        </hbox>
 
                     <!-- Tab Bar -->
                     <hbox id="fbPanelBar1-panelTabs" class="panelTabs" role="tablist"

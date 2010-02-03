@@ -856,15 +856,16 @@
 
 <binding id="searchBox">
     <content sizetopopup="none">
-        <xul:textbox type="autocomplete" anonid="searchBox"
-                rows="1" label="search.Firebug_Search" class="fbsearch-textbox" />
-        <xul:panel id="fbSearchOptionsPanel" norestorefocus="true" noautofocus="true" ignorekeys="true">
-            <xul:vbox>
+        <xul:textbox anonid="searchBox"
+                rows="1" label="search.Firebug_Search" class="fbsearch-textbox" onkeyup="onSearchBoxKeyUp(event);" aria-describedby="fbSearchBoxDescription" />
+                <xul:description anonid="fbSearchBoxDescription"  collapsed="true" tooltiptext="Press up or down arrow key for search options" />
+        <xul:panel id="fbSearchOptionsPanel" norestorefocus="true" noautofocus="true" ignorekeys="true" onkeydown="onPopupKeyDown(event)" role="presentation">
+            <xul:vbox class="searchOptionsMenu innerToolbar" role="menu" aria-label="search options">
               <xul:box anonid="startPanelFocus" class="panelFocusBound" onfocus="startFocusHandler()"  />
-              <xul:vbox anonid="searchOptionsList"/>
-              <xul:hbox pack="center" align="center">
-                  <xul:button anonid="searchPrev" class="fbsearch-options-buttons" label="search.Previous" oncommand="searchPrev()" />
-                  <xul:button anonid="searchNext" class="fbsearch-options-buttons" label="search.Next" oncommand="searchNext()"/>
+              <xul:vbox anonid="searchOptionsList" role="presentation" />
+              <xul:hbox pack="center" align="center" role="presentation">
+                  <xul:button anonid="searchPrev" class="fbsearch-options-buttons a11yFocus" label="search.Previous" oncommand="searchPrev()" role="menuitem" />
+                  <xul:button anonid="searchNext" class="fbsearch-options-buttons a11yFocus" label="search.Next" oncommand="searchNext()" role="menuitem" />
               </xul:hbox>
               <xul:box anonid="endPanelFocus" class="panelFocusBound" onfocus="endFocusHandler()" />
             </xul:vbox>
@@ -917,7 +918,8 @@
                     for (var i=0; i<menuItems.length; i++)
                     {
                         var checkbox = document.createElement("checkbox");
-                        checkbox.className = "fbsearch-options-label";
+                        checkbox.className = "fbsearch-options-label a11yFocus";
+                        checkbox.setAttribute("role", "menuitemcheckbox")
                         FBL.setItemIntoElement(checkbox, menuItems[i]);
 
                         searchOptions.appendChild(checkbox);
@@ -1040,6 +1042,43 @@
 
                 var endTextFocus = document.getAnonymousElementByAttribute(this, "anonid", "endTextFocus");
                 endTextFocus.focus();
+            ]]></body>
+        </method>
+        <method name="onSearchBoxKeyUp">
+            <parameter name="event" />
+            <body><![CDATA[
+                if (!Firebug.A11yModel || !Firebug.A11yModel.isEnabled())
+                    return;
+                if (event.keyCode ==  KeyEvent.DOM_VK_UP || event.keyCode ==  KeyEvent.DOM_VK_DOWN)
+                {
+                    var goingDown = event.keyCode ==  KeyEvent.DOM_VK_DOWN;
+                    var optionsPopup = document.getElementById("fbSearchOptionsPanel");
+                    var items = optionsPopup.getElementsByClassName("a11yFocus");
+                    if (!optionsPopup || !items)
+                        return;
+                    if (optionsPopup.state == "closed")
+                        this.showOptions();
+                    setTimeout(FBL.bindFixed(function(){items[goingDown ? 0 : items.length -1].focus();}));
+                }
+                else if (event.keyCode ==  KeyEvent.DOM_VK_ESCAPE)
+	                this.hideOptions();
+            ]]></body>
+        </method>
+        <method name="onPopupKeyDown">
+            <parameter name="event" />
+            <body><![CDATA[
+                if (!Firebug.A11yModel || !Firebug.A11yModel.isEnabled())
+                    return;
+                if (event.keyCode ==  KeyEvent.DOM_VK_ESCAPE)
+                {
+                    var optionsPopup = document.getElementById("fbSearchOptionsPanel");
+                    var items = optionsPopup.getElementsByClassName("a11yFocus");
+                    var searchBox = document.getAnonymousElementByAttribute(this, "anonid", "searchBox");
+                    if (!optionsPopup || !items || !searchBox)
+                        return;
+                    searchBox.focus();
+                    optionsPopup.hidePopup();
+                }
             ]]></body>
         </method>
     </implementation>

@@ -11,6 +11,9 @@ pref("extensions.firebug.previousPlacement", 0);
 pref("extensions.firebug.showErrorCount", true);
 pref("extensions.firebug.viewPanelOrient", "vertical");
 pref("extensions.firebug.allPagesActivation", "none");
+pref("extensions.firebug.hiddenPanels", "");                // List of hidden panels separated by a space
+pref("extensions.firebug.panelTabMinWidth", 50);            // Minimum width of a panel tab [px] applied when there is no enough horizontal size for the tab bar.
+pref("extensions.firebug.sourceLinkLabelWidth", 17);        // Maximum amount of characters for source link labels (displayed e.g. in CSS or Console panels)
 
 pref("extensions.firebug.preferEnabled.Console", false);
 pref("extensions.firebug.preferEnabled.Script", false);
@@ -37,7 +40,7 @@ pref("extensions.firebug.showChromeMessages", false);
 pref("extensions.firebug.showExternalErrors", false);
 pref("extensions.firebug.showNetworkErrors", false);
 pref("extensions.firebug.showXMLHttpRequests", true);
-pref("extensions.firebug.service.showStackTrace", true);
+pref("extensions.firebug.service.showStackTrace", false);
 pref("extensions.firebug.console.logLimit", 500);
 pref("extensions.firebug.console.enableSites", false);
 pref("extensions.firebug.persistBreakOnError", false);

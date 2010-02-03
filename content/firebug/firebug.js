@@ -60,7 +60,8 @@ const prefNames =  // XXXjjb TODO distribute to modules
     // Global
     "defaultPanelName", "throttleMessages", "textSize", "showInfoTips",
     "largeCommandLine", "textWrapWidth", "openInWindow", "showErrorCount",
-    "activateSameOrigin", "allPagesActivation",
+    "activateSameOrigin", "allPagesActivation", "hiddenPanels",
+    "panelTabMinWidth", "sourceLinkLabelWidth",
 
     // Search
     "searchCaseSensitive", "searchGlobal", "netSearchHeaders", "netSearchParameters",
