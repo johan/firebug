@@ -194,7 +194,7 @@ Firebug.NetMonitor = extend(Firebug.ActivableModule,
 
         // HTTP observer must be registered now (and not in monitorContext, since if a
         // page is opened in a new tab the top document request would be missed otherwise.
-        NetHttpObserver.registerObserver();
+        Firebug.NetMonitor.NetHttpObserver.registerObserver();
         NetHttpActivityObserver.registerObserver();
 
         Firebug.Debugger.addListener(this.DebuggerListener);
@@ -213,7 +213,7 @@ Firebug.NetMonitor = extend(Firebug.ActivableModule,
         if (Firebug.TraceModule)
             Firebug.TraceModule.removeListener(this.TraceListener);
 
-        NetHttpObserver.unregisterObserver();
+        Firebug.NetMonitor.NetHttpObserver.unregisterObserver();
         NetHttpActivityObserver.unregisterObserver();
 
         Firebug.Debugger.removeListener(this.DebuggerListener);
@@ -2243,20 +2243,14 @@ Firebug.NetMonitor.NetInfoBody = domplate(Firebug.Rep, new Firebug.Listener(),
 
     getParamName: function(param)
     {
-        var limit = 25;
         var name = param.name;
+        var limit = Firebug.netParamNameLimit;
+        if (limit <= 0)
+            return name;
+
         if (name.length > limit)
             name = name.substr(0, limit) + "...";
         return name;
-    },
-
-    getParamTitle: function(param)
-    {
-        var limit = 25;
-        var name = param.name;
-        if (name.length > limit)
-            return name;
-        return "";
     },
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -3018,7 +3012,7 @@ Firebug.NetMonitor.TimeInfoTip = domplate(Firebug.Rep,
 Firebug.NetMonitor.SizeInfoTip = domplate(Firebug.Rep,
 {
     tag:
-        TABLE({"class": "sizeInfoTip", "id": "fbNetSizeInfoTip"},
+        TABLE({"class": "sizeInfoTip", "id": "fbNetSizeInfoTip", role:"presentation"},
             TBODY(
                 FOR("size", "$sizeInfo",
                     TAG("$size|getRowTag", {size: "$size"})
@@ -4625,7 +4619,7 @@ function safeGetName(request)
 // them to appropriate tab - initContext then uses the array in order to access it.
 //-----------------------------------------------------------------------------
 
-var NetHttpObserver =
+Firebug.NetMonitor.NetHttpObserver =
 {
     registered: false,
 

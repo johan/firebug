@@ -12,6 +12,8 @@ window[chromehidden~="toolbar"] #fbToolbar {
     height: 270px;
 }
 
+
+
 #fbCommandLine {
     -moz-binding: url("chrome://firebug/content/bindings.xml#commandLine");
 }
@@ -25,6 +27,10 @@ textbox[type="fbSearchBox"] {
 }
 textbox[type="fbSearchBox"] .panelFocusBound {
     -moz-user-focus: normal;
+}
+
+.useA11y textbox[type="fbSearchBox"] .panelFocusBound {
+    -moz-user-focus: ignore;
 }
 
 panelBar {
@@ -122,7 +128,7 @@ panelTab[selected="true"]:hover > panelTabMenu .menuTarget {
 
 /* remove toolbar groups from the tab order if they have .noTabStop and are NOT the first visible group in the toolbar */
 .useA11y .innerToolbar *[collapsed="false"] ~ *.noTabStop toolbarbutton,
-.useA11y .innerToolbar *[collapsed="false"] ~ toolbarbutton.noTabStop,
+.useA11y .innerToolbar toolbarbutton.noTabStop,
 /*fbNetButtonsFilter situation, added extra id for specificity*/
 .useA11y .innerToolbar toolbarbutton:not([collapsed="true"]) ~ *.noTabStop toolbarbutton {
     -moz-user-focus: ignore;
@@ -136,7 +142,8 @@ panelTab[selected="true"]:hover > panelTabMenu .menuTarget {
 .useA11y #fbPanelBar1 toolbarbutton:focus,
 .useA11y #fbPanelBar1 textbox[focused],
 #fbStatusBar.useA11y:focus,
-.useA11y panelTab:focus {
+.useA11y panelTab:focus,
+.searchOptionsMenu .a11yFocus:focus {
     outline: 2px solid #FF9933;
     outline-offset: -2px;
     -moz-outline-radius: 5px;
