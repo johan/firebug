@@ -307,7 +307,7 @@ Firebug.NetMonitor = extend(Firebug.ActivableModule,
             {
                 var doc = netProgress.documents[i];
                 doc.id = context.uid;
-                doc.title = context.getTitle();
+                doc.title = getPageTitle(context);
             }
         }
     },
@@ -467,7 +467,7 @@ NetPanel.prototype = extend(Firebug.ActivablePanel,
     {
         Firebug.ActivablePanel.savePersistedContent.apply(this, arguments);
 
-        state.pageTitle = this.context.getTitle();
+        state.pageTitle = getPageTitle(this.context);
     },
 
     // UI Listener
@@ -3645,7 +3645,8 @@ NetProgress.prototype =
                 this.endLoad(file);
 
                 file.aborted = true;
-                file.responseStatusText = "Timeout";
+                if (!file.responseStatusText)
+                    file.responseStatusText = "Timeout";
                 file.respondedTime = time;
                 file.endTime = time;
             }
@@ -5027,6 +5028,12 @@ function getActivitySubtypeDescription(a)
     default:
         return a;
     }
+}
+
+function getPageTitle(context)
+{
+    var title = context.getTitle();
+    return (title) ? title : context.getName();
 }
 
 // ************************************************************************************************
