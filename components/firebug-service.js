@@ -962,9 +962,9 @@ FirebugService.prototype =
         return fbs.pauseDepth;
     },
 
-    unPause: function()
+    unPause: function(force)
     {
-        if (fbs.pauseDepth > 0)
+        if (fbs.pauseDepth > 0 || force)
         {
             if (FBTrace.DBG_ACTIVATION && (!jsd.isOn || jsd.pauseDepth == 0) )
                 FBTrace.sysout("fbs.unpause while jsd.isOn is "+jsd.isOn+" and hooked scripts pauseDepth:"+jsd.pauseDepth);
