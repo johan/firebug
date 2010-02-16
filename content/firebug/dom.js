@@ -1105,7 +1105,7 @@ Firebug.DOMBasePanel.prototype = extend(Firebug.ActivablePanel,
             {
                 this.toggles = {};
 
-                var win = this.context.getGlobalScope();
+                var win = unwrapObject(this.context.getGlobalScope());
                 if (object == win)
                 {
                     this.pathIndex = 0;
@@ -1151,7 +1151,7 @@ Firebug.DOMBasePanel.prototype = extend(Firebug.ActivablePanel,
 
     getDefaultSelection: function()
     {
-        return this.context.getGlobalScope();
+        return unwrapObject(this.context.getGlobalScope());
     },
 
     updateOption: function(name, value)
