@@ -131,24 +131,8 @@
                             <!-- HTML Inspector -->
                             <toolbarbutton id="fbInspectButton" tooltiptext="&firebug.InspectTooltip;"
                                     command="cmd_toggleInspecting" collapsed="false">
-                                <image src="chrome://firebug/skin/Templarian_inspector.png"/>
                             </toolbarbutton>
 
-                            <!-- Break On Next -->
-                            <toolbarbutton id="fbBreakOnNextButton" command="cmd_breakOnNext"
-                                    tooltiptext="script.Break On Next" breakable="disabled">
-                                <stack id="fbBreakOnNextButtonStack">
-                                    <image                        id="fbBreakOnImageDisabled" src="chrome://firebug/skin/breakNextDisabled.png"></image>
-                                    <image class="fbBreakOnImage" id="fbBreakOnImage" src="chrome://firebug/skin/breakNext.png"></image>
-                                    <image class="fbBreakOnImage" id="fbBreakOnImageActive" src="chrome://firebug/skin/breakNextActive.png"></image>
-                                    <image class="fbBreakOnImage" id="fbBreakOnImageArmed" src="chrome://firebug/skin/breakNextArmed.png"></image>
-                                    <!-- Badges -->
-                                    <image class="fbBreakOnImage" id="fbBreakOnImageError" src="chrome://firebug/skin/breakOn/breakOnErrorSingle.png"></image>
-                                    <image class="fbBreakOnImage" id="fbBreakOnImageMutate" src="chrome://firebug/skin/breakOn/breakOnMutateSingle.png"></image>
-                                    <image class="fbBreakOnImage" id="fbBreakOnImageNext" src="chrome://firebug/skin/breakOn/breakOnNextSingle.png"></image>
-                                    <image class="fbBreakOnImage" id="fbBreakOnImageXHR" src="chrome://firebug/skin/breakOn/breakOnXHRSingle.png"></image>
-                                </stack>
-                            </toolbarbutton>
                         </hbox>
 
                     <!-- Tab Bar -->
@@ -184,7 +168,25 @@
                             <toolbar id="fbToolbar" align="center" role="toolbar">
 
                                 <hbox id="fbToolbarInner" class="innerToolbar" insertbefore="fbDetachButton" flex="1" align="center">
+
+                                    <!-- Break On Next -->
+                                    <toolbarbutton id="fbBreakOnNextButton" command="cmd_breakOnNext"
+                                        tooltiptext="script.Break On Next" breakable="disabled">
+                                        <stack id="fbBreakOnNextButtonStack">
+                                            <image id="fbBreakOnImageDisabled"></image>
+                                            <image id="fbBreakOnImage" class="fbBreakOnImage"></image>
+                                            <image id="fbBreakOnImageActive" class="fbBreakOnImage"></image>
+                                            <image id="fbBreakOnImageArmed" class="fbBreakOnImage"></image>
+                                            <!-- Badges -->
+                                            <image id="fbBreakOnImageError" class="fbBreakOnImage"></image>
+                                            <image id="fbBreakOnImageMutate" class="fbBreakOnImage"></image>
+                                            <image id="fbBreakOnImageNext" class="fbBreakOnImage"></image>
+                                            <image id="fbBreakOnImageXHR" class="fbBreakOnImage"></image>
+                                        </stack>
+                                    </toolbarbutton>
+
                                     <hbox id="fbConsoleButtons" collapsed="true">
+                                        <toolbarseparator class="fbPanelSpecificButtonsSeparator"/>
                                         <toolbarbutton label="&firebug.Clear;" class="toolbar-text-button"
                                             tooltiptext="&firebug.ClearTooltip;" command="cmd_clearConsole"/>
                                         <toolbarbutton label="firebug.console.Persist" class="toolbar-text-button" id="fbConsolePersist"
@@ -194,16 +196,19 @@
                                     </hbox>
 
                                     <hbox id="fbHTMLButtons" collapsed="true">
+                                        <toolbarseparator class="fbPanelSpecificButtonsSeparator"/>
                                         <toolbarbutton label="&firebug.Edit;" class="toolbar-text-button"
                                             tooltiptext="&firebug.EditHTMLTooltip;" command="cmd_toggleHTMLEditing"/>
                                     </hbox>
 
                                     <hbox id="fbCSSButtons" collapsed="true">
+                                        <toolbarseparator class="fbPanelSpecificButtonsSeparator"/>
                                         <toolbarbutton label="&firebug.Edit;" class="toolbar-text-button"
                                             tooltiptext="&firebug.EditCSSTooltip;" command="cmd_toggleCSSEditing"/>
                                     </hbox>
 
                                     <hbox id="fbScriptButtons" collapsed="true">
+                                        <toolbarseparator class="fbPanelSpecificButtonsSeparator"/>
                                         <tooltip id="fbScriptFilterMenuTooltip" role="presentation"
                                             onpopupshowing="return Firebug.Debugger.onScriptFilterMenuTooltipShowing(this, FirebugContext)"/>
                                         <toolbarbutton id="fbScriptFilterMenu" type="menu" tooltip="fbScriptFilterTooltip" role="button" aria-haspopup="true">
@@ -220,6 +225,7 @@
                                     </hbox>
 
                                     <hbox id="fbNetButtons" collapsed="true">
+                                        <toolbarseparator class="fbPanelSpecificButtonsSeparator"/>
                                         <toolbarbutton label="&firebug.Clear;" class="toolbar-text-button"
                                                         tooltiptext="&firebug.ClearTooltip;" command="cmd_clearNet"/>
                                         <toolbarbutton id="fbNetPersist" label="firebug.console.Persist"
