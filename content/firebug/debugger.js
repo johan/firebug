@@ -149,12 +149,12 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
             FBTrace.sysout("debugger.halt, completed debugger stmt");
     },
 
-    breakNow: function()
+    breakNow: function(context)
     {
         Firebug.Debugger.halt(function(frame)
         {
             if (FBTrace.DBG_UI_LOOP)
-                FBTrace.sysout("debugger.breakNow: frame "+frame.script.fileName, frame);
+                FBTrace.sysout("debugger.breakNow: frame "+frame.script.fileName+" context "+context.getName(), frame);
 
             for (; frame && frame.isValid; frame = frame.callingFrame)
             {
@@ -165,7 +165,10 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
             }
 
             if (frame)
+            {
+                Firebug.Debugger.breakContext = context;
                 Firebug.Debugger.onBreak(frame, 3);
+            }
             else
             {
                 // XXXrobc no-op, added for detrace
@@ -217,6 +220,7 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
 
         try
         {
+        	 this.freeze(context);
             // We will pause here until resume is called
             var depth = fbs.enterNestedEventLoop({onNest: bindFixed(this.startDebugging, this, context)});
             // For some reason we don't always end up here
@@ -229,6 +233,10 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
                 FBTrace.sysout("debugger exception in nested event loop: ", exc);
             else     // else /*@explore*/
                 ERROR("debugger exception in nested event loop: "+exc+"\n");
+        }
+        finally
+        {
+            this.thaw(context);
         }
 
         this.stopDebugging(context);
@@ -249,8 +257,7 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
         if (FBTrace.DBG_UI_LOOP)
             FBTrace.sysout("debugger.resume, context.stopped:"+context.stopped+"\n");
 
-        this.thaw(context);
-
+        // this will cause us to return to just after the enterNestedEventLoop call
         var depth = fbs.exitNestedEventLoop();
         if (FBTrace.DBG_UI_LOOP) FBTrace.sysout("debugger.resume, depth:"+depth+"\n");
     },
@@ -260,7 +267,9 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
         if (context.stopped)
         {
             context.aborted = true;
+            this.thaw(context);
             this.resume(context);
+            fbs.unPause(true);
         }
     },
 
@@ -329,6 +338,7 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
                 if (context.eventSuppressor)
                     context.eventSuppressor.suppressEventHandling(true);
             }
+            context.isFrozen = true;
 
             if (FBTrace.DBG_UI_LOOP)
                 FBTrace.sysout("debugger.stop try to disable scripts "+(context.eventSuppressor?"and events":"but not events")+" in "+context.getName()+" executionContext.tag "+executionContext.tag+".scriptsEnabled: "+executionContext.scriptsEnabled);
@@ -341,8 +351,12 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
 
     thaw: function(context)
     {
-        var executionContext = context.debugFrame.executionContext;
         try {
+            if (context.isFrozen)
+                delete context.isFrozen;
+            else
+                return; // bail, we did not freeze this context
+            var executionContext = context.debugFrame.executionContext;
             if (executionContext.isValid)
             {
                 if (context.eventSuppressor)
@@ -359,7 +373,7 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
                     FBTrace.sysout("debugger.stop "+executionContext.tag+" executionContext is not valid");
             }
             if (FBTrace.DBG_UI_LOOP)
-                FBTrace.sysout("debugger.stop try to ensable scripts "+(context.eventSuppressor?"with events suppressed":"events enabled")+" in "+context.getName()+" executionContext.tag "+executionContext.tag+".scriptsEnabled: "+executionContext.scriptsEnabled);
+                FBTrace.sysout("debugger.stop try to enable scripts "+(context.eventSuppressor?"with events suppressed":"events enabled")+" in "+context.getName()+" executionContext.tag "+executionContext.tag+".scriptsEnabled: "+executionContext.scriptsEnabled);
         } catch (exc) {
             if (FBTrace.DBG_UI_LOOP) FBTrace.sysout("debugger.stop, scriptsEnabled = true exception:", exc);
         }
@@ -568,8 +582,6 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
     {
         if (FBTrace.DBG_UI_LOOP) FBTrace.sysout("startDebugging enter context.stopped:"+context.stopped+" for context: "+context.getName()+"\n");
         try {
-
-            this.freeze(context);
 
             fbs.lockDebugger();
 
@@ -1764,7 +1776,7 @@ Firebug.Debugger = extend(Firebug.ActivableModule,
 
         if (context.stopped)
         {
-            TabWatcher.cancelNextLoad = true;  // the abort will call resume, but the nestedEventLoop will continue the load.
+            // the abort will call resume, but the nestedEventLoop would continue the load...
             this.abort(context);
         }
 
