@@ -689,6 +689,10 @@ function onHTTPSpyAbort(spy)
     spy.detach();
     spy.loaded = true;
 
+    // Ignore aborts if the request already has a response status.
+    if (spy.xhrRequest.status)
+        return;
+
     if (spy.logRow)
     {
         removeClass(spy.logRow, "loading");
