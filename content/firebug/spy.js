@@ -19,7 +19,7 @@ var contexts = [];
  * XHR activity of the current page and create appropriate log into the Console panel.
  * This feature can be controlled by an option <i>Show XMLHttpRequests</i> (from within the
  * console panel).
- * 
+ *
  * The module is responsible for attaching/detaching a HTTP Observers when Firebug is
  * activated/deactivated for a site.
  */
@@ -210,7 +210,7 @@ Firebug.Spy = extend(Firebug.Module,
 /**
  * @class This observer uses {@link HttpRequestObserver} to monitor start and end of all XHRs.
  * using <code>http-on-modify-request</code>, <code>http-on-examine-response</code> and
- * <code>http-on-examine-cached-response</code> events. For every monitored XHR a new 
+ * <code>http-on-examine-cached-response</code> events. For every monitored XHR a new
  * instance of {@link Firebug.Spy.XMLHttpRequestSpy} object is created. This instance is removed
  * when the XHR is finished.
  */
@@ -244,7 +244,7 @@ var SpyHttpObserver =
         var win = getWindowForRequest(request);
         var xhr = Firebug.Spy.getXHR(request);
 
-        // The request must be associated with window (i.e. tab) and it also must be 
+        // The request must be associated with window (i.e. tab) and it also must be
         // real XHR request.
         if (!win || !xhr)
             return;
@@ -514,7 +514,7 @@ Firebug.Spy.XMLHttpRequestSpy.prototype =
         this.onAbort = function() { onHTTPSpyAbort(spy); };
 
         // xxxHonza: #502959 is still failing on Fx 3.5
-        // Use activity distributor to identify 3.6 
+        // Use activity distributor to identify 3.6
         if (SpyHttpActivityObserver.getActivityDistributor())
         {
             this.onreadystatechange = this.xhrRequest.onreadystatechange;
@@ -580,6 +580,9 @@ Firebug.Spy.XMLHttpRequestSpy.prototype =
     // Cache listener
     onStopRequest: function(context, request, responseText)
     {
+        if (FBTrace.DBG_SPY)
+            FBTrace.sysout("spy.onStopRequest: " + safeGetRequestName(request), responseText);
+
         if (!responseText)
             return;
 
@@ -618,7 +621,7 @@ function onHTTPSpyReadyStateChange(spy, event)
         updateTime(spy);
     }
 
-    // Request loaded. Get all the info from the request now, just in case the 
+    // Request loaded. Get all the info from the request now, just in case the
     // XHR would be aborted in the original onReadyStateChange handler.
     if (spy.xhrRequest.readyState == 4)
     {
@@ -664,6 +667,14 @@ function onHTTPSpyLoad(spy)
     // xxxHonza: Still needed for Fx 3.5 (#502959)
     if (!SpyHttpActivityObserver.getActivityDistributor())
         onHTTPSpyReadyStateChange(spy, null);
+
+    // If the spy is not loaded yet (and so, the response was not cached), do it now.
+    // This can happen since synchronous XHRs don't fire onReadyStateChange event (issue 2868).
+    if (!spy.loaded)
+    {
+        spy.loaded = true;
+        spy.responseText = spy.xhrRequest.responseText;
+    }
 }
 
 function onHTTPSpyError(spy)
@@ -717,7 +728,7 @@ function callPageHandler(spy, event, originalHandler)
     {
         // Calling the page handler throwed an exception (see #502959)
         // This should be fixed in Firefox 3.5
-        if (originalHandler)
+        if (originalHandler && event)
             originalHandler.handleEvent(event);
     }
     catch (exc)

@@ -1814,7 +1814,10 @@ top.Firebug =
         dispatch(modules, "destroyContext", [context, persistedState]);
 
         if (FirebugContext == context)
+        {
+            Firebug.chrome.clearPanels(); // disconnect the to-be-destroyed panels from the panelBar
             Firebug.chrome.setFirebugContext(null);  // FirebugContext is about to be destroyed
+        }
 
         var browser = context.browser;
         // Persist remnants of the context for restoration if the user reloads
@@ -2940,7 +2943,7 @@ Firebug.DisabledPanelPage.prototype = domplate(Firebug.Rep,
                 SPAN("$pageTitle")
             ),
             P({"class": "disabledPanelDescription", style: "margin-top: 15px;"},
-                $STR("moduleManager.desc4"),
+                $STR("moduleManager.desc3"),
                 SPAN("&nbsp;"),
                 SPAN({"class": "descImage descImage-$panelName"})
             )

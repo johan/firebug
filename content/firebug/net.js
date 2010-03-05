@@ -395,9 +395,9 @@ NetPanel.prototype = extend(Firebug.ActivablePanel,
 
     destroy: function(state)
     {
-        Firebug.ActivablePanel.destroy.apply(this, arguments);
-
         Firebug.unregisterUIListener(this);
+
+        Firebug.ActivablePanel.destroy.apply(this, arguments);
     },
 
     initializeNode : function()
@@ -1448,6 +1448,8 @@ NetPanel.prototype = extend(Firebug.ActivablePanel,
             if (netProgress.currentPhase == phase)
                 netProgress.currentPhase = null;
         }
+
+        file.clear();
 
         return true;
     },
@@ -3263,6 +3265,9 @@ function NetProgress(context)
 
     this.clear = function()
     {
+        for (var i=0; this.files && i<this.files.length; i++)
+            this.files[i].clear();
+
         this.requests = [];
         this.files = [];
         this.phases = [];
@@ -3648,7 +3653,7 @@ NetProgress.prototype =
 
                 file.aborted = true;
                 if (!file.responseStatusText)
-                    file.responseStatusText = "Timeout";
+                    file.responseStatusText = "Aborted";
                 file.respondedTime = time;
                 file.endTime = time;
             }
@@ -4055,6 +4060,13 @@ NetFile.prototype =
             return this.href;
 
         return this.href.substring(0, index);
+    },
+
+    clear: function()
+    {
+        // Remove all members to avoid circular references and memleaks.
+        for (var name in this)
+            delete this[name];
     }
 };
 
