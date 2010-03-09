@@ -212,9 +212,6 @@ const DirTablePlate = domplate(Firebug.Rep,
         if (!toggles)
             toggles = table.repObject.toggles;
 
-        if (!toggles)
-            toggles = {};
-
         var domPanel = table.domPanel;
         if (!domPanel)
         {
