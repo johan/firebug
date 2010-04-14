@@ -101,17 +101,58 @@ Firebug.SourceBoxPanel = extend( extend(Firebug.MeasureBox, Firebug.ActivablePan
         Firebug.Panel.reattach.apply(this, arguments);
         this.resizeEventTarget = Firebug.chrome.$('fbContentBox');
         this.resizeEventTarget.addEventListener("resize", this.onResize, true);
+        this.attachToCache();
     },
 
     destroyNode: function()
     {
         Firebug.Panel.destroyNode.apply(this, arguments);
         this.resizeEventTarget.removeEventListener("resize", this.onResize, true);
+        this.detachFromCache();
     },
 
-    // **************************************
-    /*  Panel extension point.
-     *  Called just before box is shown
+    attachToCache: function()
+    {
+        this.context.sourceCache.addListener(this);
+    },
+
+    detachFromCache: function()
+    {
+        this.context.sourceCache.removeListener(this);
+    },
+
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+    //  TabCache listner implementation
+
+    onStartRequest: function(context, request)
+    {
+
+    },
+
+    onStopRequest: function(context, request, responseText)
+    {
+        if (context === this.context)
+        {
+            var url = request.URI.spec;
+            var sourceBox = this.getSourceBoxByURL(url);
+            if (sourceBox)  // else no worries we did not build one
+            {
+                delete this.sourceBoxes[url];
+
+                if (this.selectedSourceBox === sourceBox) // else we will create a new one on show
+                {
+                    var sourceFile = getSourceFileByHref(url, context);
+                    this.showSourceFile(sourceFile);
+                }
+            }
+        }
+    },
+
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+
+    /**
+     * Panel extension point.
+     * Called just before box is shown
      */
     updateSourceBox: function(sourceBox)
     {
